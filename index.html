@@ -32,8 +32,11 @@ button.b.sm{padding:4px 9px;font-size:13px}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 .row{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c,#999);border-radius:10px;padding:10px 12px;margin-bottom:10px}
 .row.flag{box-shadow:0 0 0 2px #e08e0b inset}
-.row{position:relative}.row>*:not(.bgimg){position:relative;z-index:1}
-.bgimg{position:absolute;inset:0;border-radius:inherit;background-size:cover;background-position:center right;opacity:var(--bgo,.16);pointer-events:none;-webkit-mask-image:linear-gradient(to left,#000 5%,transparent 85%);mask-image:linear-gradient(to left,#000 5%,transparent 85%)}
+.botrow{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.botrow .phwrap{flex:1 1 230px;min-width:0}
+.illus{display:none;flex:0 1 46%;max-width:560px;min-width:240px;aspect-ratio:5/1;border-radius:8px;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:var(--bgo,.7);margin-left:auto;border:1px solid var(--line)}
+.illus.has{display:block}
+@media(max-width:560px){.illus{flex:1 1 100%;max-width:none;margin-left:0}}
 .jthumb{width:64px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--line);display:block}
 tr.dropt td{background:var(--soft)!important}
 .rowtop{display:flex;gap:8px;align-items:center;margin-bottom:6px}
@@ -145,7 +148,7 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
     <button class="b amber" id="quick" title="บันทึกพิกัดตำแหน่งปัจจุบันเป็นรายการใหม่ทันที แล้วกรอกรายละเอียดทีหลัง">⚡ จุดด่วน (จับพิกัด)</button>
     <button class="b" id="add">＋ เพิ่มรายการ</button>
     <select id="flt" style="width:auto"><option value="all">แสดงทั้งหมด</option><option value="inc">เฉพาะที่ยังไม่ครบ</option><option value="flag">เฉพาะที่ติดธง ⚑</option></select>
-    <select id="bgo" style="width:auto" title="ความเข้มของภาพพื้นหลังในการ์ด"><option value="0">ภาพพื้นหลัง: ปิด</option><option value="0.12">ภาพพื้นหลัง: จาง</option><option value="0.2">ภาพพื้นหลัง: ปานกลาง</option><option value="0.32">ภาพพื้นหลัง: เข้ม</option></select>
+    <select id="bgo" style="width:auto" title="ความชัดของรูปประกอบงานมุมขวาล่างของการ์ด"><option value="0">รูปประกอบงาน: ปิด</option><option value="0.4">รูปประกอบงาน: จาง</option><option value="0.7">รูปประกอบงาน: ปานกลาง</option><option value="1">รูปประกอบงาน: ชัด</option></select>
   </div>
   <div class="mute" style="margin:0 2px 8px">STA กรอกเป็นเมตร (150 = 0+150) หรือ 0+150 · รหัสงานพิมพ์บางคำได้ เช่น <i>ท่อ 0.60</i> · ปริมาณ = กว้าง × ยาว/จำนวน × ลึก/หนา × ตัวคูณ (ไม่ใส่ "ยาว" = ใช้ระยะจาก STA) · ติดธง ⚑ ไว้ที่รายการที่ต้องกลับมาตรวจทีหลัง</div>
   <div id="rows"></div>
@@ -187,7 +190,7 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
     <div class="bar">
       <label class="b ghost sm" style="margin:0;cursor:pointer">🖼 เพิ่มรูปหลายไฟล์ (ชื่อไฟล์ = รหัสงาน เช่น B01.jpg)<input type="file" id="jobImgBulk" accept="image/*" multiple hidden></label>
       <button class="b ghost sm" id="jobImgZip">⬇ ส่งออกชุดรูป (images.zip) เพื่ออัปโหลดขึ้น GitHub</button><span class="mute" id="jobImgInfo"></span></div>
-    <div class="mute">รูปประกอบรายการงาน (1 รูปต่อรายการ): กดปุ่ม 🖼 ที่แถวของรายการ หรือลากไฟล์รูปไปวางบนแถวนั้น · รูปที่ใส่เก็บในเครื่องนี้ ถ้าต้องการให้ทุกเครื่องเห็น ให้ส่งออก images.zip แล้วแตกเป็นโฟลเดอร์ <b>images</b> อัปโหลดข้างไฟล์ index.html บน GitHub (แอปจะหารูป images/รหัสงาน.jpg ให้เอง)</div>
+    <div class="mute">รูปประกอบรายการงาน (1 รูปต่อรายการ · แนะนำสัดส่วน กว้าง:สูง = 5:1 เช่น 1000×200 พิกเซล แสดงมุมขวาล่างของการ์ดสำรวจ): กดปุ่ม 🖼 ที่แถวของรายการ หรือลากไฟล์รูปไปวางบนแถวนั้น · รูปที่ใส่เก็บในเครื่องนี้ ถ้าต้องการให้ทุกเครื่องเห็น ให้ส่งออก images.zip แล้วแตกเป็นโฟลเดอร์ <b>images</b> อัปโหลดข้างไฟล์ index.html บน GitHub (แอปจะหารูป images/รหัสงาน.jpg ให้เอง)</div>
     <div class="mute">นำเข้าจาก Excel: ระบบหาแถวหัวตารางที่มีคำว่า "รหัส", "ชื่อ", "หน่วย" ให้เอง (ชีต LIST JOB นำเข้าได้เลย — หน่วยจะตัดคำว่า "บาท/" ออก) · รายการงานที่แก้เก็บในเบราว์เซอร์เครื่องนี้ ส่งต่อให้เพื่อนร่วมงานด้วยไฟล์ CSV หรือไฟล์โครงการ .json (มีรายการที่ใช้แนบไปด้วย)</div>
   </div>
   <div class="card"><div style="overflow:auto"><table id="jobT"></table></div></div>
@@ -369,7 +372,7 @@ function renderRows(){
   S.rows.forEach((r,i)=>{
     if(FILTER==='inc'&&!incomplete(r))return;if(FILTER==='flag'&&!r.flag)return;shown++;
     const el=document.createElement('div');el.className='row';
-    el.innerHTML=`<div class="bgimg"></div><div class="rowtop"><span class="n">${i+1}</span><span class="nm" data-nm></span><button class="b ghost sm" data-flag title="ติดธง ตรวจสอบภายหลัง">⚑</button><button class="b ghost sm" data-dup title="ทำซ้ำ">⧉</button><button class="b red sm" data-del title="ลบ">✕</button></div>
+    el.innerHTML=`<div class="rowtop"><span class="n">${i+1}</span><span class="nm" data-nm></span><button class="b ghost sm" data-flag title="ติดธง ตรวจสอบภายหลัง">⚑</button><button class="b ghost sm" data-dup title="ทำซ้ำ">⧉</button><button class="b red sm" data-del title="ลบ">✕</button></div>
     <div class="chips" data-chips></div>
     <div class="rg">
      <div><label>STA เริ่มต้น</label><input data-f="sta1" placeholder="0+000"></div>
@@ -387,7 +390,7 @@ function renderRows(){
      <div class="wide gps"><div><label>พิกัดจุดเริ่ม (lat, lon)</label><input data-f="g1" placeholder="13.7563, 100.5018" inputmode="decimal"></div><button class="b amber sm" data-gps="1">📍</button></div>
      <div class="wide gps"><div><label>พิกัดจุดสิ้นสุด (lat, lon)</label><input data-f="g2" placeholder="ไม่บังคับ" inputmode="decimal"></div><button class="b amber sm" data-gps="2">📍</button></div>
      <div class="full mute" data-utm></div>
-     <div class="full" data-ph></div>
+     <div class="full botrow"><div class="phwrap" data-ph></div><div class="illus"></div></div>
     </div>`;
     box.appendChild(el);
     el.querySelectorAll('[data-f]').forEach(inp=>{
@@ -553,10 +556,10 @@ async function jobImg(code){code=String(code||'').toUpperCase();if(!code)return 
   let u='';try{const r=await pGet('jobimg:'+code);if(r)u=URL.createObjectURL(r.blob)}catch(e){}
   if(!u){const t='images/'+code+'.jpg';const ok=await new Promise(res=>{const im=new Image();im.onload=()=>res(true);im.onerror=()=>res(false);im.src=t});if(ok)u=t}
   JIMG[code]=u||null;return JIMG[code]}
-async function applyBg(el,code){code=String(code||'').toUpperCase();if(el._bg===code)return;el._bg=code;const d=el.querySelector('.bgimg');if(!d)return;
-  if(!code){d.style.backgroundImage='';return}
-  const u=await jobImg(code);if(el._bg!==code)return;d.style.backgroundImage=u?`url("${u}")`:''}
-async function setJobImg(code,file){try{const b=await resizeImg(file,640);await pPut({id:'jobimg:'+code,blob:b,t:Date.now(),pid:'job'});if(JIMG[code]&&String(JIMG[code]).startsWith('blob:'))URL.revokeObjectURL(JIMG[code]);JIMG[code]=URL.createObjectURL(b);return true}catch(e){alert('บันทึกรูปไม่สำเร็จ: '+(e&&e.message||e));return false}}
+async function applyBg(el,code){code=String(code||'').toUpperCase();if(el._bg===code)return;el._bg=code;const d=el.querySelector('.illus');if(!d)return;
+  if(!code){d.style.backgroundImage='';d.classList.remove('has');return}
+  const u=await jobImg(code);if(el._bg!==code)return;d.style.backgroundImage=u?`url("${u}")`:'';d.classList.toggle('has',!!u)}
+async function setJobImg(code,file){try{const b=await resizeImg(file,1000);await pPut({id:'jobimg:'+code,blob:b,t:Date.now(),pid:'job'});if(JIMG[code]&&String(JIMG[code]).startsWith('blob:'))URL.revokeObjectURL(JIMG[code]);JIMG[code]=URL.createObjectURL(b);return true}catch(e){alert('บันทึกรูปไม่สำเร็จ: '+(e&&e.message||e));return false}}
 async function delJobImg(code){await pDel('jobimg:'+code);if(JIMG[code]&&String(JIMG[code]).startsWith('blob:'))URL.revokeObjectURL(JIMG[code]);delete JIMG[code]}
 async function moveJobImg(a,b){try{const r=await pGet('jobimg:'+a);if(r){await pPut({...r,id:'jobimg:'+b});await pDel('jobimg:'+a)}}catch(e){}delete JIMG[a];delete JIMG[b]}
 function refreshBgs(){document.querySelectorAll('#rows .row').forEach(el=>{el._bg=null});renderRows()}
@@ -817,9 +820,9 @@ function initSaveUI(){const cur=saveMode(),sh=canShareFiles(),pk=canPick();
   document.querySelectorAll('input[name=smode]').forEach(r=>{r.checked=r.value===cur;r.disabled=(r.value==='share'&&!sh)||(r.value==='picker'&&!pk);r.onchange=()=>{setSaveMode(r.value)}});
   $('smShare').textContent=sh?'':'(เบราว์เซอร์/เครื่องนี้ไม่รองรับ)';$('smPick').textContent=pk?'':'(เบราว์เซอร์นี้ไม่รองรับ)'}
 initSaveUI();
-(function(){let v='0.16';try{v=localStorage.getItem('surveyfield.bgo')||'0.12'}catch(e){}
-  const s=$('bgo');[...s.options].forEach(o=>{if(o.value===v)s.value=v});if(!s.value)s.value='0.12';
-  const ap=()=>document.documentElement.style.setProperty('--bgo',s.value);ap();s.onchange=()=>{ap();try{localStorage.setItem('surveyfield.bgo',s.value)}catch(e){}}})();
+(function(){let v='0.7';try{v=localStorage.getItem('surveyfield.bgo2')||'0.7'}catch(e){}
+  const s=$('bgo');[...s.options].forEach(o=>{if(o.value===v)s.value=v});if(!s.value)s.value='0.7';
+  const ap=()=>document.documentElement.style.setProperty('--bgo',s.value);ap();s.onchange=()=>{ap();try{localStorage.setItem('surveyfield.bgo2',s.value)}catch(e){}}})();
 $('zipBtn').onclick=zipAll;$('pkgBtn').onclick=pkgZip;
 $('lbClose').onclick=()=>$('lb').classList.remove('on');
 $('lb').onclick=e=>{if(e.target===$('lb'))$('lb').classList.remove('on')};
