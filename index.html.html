@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Survey Field</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1d2733;--mute:#6b7785;--line:#d9dee5;--brand:#1f4e79;--brand2:#2e75b6;--warn:#c0392b;--ok:#2e7d32;--soft:#eaf1f8}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12171d;--card:#1b222b;--ink:#e6ebf0;--mute:#93a0ae;--line:#2f3a46;--brand:#7fb2e5;--brand2:#5a9bd8;--soft:#22303e}}
+:root[data-theme=dark]{--bg:#12171d;--card:#1b222b;--ink:#e6ebf0;--mute:#93a0ae;--line:#2f3a46;--brand:#7fb2e5;--brand2:#5a9bd8;--soft:#22303e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Sarabun",system-ui,sans-serif}
+header{background:var(--brand);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) header{color:#10202f}}
+header h1{font-size:18px;margin:0;font-weight:700;flex:1}
+nav{display:flex;gap:4px;padding:8px 16px 0;background:var(--bg);position:sticky;top:0;z-index:5;overflow-x:auto;border-bottom:1px solid var(--line)}
+nav button{border:0;background:none;color:var(--mute);padding:9px 14px;font:inherit;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:var(--brand);border-color:var(--brand2)}
+main{max-width:1100px;margin:0 auto;padding:14px 16px 60px}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+label{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:7px 9px}
+input:focus,select:focus{outline:2px solid var(--brand2);outline-offset:0}
+button.b{font:inherit;font-weight:600;border:1px solid var(--brand2);background:var(--brand2);color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) button.b{color:#0d1a26}}
+button.b.ghost{background:transparent;color:var(--brand)}
+button.b.red{border-color:var(--warn);color:var(--warn);background:transparent}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.row{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c,#999);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.rowtop{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.rowtop .n{font-weight:700;color:var(--mute);min-width:26px}
+.rowtop .nm{flex:1;font-size:13px;color:var(--mute)}
+.rg{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.rg .wide{grid-column:span 2}
+.qty{font-weight:700;font-size:17px;color:var(--brand)}
+.pos{display:flex;gap:12px;align-items:center;padding-top:20px}
+.pos label{display:flex;align-items:center;gap:4px;margin:0;font-size:14px;color:var(--ink)}
+.pos input{width:auto}
+.sug{position:absolute;z-index:20;left:0;right:0;top:100%;background:var(--card);border:1px solid var(--brand2);border-radius:8px;max-height:260px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.sug div{padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--line);font-size:13px}
+.sug div:hover,.sug div.act{background:var(--soft)}
+.sug b{color:var(--brand)}
+.rel{position:relative}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;font-size:14px}
+th{background:var(--soft);color:var(--brand)}
+td.r,th.r{text-align:right}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.mute{color:var(--mute);font-size:13px}.warn{color:var(--warn)}
+#planbox{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center}
+#planbox svg{max-width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:13px}
+@media print{header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab.on{display:block!important}body{background:#fff}.card{border:0}}
+</style>
+</head>
+<body data-v="1">
+<header>
+  <h1>📐 Survey Field — สำรวจภาคสนาม &amp; คิดปริมาณงาน</h1>
+  <span class="mute" id="saved" style="color:inherit;opacity:.85"></span>
+</header>
+<nav>
+  <button data-t="t1" class="on">โครงการ &amp; ตารางสำรวจ</button>
+  <button data-t="t2">สรุป BOQ</button>
+  <button data-t="t3">PLAN</button>
+  <button data-t="t4">ส่งออก / สำรองข้อมูล</button>
+</nav>
+<main>
+<section class="tab on" id="t1">
+  <div class="card"><div class="grid">
+    <div><label>โครงการ</label><input id="p_name"></div>
+    <div><label>หน่วยงาน / สถานที่</label><input id="p_agency"></div>
+    <div><label>สายทาง / ตอน</label><input id="p_route"></div>
+    <div><label>ผู้สำรวจ</label><input id="p_who"></div>
+    <div><label>วันที่</label><input id="p_date" type="date"></div>
+  </div>
+  <div class="mute" id="info" style="margin-top:8px"></div></div>
+  <div class="mute" style="margin:0 2px 8px">วิธีกรอก: STA กรอกเป็นเมตร (150 = 0+150) หรือพิมพ์ 0+150 ก็ได้ · ช่องรหัสงานพิมพ์คำบางส่วนได้ เช่น <i>ท่อ 0.60</i> แล้วเลือกจากรายการ · ปริมาณ = กว้าง × ยาว/จำนวน × ลึก/หนา × ตัวคูณ (ถ้าไม่ใส่ "ยาว" จะใช้ระยะทางจาก STA)</div>
+  <div id="rows"></div>
+  <div class="bar"><button class="b" id="add">＋ เพิ่มรายการ</button><button class="b ghost" id="clearAll">ล้างทั้งหมด</button><button class="b ghost" id="sample">ใส่ข้อมูลตัวอย่าง</button></div>
+</section>
+
+<section class="tab" id="t2"><div class="card"><div style="overflow:auto"><table id="sumT"></table></div></div></section>
+
+<section class="tab" id="t3">
+  <div class="bar"><button class="b" id="pngBtn">⬇ บันทึกภาพ PLAN (PNG)</button><button class="b ghost" onclick="window.print()">🖨 พิมพ์</button></div>
+  <div class="card"><div id="planbox"></div><div class="legend" id="legend"></div></div>
+</section>
+
+<section class="tab" id="t4">
+  <div class="card">
+    <h3 style="margin:0 0 8px">ส่งออกเป็น Excel</h3>
+    <div class="mute">ไฟล์ .xlsx มี 2 ชีต: ตารางสำรวจ และสรุป BOQ — นำไปวางต่อในระบบราคากลางได้</div>
+    <div class="bar"><button class="b" id="xlsxBtn">⬇ ดาวน์โหลด Excel</button><button class="b ghost" id="csvBtn">⬇ CSV (สรุป BOQ)</button></div>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 8px">สำรองข้อมูล / ส่งต่อให้เพื่อนร่วมงาน</h3>
+    <div class="mute">ข้อมูลถูกบันทึกอัตโนมัติในเครื่องนี้ (เบราว์เซอร์) หากเปลี่ยนเครื่องหรือต้องการส่งให้คนอื่น ให้บันทึกเป็นไฟล์ .json แล้วเปิดอีกเครื่อง</div>
+    <div class="bar"><button class="b" id="jsonOut">⬇ บันทึกไฟล์ข้อมูล</button><label class="b ghost" style="margin:0;display:inline-block;color:var(--brand);cursor:pointer">⬆ เปิดไฟล์ข้อมูล<input id="jsonIn" type="file" accept=".json" hidden></label></div>
+  </div>
+</section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const JOBS={"cats":[["A","งานรื้อถอน","FF8C6D62"],["B","งานเตรียมพื้นที่ / ดินตัด","FFC99A4B"],["C","งานดินถม","FF6FA35B"],["D","วัสดุคัดเลือก","FF3E8E7E"],["E","งานรื้อ/ปรับปรุงพื้นทางเดิม","FF5B8FB9"],["F","งานพื้นทาง / ไหล่ทาง","FF3C5FA0"],["G","งานผิวทาง (AC / คอนกรีต)","FF4A4A55"],["H","งานระบายน้ำ","FF2FA3C7"],["I","เครื่องหมายจราจร / ทางเท้า","FFE0873D"],["J","งานป้ายจราจร","FFC2547A"],["K","งานอื่น ๆ","FF8E8E8E"]],"items":[["A01","งานรื้อผิว AC REMOVAL OF EXISTING ASPHALT CONCRETE SURFACE","ตร.ม."],["A02","งานรื้อท่อเหลี่ยมเดิม REMOVAL OF EXISTING CURB & GUTTER","ลบ.ม."],["A03","งาน REMOVAL OF EXISTING CONCRETE BRIDGES","ลบ.ม."],["A04","งานรื้อ ผิวทางคอนกรีต REMOVE CONCRETE PAVEMENT","ตร.ม."],["A05","งาน MIILLING 5 Cm.","ตร.ม."],["A06","งาน MIILLING 10 Cm.","ตร.ม."],["A07","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.30 m.","ม."],["A08","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.40 m.","ม."],["A09","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.50 m.","ม."],["A10","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.60 m.","ม."],["A11","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.80 m.","ม."],["A12","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 1.00 m.","ม."],["B01","งานถางป่า ขุดตอ ไถปรับ CLEARING AND GRUBBING (ขนาดเบา)","ตร.ม."],["B02","งานถางป่า ขุดตอ ไถปรับ CLEARING AND GRUBBING (ขนาดกลาง)","ตร.ม."],["B03","งานถางป่า ขุดตอ ไถปรับ CLEARING AND GRUBBING (ขนาดหนัก)","ตร.ม."],["B04","งานตัดดิน EARTH EXCAVATION","ลบ.ม."],["B05","งานตัดผินผุ SOFT ROCK EXCAVATION","ลบ.ม."],["B06","งานตัดหินแข็ง HARD ROCK EXCAVATION","ลบ.ม."],["B07","งานขุดวัสดุ ไม่เหมาะสม UNSUITABLE MATERIAL EXCAVATION","ลบ.ม."],["B08","งานขุดบริเวณดินอ่อน (เฉพาะงานขุด)","ลบ.ม."],["C01","งานตัดดิน EARTH EXCAVATION พร้อมลูกรังใส่ แทนที่","ลบ.ม"],["C02","งานตัดดิน EARTH EXCAVATION","ลบ.ม."],["C03","งานดินถมคันทาง EARTH EMBANKMENT","ลบ.ม."],["C04","งานทรายถมคันทาง SAND EMBANKMENT","ลบ.ม."],["C05","งานดินถม บริเวณเกาะกลาง EARTH FILL IN MEDIAN & ISLAND","ลบ.ม."],["C06","งานดินถมบริเวณทางเท้า EARTH FILL UNDER SIDEWALK","ลบ.ม."],["D01","งานวัสดุ คัดเลือก ก SELECTED MATERIAL A","ลบ.ม."],["D02","งานวัสดุ คัดเลือก ก SELECTED MATERIAL B","ลบ.ม."],["E01","งานรื้อพื้นทาง (หินคลุก) 10 CM +บดทับ SCARIFICATION & RECONSTRUCTION OF EXISTING BASE","ลบ.ม."],["E02","งานรื้อพื้นทาง (ลูกรัง) 10 CM +บดทับ SCARIFICATION & RECONSTRUCTION OF EXISTING BASE","ลบ.ม."],["E03","งานรื้อผิวทาง แล้วบดทับ SCARIFICATION & RECONSTRUCTION OF EXISTING BASE (AC)","ลบ.ม."],["E04","งานหินคลุกปรับระดับ CRUSHED ROCK SOIL AGGREGATE LEVELLING COURSE","ลบ.ม."],["E05","งานรองพื้นทางวัสดุมวลรวม แก้ไขจุดอ่อนตัว","ลบ.ม."],["F01","งานรองพื้นทางดินซิเมนต์ SOIL CEMENT SUBBASE","ลบ.ม."],["F02","งานพื้นทางหินคลุก+บดทับ CRUSHED ROCK SOIL AGGREGATE TYPE BASE","ลบ.ม."],["F03","งานพื้นทางหินคลุกซิเมนต์ CEMENT MODIFIED CRUSHED ROCK BASE","ลบ.ม."],["F04","งานพื้นทางดินซิเมนต์ SOIL CEMENT BASE","ลบ.ม."],["F05","งานไหล่ทางวัสดุมวลรวม SOIL AGGREATE SHOULDER","ลบ.ม."],["F06","งานCRUSHED ROCK SOIL AGGREGATE TYPE SHOULDER","ลบ.ม."],["F07","งานปรับปรุงชั้นพื้นทางเดิมด้วยวิธี PAVEMENT IN-PLACE RECYCLING หนา 15 ซม. (MIN)","ม.2"],["F08","งานปรับปรุงชั้นพื้นทางเดิมด้วยวิธี PAVEMENT IN-PLACE RECYCLING หนา 20 ซม. (MIN)","ม.2"],["F09","งาน GEOTEXTILE FOR CONCRETE PAVEMENT","ตร.ม."],["G01","งานลาดไพรม์โค้ด PRIME COAT (EAP)","ตร.ม."],["G02","งานลาดยางแอสฟัลต์ไพรม์โคท ( PRIME COAT ) MC-70","ตร.ม."],["G03","งานลาดยางแอสฟัลต์แทคโคท (TACK COAT CRS-2)","ตร.ม."],["G04","งาน CAPE SEAL","ตร.ม."],["G05","งานปรับระดับผิวทางคอนกรีตเดิมด้วยแอสฟัลต์คอนกรีต (ASPHALT CONCRETE LEVELLING )","ตัน"],["G06","งานผิวไหล่ทางแอสฟัลต์ คอนกรีต หนา 4 ซม. (ASPHALT CONCRETE SHOULDER)","ตร.ม."],["G07","งานชั้นรองผิวไหล่ทาง แอสฟัลต์ ASPHALT CONCRETE SHOULDER BINDER","ตร.ม."],["G08","งานผิวไหล่ทาง ASPHALT CONCRETE SHOULDER WEARING","ตร.ม."],["G09","งาน AC. ปรับระดับ ASPHALT CONCRETE LEVELLING COURSE","ตัน"],["G10","งานรองพื้นทาง ASPHALT CONCRETE BINDER COURSE บน PRIME COAT (หิน Basalt)","ตร.ม."],["G11","งานแอสฟัลต์ชั้นผิวทาง ASPHALT CONCRETE WEARING COURSE บน TACK COAT (หิน Basalt)","ตร.ม."],["G12","งานรองพื้นทาง ASPHALT CONCRETE BINDER COURSE บน PRIME COAT (หิน Limestone)","ตร.ม."],["G13","งานแอสฟัลต์ชั้นผิวทาง ASPHALT CONCRETE WEARING COURSE บน TACK COAT (หิน Limestone)","ตร.ม."],["G14","งานรองพื้นทาง ASPHALT CONCRETE BINDER COURSE บน PRIME COAT (หิน Granite)","ตร.ม."],["G15","งานแอสฟัลต์ชั้นผิวทาง ASPHALT CONCRETE WEARING COURSE บนผิว TACK COAT (หิน Granite)","ตร.ม."],["G16","งานทรายหยาบ ใต้ผิวทางคอนกรีต SAND CUSHION UNDER CONCRETE PAVEMENT","ลบ.ม."],["G17","งานหินคลุก ใต้ผิวทาง CRUSH ROCK SOIL AGGREGATE UNDER CONCRETE PAVEMENT","ลบ.ม."],["G18","งานผิวทางคอนกรีต PORTLAND CEMENT CONCRETE PAVEMENT 15 CM.THICK","ตร.ม."],["G19","งานรอยต่อเผื่อขยายตามขวาง EXPANSION JOINT พื้นคอนกรีตหนา 15 ซม.","ม."],["G20","งานรอยต่อเผื่อหดตัวตามขวาง CONTRACTION JOINT พื้นคอนกรีตหนา 15 ซม.","ม."],["G21","งานรอยต่อเผื่อหดตัวตามขวาง LONGITUDINAL JOINT พื้นคอนกรีตหนา 15 ซม.","ม."],["G22","งานDUMMY JOINT พื้นคอนกรีตหนา",""],["G23","งานรอยต่อตามขอบถนนคอนกรีตกับลาดยาง EDGE JOINT","ม."],["H01","งานติดตั้ง BOX CULVERTS PRECAST SIZE 2-[1.50 x 1.50]","ม."],["H02","งานติดตั้ง BOX CULVERTS PRECAST SIZE 2-[1.50 x 1.50] VER 2","ม."],["H03","งานวางท่อระบายน้ำ DIA 0.30 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H04","งานวางท่อระบายน้ำ DIA 0.40 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H05","งานวางท่อระบายน้ำ DIA 0.50 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H06","งานวางท่อระบายน้ำ DIA 0.60 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H07","งานวางท่อระบายน้ำ DIA 0.80 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H08","งานวางท่อระบายน้ำ DIA 1.00 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H09","งานวางท่อระบายน้ำ DIA 1.20 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H10","งานวางท่อระบายน้ำ DIA 0.30 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H11","งานวางท่อระบายน้ำ DIA 0.40 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H12","งานวางท่อระบายน้ำ DIA 0.50 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H13","งานวางท่อระบายน้ำ DIA 0.60 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H14","งานวางท่อระบายน้ำ DIA 0.80 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H15","งานวางท่อระบายน้ำ DIA 1.00 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H16","งานวางท่อระบายน้ำ DIA 1.20 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H17","งานวางท่อระบายน้ำ คสล.ธรรมดา R.C. PIPE DIA 0.30 m.","ม."],["H18","งานวางท่อระบายน้ำ คสล.ธรรมดา R.C. PIPE DIA 0.40 m.","ม."],["H19","งานวางท่อระบายน้ำ คสล.ธรรมดา R.C. PIPE DIA 0.50 m.","ม."],["H20","R.C.MANHOLE For Dia 0.40 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H21","R.C.MANHOLE For Dia 0.40 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H22","R.C.MANHOLE For Dia 0.60 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H23","R.C.MANHOLE For Dia 0.60 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H24","R.C.MANHOLE For Dia 0.80 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H25","R.C.MANHOLE For Dia 0.80 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H26","R.C.MANHOLE For Dia 1.00 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H27","R.C.MANHOLE For Dia 1.00 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H28","HEADWALL FOR R.C. PIPE CULVERTS (END WALL) ; PLAIN CONCRETE","ม."],["H29","HEADWALL FOR R.C. PIPE CULVERTS (END WALL) ; REINFORCED CONCRETE","ม."],["H30","CONCRETE HEADWALL FOR R.C.P. 1 - DIA 0.40-60 M. (1-HDWL) S = 2 : 1 ตามแบบหน่วยงาน","ม."],["H31","CONCRETE HEADWALL FOR R.C.P. 1 - DIA 0.80 M. (1-HDWL) S = 2 : 1 ตามแบบหน่วยงาน","ม."],["H32","รางตื้นคอนกรีตเสริมเหล็ก R.C. GUTTER R.C. GUTTER (DWG.NO.DS-407)","ม."],["H33","รางระบายน้ำด้นข้าง SIDE DITCH LINING R.C.DITCH TYPE F (DWG.DS-604)","ม."],["H34","รางระบายน้ำด้นข้าง R.C.DITCH TYPE B (DWG.DS-406)","ม."],["H35","งานขอบคันหินรางตื้น MOUNTABLE CURB AND GUTTER คันหินรางตื้น (DWG.NO.RS-508)","ม."],["H36","งานขอบคันหินรางตื้น MOUNTABLE CURB ขอบคันหินแบบรถปีนได้ (DWG.NO.RS-508)","ม."],["I01","TRANSVERSE RUMBLE STRIPS 5 mm. แถบเตือนตามขวางผิวจราจร","ม."],["I02","THERMOPLASTIC PAINT (สีขาว สีเหลือง) งานตีเส้นผิว จราจร 3 มม ","ม."],["I03","ปุ่มสะท้อนแสง 2 ด้าน ROAD STUD UNI-DIRECTION","EACH"],["I04","ปุ่มสะท้อนแสง 1 ด้าน ROAD STUD BI-DIRECTION","EACH"],["I05","CONCRETE SLAB BLOCK 40X40X4 CM. แผ่นทางเท้าคอนกรีต (DWG.NO.MD-501)","ตร.ม."],["I06","CONCRETE PAVING BLOCK (DWG.MD-801)","ม."],["I07","CURB MARKING (สีน้ำพลาสติก)","ตร.ม."],["I08","CURB MARKING (สีน้ำมัน)","ตร.ม."],["J01","งานหลักนำโค้ง GUIDE POST (DWG.NO.RS-401)","ต้น"],["J02","งานเสาป้ายจราจร โลหะ","ม."],["J03","งานเสาป้ายจราจร คสล.","ม."],["J04","งานแผ่นป้ายจราจร 1","ม."],["J05","งานแผ่นป้ายจราจร 2","ม."],["J06","งานแผ่นป้ายจราจร 3","ม."],["J07","งานแผ่นป้ายจราจร 4","ม."],["J08","งานแผ่นป้ายจราจร 5","ม."],["J09","งานแผ่นป้ายจราจร 6","ม."],["K01","งานป้ายประชาสัมพันธ์ถาวร 1","ม."],["K02","งานป้ายประชาสัมพันธ์ถาวร 2","ม."],["K03","งานเทพื้นคอนกรีตภายนอก หนา 0.10 ม. + WIRE MESH","ม."],["K04","งานเทพื้นคอนกรีตปรับระดับ","ม."],["K05","งานดินถมปรับภูมิทัศน์  (EARTH FILL LANSCAPE)","ม."],["K06","งานอื่นๆ กำหนดภายหลัง 2","ม."],["K07","งานอื่นๆ กำหนดภายหลัง 3","ม."]]};
+const CATS=JOBS.cats.map(c=>({k:c[0],name:c[1],color:'#'+c[2].slice(2)}));
+const ITEMS=JOBS.items.map(x=>({code:x[0],name:x[1],unit:x[2],cat:CATS.find(c=>c.k===x[0][0].toUpperCase())}));
+const BYCODE={};ITEMS.forEach(i=>BYCODE[i.code.toUpperCase()]=i);
+const KEY='surveyfield.v1';
+let S={proj:{name:'',agency:'',route:'',who:'',date:''},rows:[]};
+const $=id=>document.getElementById(id);
+function load(){try{const t=localStorage.getItem(KEY);if(t)S=JSON.parse(t)}catch(e){}}
+let tmr;function save(){clearTimeout(tmr);tmr=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S));$('saved').textContent='บันทึกแล้ว '+new Date().toLocaleTimeString('th-TH')}catch(e){$('saved').textContent='บันทึกในเครื่องไม่ได้ — ใช้ปุ่มสำรองข้อมูล'}},300)}
+const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',L:false,C:false,R:false,note:''});
+// ---- STA ----
+function parseSta(v){v=String(v==null?'':v).trim();if(!v)return null;if(/^-?\d+(\.\d+)?$/.test(v))return +v;const m=v.match(/^(\d+)\s*\+\s*(\d+(\.\d+)?)$/);return m?(+m[1])*1000+ +m[2]:null}
+function fmtSta(m){if(m==null||isNaN(m))return'';const k=Math.floor(m/1000),r=m-k*1000;return k+'+'+(r<100?(r<10?'00':'0'):'')+(Math.round(r*100)/100)}
+const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?null:n};
+function calc(r){const a=parseSta(r.sta1);let b=parseSta(r.sta2);const has2=String(r.sta2).trim()!=='';if(!has2)b=a;
+  const dist=(a!=null&&b!=null&&has2)?b-a:null;
+  if(!r.code)return{a,b,dist,qty:null};
+  const f=[];const w=num(r.w),l=num(r.l),d=num(r.d),m1=num(r.m1),m2=num(r.m2);
+  if(w!=null)f.push(w);
+  if(l!=null)f.push(l);else if(dist!=null)f.push(dist);
+  if(d!=null)f.push(d);if(m1!=null)f.push(m1);if(m2!=null)f.push(m2);
+  return{a,b,dist,qty:f.length?f.reduce((x,y)=>x*y,1):0}}
+const nf=(n,d=2)=>n==null?'':n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+// ---- search ----
+function search(q){q=q.trim().toLowerCase();if(!q)return[];const ws=q.split(/\s+/);return ITEMS.filter(i=>{const h=(i.code+' '+i.name).toLowerCase();return ws.every(w=>h.includes(w))}).slice(0,40)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+// ---- rows UI ----
+function renderRows(){
+  const box=$('rows');box.innerHTML='';
+  S.rows.forEach((r,i)=>{
+    const it=BYCODE[(r.code||'').toUpperCase()];
+    const el=document.createElement('div');el.className='row';el.style.setProperty('--c',it?it.cat.color:'#999');
+    el.innerHTML=`<div class="rowtop"><span class="n">${i+1}</span><span class="nm" data-nm></span><button class="b ghost" data-dup title="ทำซ้ำ">⧉</button><button class="b red" data-del title="ลบ">✕</button></div>
+    <div class="rg">
+     <div><label>STA เริ่มต้น</label><input data-f="sta1" inputmode="text" placeholder="0+000"></div>
+     <div><label>STA สิ้นสุด</label><input data-f="sta2" placeholder="0+500"></div>
+     <div><label>ระยะทาง (ม.)</label><div data-dist class="qty" style="font-size:15px;padding-top:6px"></div></div>
+     <div class="wide rel"><label>รหัสงาน / พิมพ์ค้นหา</label><input data-f="code" placeholder="พิมพ์รหัส หรือคำ เช่น ท่อ 0.60" autocomplete="off"><div class="sug" hidden></div></div>
+     <div><label>กว้าง (ม.)</label><input data-f="w" inputmode="decimal"></div>
+     <div><label>ยาว / จำนวน</label><input data-f="l" inputmode="decimal"></div>
+     <div><label>ลึก/หนา (ม.)</label><input data-f="d" inputmode="decimal"></div>
+     <div><label>ตัวคูณ 1</label><input data-f="m1" inputmode="decimal"></div>
+     <div><label>ตัวคูณ 2</label><input data-f="m2" inputmode="decimal"></div>
+     <div><label>ปริมาณงาน</label><div class="qty" data-qty></div></div>
+     <div class="pos"><label><input type="checkbox" data-f="L">L</label><label><input type="checkbox" data-f="C">C</label><label><input type="checkbox" data-f="R">R</label></div>
+     <div class="wide"><label>หมายเหตุ</label><input data-f="note"></div>
+    </div>`;
+    box.appendChild(el);
+    el.querySelectorAll('[data-f]').forEach(inp=>{
+      const f=inp.dataset.f;
+      if(inp.type==='checkbox'){inp.checked=!!r[f];inp.onchange=()=>{r[f]=inp.checked;save();refresh()}}
+      else{inp.value=r[f]||'';inp.oninput=()=>{r[f]=inp.value;if(f==='code')showSug(el,r,inp);save();update(el,r)};
+        if(f==='code'){inp.onfocus=()=>{if(inp.value&&!BYCODE[inp.value.toUpperCase()])showSug(el,r,inp)};inp.onblur=()=>setTimeout(()=>{el.querySelector('.sug').hidden=true},180);
+          inp.onkeydown=e=>sugKey(e,el,r,inp)}}
+    });
+    el.querySelector('[data-del]').onclick=()=>{S.rows.splice(i,1);save();renderRows();refresh()};
+    el.querySelector('[data-dup]').onclick=()=>{S.rows.splice(i+1,0,{...r});save();renderRows();refresh()};
+    update(el,r,true);
+  });
+}
+function update(el,r,quiet){
+  const c=calc(r),it=BYCODE[(r.code||'').toUpperCase()];
+  el.style.setProperty('--c',it?it.cat.color:'#999');
+  el.querySelector('[data-nm]').innerHTML=r.code?(it?esc(it.name):'<span class="warn">! ไม่พบรหัสนี้ในรายการงาน</span>'):'';
+  el.querySelector('[data-dist]').textContent=c.dist==null?'':nf(c.dist);
+  el.querySelector('[data-qty]').textContent=c.qty==null?'':nf(c.qty)+(it&&it.unit?' '+it.unit:'');
+  if(!quiet)refresh();
+}
+function pick(el,r,it){r.code=it.code;el.querySelector('[data-f=code]').value=it.code;el.querySelector('.sug').hidden=true;save();update(el,r)}
+function showSug(el,r,inp){const box=el.querySelector('.sug');const q=inp.value;
+  if(BYCODE[q.trim().toUpperCase()]){box.hidden=true;return}
+  const res=search(q);if(!res.length){box.hidden=true;return}
+  box.hidden=false;box.innerHTML=res.map((it,k)=>`<div data-k="${k}"><b>${esc(it.code)}</b> ${esc(it.name)} <span class="mute">[${esc(it.unit)}]</span></div>`).join('');
+  box._res=res;box._act=-1;
+  box.querySelectorAll('div').forEach(d=>d.onmousedown=e=>{e.preventDefault();pick(el,r,res[+d.dataset.k])});
+}
+function sugKey(e,el,r,inp){const box=el.querySelector('.sug');if(box.hidden||!box._res)return;
+  const n=box._res.length;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();box._act=(box._act+(e.key==='ArrowDown'?1:-1)+n)%n;box.querySelectorAll('div').forEach((d,k)=>d.classList.toggle('act',k===box._act));box.querySelectorAll('div')[box._act].scrollIntoView({block:'nearest'})}
+  else if(e.key==='Enter'){e.preventDefault();pick(el,r,box._res[Math.max(0,box._act)])}
+  else if(e.key==='Escape')box.hidden=true}
+// ---- summary ----
+function summary(){const m=new Map();
+  S.rows.forEach(r=>{if(!r.code)return;const c=calc(r),k=r.code.toUpperCase();
+    const o=m.get(k)||{code:k,qty:0,n:0,min:null,max:null};o.qty+=c.qty||0;o.n++;
+    if(c.a!=null){o.min=o.min==null?c.a:Math.min(o.min,c.a)}if(c.b!=null){o.max=o.max==null?c.b:Math.max(o.max,c.b)}m.set(k,o)});
+  return [...m.values()].map(o=>{const it=BYCODE[o.code];return{...o,name:it?it.name:'! ไม่พบรหัสนี้',unit:it?it.unit:'',cat:it?it.cat:null,ord:it?ITEMS.indexOf(it):9999}}).sort((a,b)=>a.ord-b.ord||a.code.localeCompare(b.code))}
+function renderSummary(){const s=summary();
+  let h='<tr><th>ลำดับ</th><th>รหัสงาน</th><th>ชื่อรายการงาน</th><th class="r">ปริมาณงานรวม</th><th>หน่วย</th><th>หมวดงาน</th><th class="r">จำนวนที่สำรวจ</th><th>ช่วง STA</th></tr>';
+  s.forEach((o,i)=>h+=`<tr><td>${i+1}</td><td>${esc(o.code)}</td><td>${esc(o.name)}</td><td class="r"><b>${nf(o.qty)}</b></td><td>${esc(o.unit)}</td><td>${o.cat?`<span class="sw" style="background:${o.cat.color}"></span>${esc(o.cat.name)}`:''}</td><td class="r">${o.n}</td><td>${o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max)}</td></tr>`);
+  if(!s.length)h+='<tr><td colspan="8" class="mute">ยังไม่มีรายการ</td></tr>';
+  $('sumT').innerHTML=h;return s}
+// ---- plan ----
+function renderPlan(){
+  const bars=[];let un=0;
+  S.rows.forEach((r,i)=>{if(!r.code)return;const c=calc(r),it=BYCODE[r.code.toUpperCase()];
+    const z=['L','C','R'].filter(k=>r[k]);if(c.a==null||!z.length){un++;return}
+    z.forEach(k=>bars.push({z:k,a:Math.min(c.a,c.b),b:Math.max(c.a,c.b),code:r.code.toUpperCase(),it,i:i+1}))});
+  const box=$('planbox');
+  if(!bars.length){box.innerHTML='<div class="mute" style="padding:30px">ยังไม่มีรายการที่ระบุ STA และตำแหน่ง (L/C/R) — กรอกในตารางสำรวจ</div>';$('legend').innerHTML='';return}
+  let lo=Math.min(...bars.map(b=>b.a)),hi=Math.max(...bars.map(b=>b.b));if(hi-lo<1){hi=lo+10}
+  const steps=[1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000,10000,20000,50000];
+  const step=steps.find(s=>(hi-lo)/s<=12)||50000;
+  lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+  const W=760,top=94,H=Math.max(520,Math.min(1100,(hi-lo)/step*60)),bot=top+H;
+  const zx={L:[70,270],C:[270,490],R:[490,690]};
+  const y=m=>bot-(m-lo)/(hi-lo)*H;
+  const minH=16;
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${bot+90+Math.ceil(legendCats(bars).length/2)*18}" font-family="Sarabun,Tahoma,sans-serif">
+  <rect width="100%" height="100%" fill="#fff"/>
+  <text x="20" y="26" font-size="20" font-weight="700" fill="#1f4e79">PLAN ${esc(S.proj.name||'โครงการ')}</text>
+  <text x="20" y="46" font-size="12" fill="#555">${esc([S.proj.route,S.proj.agency].filter(Boolean).join(' · '))}</text>`;
+  [['L','ซ้าย (LEFT)','#2e75b6'],['C','กลางทาง (CENTER)','#1f4e79'],['R','ขวา (RIGHT)','#555']].forEach(([k,t,c])=>{const [x1,x2]=zx[k];svg+=`<rect x="${x1+2}" y="54" width="${x2-x1-4}" height="20" rx="4" fill="${c}"/><text x="${(x1+x2)/2}" y="68" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${t}</text>`});
+  svg+=`<rect x="70" y="${top+8}" width="620" height="${H-8+0}" fill="#f3f5f8"/>`;
+  for(let m=lo;m<=hi;m+=step){const yy=y(m);svg+=`<line x1="60" x2="700" y1="${yy}" y2="${yy}" stroke="#cfd6df" stroke-width="1"/><text x="56" y="${yy+4}" font-size="11" text-anchor="end" fill="#333">${fmtSta(m)}</text><text x="704" y="${yy+4}" font-size="11" fill="#333">${fmtSta(m)}</text>`}
+  svg+=`<text x="56" y="${top-2}" font-size="11" text-anchor="end" fill="#555">STA ▲</text>`;
+  svg+=`<line x1="270" x2="270" y1="${top+8}" y2="${bot}" stroke="#9aa5b3" stroke-dasharray="4 3"/><line x1="490" x2="490" y1="${top+8}" y2="${bot}" stroke="#9aa5b3" stroke-dasharray="4 3"/>`;
+  ['L','C','R'].forEach(k=>{
+    const zb=bars.filter(b=>b.z===k).map(b=>{const y2=y(b.a),y1=y(b.b);let h=y2-y1,yt=y1;if(h<minH){yt=(y1+y2)/2-minH/2;h=minH}return{...b,yt,h}}).sort((p,q)=>p.yt-q.yt);
+    const lanes=[];zb.forEach(b=>{let l=lanes.findIndex(e=>e<=b.yt+0.5);if(l<0){l=lanes.length;lanes.push(0)}lanes[l]=b.yt+b.h;b.l=l});
+    const n=Math.max(1,lanes.length),[x1,x2]=zx[k],w=(x2-x1-8)/n;
+    zb.forEach(b=>{const x=x1+4+b.l*w,col=b.it?b.it.cat.color:'#8e8e8e';
+      svg+=`<rect x="${x+1}" y="${b.yt}" width="${w-2}" height="${b.h}" fill="${col}" rx="2" stroke="#fff" stroke-width=".8"><title>${esc(b.code)} ${esc(b.it?b.it.name:'')} (${fmtSta(b.a)}–${fmtSta(b.b)})</title></rect>`;
+      const fs=Math.min(12,Math.max(8,w-6));
+      if(b.h>=34)svg+=`<text transform="translate(${x+w/2+fs/3},${b.yt+b.h/2}) rotate(-90)" font-size="${fs}" font-weight="700" fill="#fff" text-anchor="middle">${esc(b.code)}</text>`;
+      else if(w>=26)svg+=`<text x="${x+w/2}" y="${b.yt+b.h/2+4}" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">${esc(b.code)}</text>`})});
+  const lc=legendCats(bars);let ly=bot+30;
+  svg+=`<text x="20" y="${ly-4}" font-size="12" font-weight="700" fill="#1f4e79">คำอธิบายสัญลักษณ์</text>`;
+  lc.forEach((c,i)=>{const x=20+(i%2)*360,yy=ly+Math.floor(i/2)*18+10;svg+=`<rect x="${x}" y="${yy-9}" width="12" height="12" fill="${c.color}" rx="2"/><text x="${x+18}" y="${yy+1}" font-size="12" fill="#222">${esc(c.name)} (${c.n})</text>`});
+  svg+=`</svg>`;
+  box.innerHTML=svg;
+  $('legend').innerHTML=un?`<span class="warn">ไม่แสดงใน PLAN ${un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
+}
+function legendCats(bars){const m=new Map();bars.forEach(b=>{const c=b.it?b.it.cat:{k:'?',name:'ไม่พบรหัส',color:'#8e8e8e'};const o=m.get(c.k)||{...c,n:0};o.n++;m.set(c.k,o)});return[...m.values()]}
+// ---- info / refresh ----
+function refresh(){
+  const as=S.rows.map(r=>calc(r)).filter(c=>c.a!=null);
+  const lo=as.length?Math.min(...as.map(c=>c.a)):null,hi=as.length?Math.max(...as.map(c=>c.b)):null;
+  const bad=S.rows.filter(r=>r.code&&!BYCODE[r.code.toUpperCase()]).length;
+  $('info').textContent=lo==null?'ยังไม่มีข้อมูล STA — กรอกตารางด้านล่างได้เลย':`STA ${fmtSta(lo)} – ${fmtSta(hi)} · ความยาวรวมโครงการ ${nf(hi-lo)} ม. · จำนวนรายการ ${S.rows.filter(r=>r.code).length}`+(bad?` · รหัสไม่พบ ${bad}`:'');
+  renderSummary();renderPlan();
+}
+// ---- export ----
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+const fname=()=>'SurveyField_'+((S.proj.name||'project').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,30))+'_'+new Date().toISOString().slice(0,10);
+function xlsx(){
+  if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ตครั้งแรก) — ใช้ปุ่ม CSV แทนได้');return}
+  const wb=XLSX.utils.book_new();
+  const a=[['ตารางบันทึกข้อมูลการสำรวจภาคสนามและการคิดปริมาณงาน'],['โครงการ',S.proj.name,'','สายทาง/ตอน',S.proj.route],['หน่วยงาน/สถานที่',S.proj.agency,'','ผู้สำรวจ',S.proj.who,'วันที่',S.proj.date],[],
+   ['ลำดับ','STA เริ่มต้น','STA สิ้นสุด','ระยะทาง (ม.)','รหัสงาน','ชื่อรายการงาน','กว้าง','ยาว/จำนวน','ลึก/หนา','ตัวคูณ 1','ตัวคูณ 2','ปริมาณงาน','หน่วย','LEFT','CENTER','RIGHT','หมายเหตุ']];
+  S.rows.forEach((r,i)=>{const c=calc(r),it=BYCODE[(r.code||'').toUpperCase()];
+    a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',num(r.m1)??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',r.note])});
+  const ws1=XLSX.utils.aoa_to_sheet(a);ws1['!cols']=[6,11,11,11,9,50,8,10,8,8,8,12,9,6,8,7,24].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws1,'Survey Field');
+  const s=summary();
+  const b=[['สรุปปริมาณงานก่อสร้าง (BOQ Summary)'],[],['ลำดับ','รหัสงาน','ชื่อรายการงาน','ปริมาณงานรวม','หน่วย','หมวดงาน','จำนวนที่สำรวจ','ช่วง STA']];
+  s.forEach((o,i)=>b.push([i+1,o.code,o.name,Math.round(o.qty*1e4)/1e4,o.unit,o.cat?o.cat.name:'',o.n,o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max)]));
+  const ws2=XLSX.utils.aoa_to_sheet(b);ws2['!cols']=[6,9,60,14,9,26,12,18].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws2,'Summary BOQ');
+  XLSX.writeFile(wb,fname()+'.xlsx');
+}
+function csv(){const s=summary();const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const t=['รหัสงาน,ชื่อรายการงาน,ปริมาณงานรวม,หน่วย,หมวดงาน,จำนวนที่สำรวจ,ช่วง STA',...s.map(o=>[q(o.code),q(o.name),o.qty,q(o.unit),q(o.cat?o.cat.name:''),o.n,q(o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max))].join(','))].join('\r\n');
+  dl(new Blob(['﻿'+t],{type:'text/csv;charset=utf-8'}),fname()+'_BOQ.csv')}
+function png(){const svg=$('planbox').querySelector('svg');if(!svg){alert('ยังไม่มีภาพ PLAN');return}
+  const vb=svg.viewBox.baseVal,sc=2,img=new Image();
+  const xml=new XMLSerializer().serializeToString(svg);
+  img.onload=()=>{const cv=document.createElement('canvas');cv.width=vb.width*sc;cv.height=vb.height*sc;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);cv.toBlob(b=>dl(b,fname()+'_PLAN.png'))};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml)}
+// ---- wiring ----
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));b.classList.add('on');$(b.dataset.t).classList.add('on');refresh()});
+[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>{$(id).oninput=()=>{S.proj[k]=$(id).value;save()}});
+$('add').onclick=()=>{S.rows.push(newRow());save();renderRows();refresh();const l=$('rows').lastElementChild;l&&l.querySelector('[data-f=sta1]').focus()};
+$('clearAll').onclick=()=>{if(confirm('ล้างรายการสำรวจทั้งหมด? (ข้อมูลโครงการไม่ถูกล้าง)')){S.rows=[];save();renderRows();refresh()}};
+$('sample').onclick=()=>{if(S.rows.length&&!confirm('เพิ่มข้อมูลตัวอย่างต่อท้ายรายการเดิม?'))return;
+  [['0','500','B01','12','','','C'],['100','350','B04','','','1.5','L'],['0','500','F02','7','','0.2','C'],['0','500','G11','7','','','R'],['50','100','H06','','','','L']].forEach(x=>S.rows.push({...newRow(),sta1:x[0],sta2:x[1],code:x[2],w:x[3],l:x[4],d:x[5],[x[6]]:true}));save();renderRows();refresh()};
+$('xlsxBtn').onclick=xlsx;$('csvBtn').onclick=csv;$('pngBtn').onclick=png;
+$('jsonOut').onclick=()=>dl(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}),fname()+'.json');
+$('jsonIn').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.rows)throw 0;S=d;S.proj=S.proj||{};save();fillProj();renderRows();refresh()}catch(x){alert('ไฟล์ไม่ถูกต้อง')}})};
+function fillProj(){[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
+load();if(!S.rows.length)S.rows.push(newRow());fillProj();renderRows();refresh();
+</script>
+</body></html>
