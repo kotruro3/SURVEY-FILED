@@ -77,7 +77,38 @@ td.r,th.r{text-align:right}
 .rep{break-inside:avoid;page-break-inside:avoid}
 .rep .imgs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
 .rep .imgs img{width:100%;border-radius:6px;border:1px solid var(--line)}
-@media print{header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab.on{display:block!important}body{background:#fff}.card{border:0}}
+#printRoot{display:none}
+@media print{
+body.pdfmode>*:not(#printRoot):not(#pageStyle){display:none!important}
+body.pdfmode #printRoot{display:block!important}
+body.pdfmode{background:#fff;color:#1d2733;font-size:9.5pt;line-height:1.35}
+#printRoot,#printRoot *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pr{width:100%;border-collapse:collapse}.pr>thead{display:table-header-group}.pr>tbody>tr>td,.pr>thead>tr>td{padding:0}
+.ph{display:flex;justify-content:space-between;gap:12px;align-items:stretch;background:linear-gradient(90deg,#1f4e79,#2e75b6);color:#fff;border-radius:6px;padding:7px 12px}
+.ph-code{display:inline-block;background:#f5b335;color:#3a2a00;font-weight:700;border-radius:4px;padding:0 7px;font-size:10pt}
+.ph-name{font-size:14pt;font-weight:700;line-height:1.2;margin-top:2px}.ph-sub{font-size:9pt;opacity:.92}
+.ph-r{font-size:8.5pt;text-align:right;line-height:1.45}.ph-r b{opacity:.8;font-weight:600;margin-right:4px}
+.ph-line{height:3px;background:#f5b335;border-radius:2px;margin:3px 0 6px}
+.sh{font-weight:700;color:#1f4e79;border-left:5px solid #2e75b6;padding:2px 9px;background:#eaf1f8;margin:8px 0 6px;font-size:11pt;break-after:avoid}
+.kpi{display:flex;gap:8px;margin:4px 0 8px}.kpi div{flex:1;border:1px solid #d9dee5;border-top:3px solid #2e75b6;border-radius:5px;padding:4px 8px;background:#fff}
+.kpi b{display:block;font-size:13pt;color:#1f4e79}.kpi span{font-size:8pt;color:#6b7785}
+.pt2{width:100%;border-collapse:collapse;font-size:8.5pt}
+.pt2 th{background:#1f4e79;color:#fff;padding:3px 5px;text-align:left;font-weight:600}
+.pt2 td{border-bottom:1px solid #d9dee5;padding:3px 5px;vertical-align:top}
+.pt2 tr:nth-child(even) td{background:#f5f8fc}.pt2 tr{break-inside:avoid}.pt2 thead{display:table-header-group}
+.pt2 th,.pt2 td{white-space:nowrap}.pt2 .wrap{white-space:normal;min-width:38mm}.pt2 .r{text-align:right}.pt2 .c{text-align:center}
+.pt2 td.cb{border-left:5px solid var(--cc,#999)}
+.sw2{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.planw{text-align:center;break-inside:avoid}
+.pdf-landscape .planw svg{height:132mm;width:auto}.pdf-portrait .planw svg{width:100%;height:auto;max-height:215mm}
+.pc{break-inside:avoid;border:1px solid #d9dee5;border-radius:6px;padding:5px 8px;margin:0 0 7px}
+.pc b{color:#1f4e79}.pc .sub{font-size:8.5pt;color:#6b7785}
+.pc .im{display:grid;gap:5px;margin-top:4px}.pdf-landscape .pc .im{grid-template-columns:repeat(4,1fr)}.pdf-portrait .pc .im{grid-template-columns:repeat(2,1fr)}
+.pc .im img{width:100%;height:auto;max-height:62mm;object-fit:cover;border-radius:4px;border:1px solid #d9dee5}
+.pdf-landscape .pc .im img{max-height:42mm}
+.sig{display:flex;gap:18px;margin-top:22px;break-inside:avoid}.sig div{flex:1;text-align:center;font-size:9pt}.sig i{display:block;border-bottom:1px solid #555;height:34px;margin-bottom:3px}
+.brk{break-before:page}
+header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab.on{display:block!important}body{background:#fff}.card{border:0}}
 </style>
 </head>
 <body>
@@ -119,7 +150,7 @@ td.r,th.r{text-align:right}
 <section class="tab" id="t2"><div class="card"><div style="overflow:auto"><table id="sumT"></table></div></div></section>
 
 <section class="tab" id="t3">
-  <div class="bar"><button class="b" id="pngBtn">⬇ บันทึกภาพ PLAN (PNG)</button><button class="b ghost" onclick="window.print()">🖨 พิมพ์</button></div>
+  <div class="bar"><button class="b" id="pngBtn">⬇ บันทึกภาพ PLAN (PNG)</button><button class="b" data-pdf>📄 ส่งออก PDF</button></div>
   <div class="card"><div id="planbox"></div><div class="legend" id="legend"></div></div>
 </section>
 
@@ -135,7 +166,7 @@ td.r,th.r{text-align:right}
 </section>
 
 <section class="tab" id="t6">
-  <div class="bar"><button class="b" id="zipBtn">⬇ ดาวน์โหลดรูปทั้งหมด (.zip)</button><button class="b ghost" onclick="window.print()">🖨 พิมพ์รายงานรูปภาพ</button><span class="mute">รูปแนบได้สูงสุด 4 รูป ต่อรายการ/ต่อจุดสำคัญ (ย่อขนาดอัตโนมัติ)</span></div>
+  <div class="bar"><button class="b" id="zipBtn">⬇ ดาวน์โหลดรูปทั้งหมด (.zip)</button><button class="b" data-pdf>📄 ส่งออก PDF</button><span class="mute">รูปแนบได้สูงสุด 4 รูป ต่อรายการ/ต่อจุดสำคัญ (ย่อขนาดอัตโนมัติ)</span></div>
   <div id="photoRep"></div>
 </section>
 
@@ -154,6 +185,21 @@ td.r,th.r{text-align:right}
 </section>
 
 <section class="tab" id="t4">
+  <div class="card">
+    <h3 style="margin:0 0 8px">📤 ปลายทางการบันทึกไฟล์</h3>
+    <div class="mute">เลือกว่าเมื่อกดส่งออก (Excel, zip, KML, สำรองข้อมูล ฯลฯ) ให้ไฟล์ไปที่ไหน</div>
+    <div style="margin-top:6px">
+      <label style="display:flex;gap:8px;align-items:flex-start;color:var(--ink);font-size:14px"><input type="radio" name="smode" value="download" style="width:auto;margin-top:5px"><span><b>ดาวน์โหลดปกติ</b> — ลงโฟลเดอร์ Downloads ของเครื่อง</span></label>
+      <label style="display:flex;gap:8px;align-items:flex-start;color:var(--ink);font-size:14px"><input type="radio" name="smode" value="share" style="width:auto;margin-top:5px"><span><b>เลือกปลายทาง (แชร์)</b> — เปิดหน้าต่างแชร์ของเครื่อง เลือก Google Drive, LINE, อีเมล, Files ได้ (เหมาะกับแท็บเล็ต/มือถือ) <span class="mute" id="smShare"></span></span></label>
+      <label style="display:flex;gap:8px;align-items:flex-start;color:var(--ink);font-size:14px"><input type="radio" name="smode" value="picker" style="width:auto;margin-top:5px"><span><b>เลือกตำแหน่งบันทึก</b> — เลือกโฟลเดอร์เอง เช่น โฟลเดอร์ Google Drive บนคอมพิวเตอร์ (Chrome/Edge บนคอมพิวเตอร์) <span class="mute" id="smPick"></span></span></label>
+    </div>
+    <div class="mute" style="margin-top:6px">ไฟล์ PDF: เมื่อกดส่งออก PDF เครื่องจะเปิดหน้าต่างพิมพ์ ให้เลือก "บันทึกเป็น PDF" แล้วเลือกปลายทาง (บน Android เลือก Google Drive ได้ตรงนั้น)</div>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 8px">📄 ส่งออกเป็น PDF (A4)</h3>
+    <div class="mute">เลือกแนวกระดาษและหัวข้อที่ต้องการ มีรายละเอียดโครงการที่หัวกระดาษทุกหน้า</div>
+    <div class="bar"><button class="b" data-pdf>📄 ส่งออก PDF</button></div>
+  </div>
   <div class="card">
     <h3 style="margin:0 0 8px">📦 แฟ้มโครงการ (แนะนำ — ไฟล์เดียวครบทุกอย่าง)</h3>
     <div class="mute">รวมทุกอย่างของโครงการนี้เป็น .zip เดียว แตกออกมาได้โฟลเดอร์ <b id="pkgName">SV01_ชื่อโครงการ</b> ภายในแยกเป็น 01_Excel · 02_Photos · 03_GIS · 04_PLAN · 05_Backup เก็บเข้า Google Drive โฟลเดอร์เดียวได้เลย</div>
@@ -187,6 +233,22 @@ td.r,th.r{text-align:right}
   <div class="mute" id="jeHint" style="margin-top:6px"></div>
   <div class="bar"><button class="b" id="jeSave">บันทึก</button><button class="b ghost" id="jeCancel">ยกเลิก</button></div>
 </div></div>
+<div class="ov" id="pdfDlg"><div class="box" style="max-width:520px">
+  <h3 style="margin:0 0 8px">📄 ส่งออกเป็น PDF (กระดาษ A4)</h3>
+  <label>ทิศทางกระดาษ</label>
+  <select id="pdfO"><option value="landscape">A4 แนวนอน — เหมาะกับตารางสำรวจ</option><option value="portrait">A4 แนวตั้ง — เหมาะกับภาพ PLAN</option></select>
+  <label style="margin-top:10px">หัวข้อที่ต้องการในรายงาน</label>
+  <div id="pdfChecks" style="display:grid;gap:4px"></div>
+  <div class="mute" style="margin-top:8px">กด "สร้าง PDF" แล้วในหน้าต่างพิมพ์ให้เลือก <b>บันทึกเป็น PDF</b> (Save as PDF) · ในหน้าต่างพิมพ์ให้ปิด "Headers and footers" ถ้ามี · แผนที่ไม่รวมใน PDF (ใช้การจับภาพหน้าจอ หรือ KML)</div>
+  <div class="bar"><button class="b" id="pdfGo">สร้าง PDF</button><button class="b ghost" id="pdfCancel">ยกเลิก</button></div>
+</div></div>
+<div class="ov" id="svDlg" style="align-items:center"><div class="box" style="max-width:460px">
+  <h3 style="margin:0 0 6px">ไฟล์พร้อมแล้ว</h3>
+  <div class="mute" id="svName" style="word-break:break-all"></div>
+  <div class="bar"><button class="b" id="svDo">📤 เลือกปลายทาง</button><button class="b ghost" id="svDl">⬇ ดาวน์โหลดปกติ</button><button class="b ghost" id="svClose">ปิด</button></div>
+</div></div>
+<div id="printRoot"></div>
+<style id="pageStyle"></style>
 <div class="ov" id="lib"><div class="box">
   <div class="bar" style="margin-top:0"><h3 style="margin:0;flex:1">📂 คลังโครงการ</h3><button class="b ghost sm" id="libClose">ปิด ✕</button></div>
   <input id="libQ" placeholder="ค้นหา: ชื่อโครงการ / หน่วยงาน / สายทาง / ผู้สำรวจ / รหัสงาน / หมายเหตุ">
@@ -532,6 +594,47 @@ async function importJobs(file,replace){let rows;
   saveJobs();renderJobs();renderRows();refresh();alert('นำเข้าเรียบร้อย — ขณะนี้มี '+ITEMS.length+' รายการ')}
 function exportJobs(){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';dl(new Blob(['﻿'+['รหัสงาน,ชื่อรายการงาน,หน่วย',...ITEMS.map(i=>[q(i.code),q(i.name),q(i.unit)].join(','))].join('\r\n')],{type:'text/csv;charset=utf-8'}),'SurveyField_JobList_'+new Date().toISOString().slice(0,10)+'.csv')}
 function resetJobs(){if(!confirm('กลับไปใช้รายการงานเริ่มต้น (ที่มากับแอป)? รายการที่เพิ่ม/แก้ไว้จะหายจากเครื่องนี้ (ควรส่งออก CSV สำรองก่อน)'))return;try{localStorage.removeItem(KEYJ)}catch(e){}loadJobs();renderJobs();renderRows();refresh()}
+// ---- PDF report (via system print → Save as PDF) ----
+const PDFKEY='surveyfield.pdfopt';
+const PDFSECS=[['proj','ภาพรวมโครงการ (ตัวเลขสรุป)'],['boq','สรุป BOQ'],['survey','ตารางสำรวจ'],['coords','— แสดงคอลัมน์พิกัดในตารางสำรวจ'],['plan','ภาพ PLAN'],['pts','จุดสำคัญ'],['photos','รูปภาพประกอบ'],['sign','ช่องลงนาม (ผู้สำรวจ / ผู้ตรวจสอบ / ผู้อนุมัติ)']];
+function pdfOpts(){const o={orient:'landscape',proj:true,boq:true,survey:true,coords:false,plan:true,pts:true,photos:true,sign:true};try{Object.assign(o,JSON.parse(localStorage.getItem(PDFKEY)||'{}'))}catch(e){}return o}
+function openPdf(){const o=pdfOpts();$('pdfO').value=o.orient;
+  $('pdfChecks').innerHTML=PDFSECS.map(([k,t])=>`<label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;margin:0"><input type="checkbox" data-k="${k}" style="width:auto" ${o[k]?'checked':''}>${esc(t)}</label>`).join('');
+  $('pdfDlg').classList.add('on')}
+const dnum=(v,d=2)=>v==null||v===''?'':nf(+v,d);
+async function makePdf(){
+  const o={orient:$('pdfO').value};document.querySelectorAll('#pdfChecks input').forEach(c=>o[c.dataset.k]=c.checked);
+  try{localStorage.setItem(PDFKEY,JSON.stringify(o))}catch(e){}
+  $('pdfDlg').classList.remove('on');
+  const rows=S.rows.map((r,i)=>({r,i,c:calc(r),it:BYCODE[(r.code||'').toUpperCase()]})).filter(x=>!isBlank(x.r));
+  const as=rows.map(x=>x.c).filter(c=>c.a!=null),lo=as.length?Math.min(...as.map(c=>c.a)):null,hi=as.length?Math.max(...as.map(c=>c.b)):null;
+  const P=S.proj,now=new Date().toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
+  const head=`<div class="ph"><div><span class="ph-code">${esc(S.code||'SV')}</span><div class="ph-name">${esc(P.name||'(ไม่มีชื่อโครงการ)')}</div><div class="ph-sub">${esc([P.route,P.agency].filter(Boolean).join(' · '))}</div></div>
+    <div class="ph-r"><div><b>ผู้สำรวจ</b>${esc(P.who||'-')}</div><div><b>วันที่สำรวจ</b>${esc(P.date||'-')}</div><div><b>ช่วง STA</b>${lo==null?'-':fmtSta(lo)+' – '+fmtSta(hi)+' ('+nf(hi-lo)+' ม.)'}</div><div><b>พิมพ์เมื่อ</b>${esc(now)}</div></div></div><div class="ph-line"></div>`;
+  const secs=[];const sh=t=>`<div class="sh">${esc(t)}</div>`;
+  if(o.proj){const s=summary(),np=Object.values([S]).reduce((a,p)=>a+photoIds(p).length,0);
+    secs.push(sh('ภาพรวมโครงการ')+`<div class="kpi"><div><b>${rows.length}</b><span>รายการสำรวจ</span></div><div><b>${s.length}</b><span>รหัสงานที่ใช้</span></div><div><b>${lo==null?'-':nf(hi-lo,0)+' ม.'}</b><span>ความยาวโครงการ</span></div><div><b>${S.pts.length}</b><span>จุดสำคัญ</span></div><div><b>${np}</b><span>รูปภาพ</span></div></div>`)}
+  if(o.boq){const s=summary();secs.push(sh('สรุปปริมาณงาน (BOQ)')+`<table class="pt2"><thead><tr><th class="c">ลำดับ</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">ปริมาณงานรวม</th><th>หน่วย</th><th>หมวดงาน</th><th class="r">จำนวนที่สำรวจ</th><th>ช่วง STA</th></tr></thead><tbody>`+
+    (s.map((x,i)=>`<tr><td class="c">${i+1}</td><td><b>${esc(x.code)}</b></td><td class="wrap">${esc(x.name)}</td><td class="r"><b>${nf(x.qty)}</b></td><td>${esc(x.unit)}</td><td>${x.cat?`<span class="sw2" style="background:${x.cat.color}"></span>${esc(x.cat.name)}`:''}</td><td class="r">${x.n}</td><td>${x.min==null?'-':fmtSta(x.min)+' – '+fmtSta(x.max)}</td></tr>`).join('')||'<tr><td colspan="8">ยังไม่มีรายการ</td></tr>')+'</tbody></table>')}
+  if(o.survey){secs.push(sh('ตารางบันทึกข้อมูลการสำรวจภาคสนาม')+`<table class="pt2"><thead><tr><th class="c">#</th><th>STA เริ่ม</th><th>STA สิ้นสุด</th><th class="r">ระยะ (ม.)</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">กว้าง</th><th class="r">ยาว/จำนวน</th><th class="r">ลึก/หนา</th><th class="c">ตัวคูณ</th><th class="r">ปริมาณ</th><th>หน่วย</th><th class="c">L C R</th>${o.coords?'<th>พิกัด</th>':''}<th class="wrap">หมายเหตุ</th></tr></thead><tbody>`+
+    rows.map(({r,i,c,it})=>{const lcr=['L','C','R'].map(k=>r[k]?k:'·').join(' ');const mm=[r.m1,r.m2].filter(x=>String(x).trim()!=='').join(' × ');
+      return`<tr><td class="c cb" style="--cc:${it?it.cat.color:'#999'}">${i+1}${r.flag?' ⚑':''}</td><td>${c.a==null?'':fmtSta(c.a)}</td><td>${String(r.sta2).trim()===''?'':fmtSta(c.b)}</td><td class="r">${dnum(c.dist)}</td><td><b>${esc(r.code||'')}</b></td><td class="wrap">${esc(it?it.name:(r.code?'! ไม่พบรหัสงาน':''))}</td><td class="r">${esc(r.w)}</td><td class="r">${esc(r.l)}</td><td class="r">${esc(r.d)}</td><td class="c">${esc(mm)}</td><td class="r"><b>${c.qty==null?'':nf(c.qty)}</b></td><td>${esc(it?it.unit:'')}</td><td class="c">${lcr}</td>${o.coords?`<td>${esc([r.g1,r.g2].filter(Boolean).join(' → '))}</td>`:''}<td class="wrap">${esc(r.note)}</td></tr>`}).join('')+'</tbody></table>')}
+  if(o.plan){renderPlan();const sv=$('planbox').querySelector('svg');secs.push(`<div class="brk"></div>`+sh('ภาพ PLAN (มองจาก STA เริ่มต้นขึ้นไป · ซ้าย | กลาง | ขวา)')+`<div class="planw">${sv?sv.outerHTML:'<div>ยังไม่มีข้อมูลสำหรับสร้างภาพ PLAN</div>'}</div>`)}
+  if(o.pts&&S.pts.length){secs.push(sh('จุดสำคัญ')+`<table class="pt2"><thead><tr><th class="c">#</th><th>ชื่อจุด</th><th>ประเภท</th><th>พิกัด (lat, lon)</th><th>UTM</th><th class="wrap">หมายเหตุ</th></tr></thead><tbody>`+S.pts.map((p,i)=>`<tr><td class="c">${i+1}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.type)}</td><td>${esc(p.ll)}</td><td>${esc(utmTxt(parseLL(p.ll)))}</td><td class="wrap">${esc(p.note)}</td></tr>`).join('')+'</tbody></table>')}
+  if(o.photos){const its=photoItems();if(its.length){const urls={};await Promise.all(its.flatMap(x=>x.ph).map(async id=>urls[id]=await pURL(id)));
+    secs.push(`<div class="brk"></div>`+sh('รูปภาพประกอบ')+its.map(x=>`<div class="pc"><b>${esc(x.title)}</b><div class="sub">${esc(x.sub)}</div><div class="im">${x.ph.map(id=>`<img src="${urls[id]||''}" alt="">`).join('')}</div></div>`).join(''))}}
+  if(o.sign)secs.push(`<div class="sig"><div><i></i>ผู้สำรวจ<br>(${esc(P.who||'............................')})<br>วันที่ ........../........../..........</div><div><i></i>ผู้ตรวจสอบ<br>(............................)<br>วันที่ ........../........../..........</div><div><i></i>ผู้อนุมัติ<br>(............................)<br>วันที่ ........../........../..........</div></div>`);
+  if(!secs.length){alert('เลือกหัวข้ออย่างน้อย 1 รายการ');return}
+  const cls='pdf-'+o.orient,title=((S.code||'')+' '+(P.name||'')).replace(/["\\]/g,'');
+  $('pageStyle').textContent=`@page{size:A4 ${o.orient};margin:9mm 9mm 13mm;@bottom-right{content:"หน้า " counter(page) " / " counter(pages);font-size:8pt;color:#6b7785}@bottom-left{content:"${title}";font-size:8pt;color:#6b7785}}`;
+  const root=$('printRoot');root.className=cls;
+  root.innerHTML=`<table class="pr"><thead><tr><td>${head}</td></tr></thead><tbody>${secs.map(s=>`<tr><td>${s}</td></tr>`).join('')}</tbody></table>`;
+  const ot=document.title;document.title=fname();document.body.classList.add('pdfmode');
+  try{await document.fonts.ready}catch(e){}
+  await Promise.all([...root.querySelectorAll('img')].map(im=>im.complete?1:new Promise(r=>{im.onload=im.onerror=r})));
+  const done=()=>{document.body.classList.remove('pdfmode');document.title=ot;window.removeEventListener('afterprint',done)};
+  window.addEventListener('afterprint',done);
+  setTimeout(()=>window.print(),200)}
 // ---- info / refresh ----
 function refresh(light){
   const as=S.rows.map(r=>calc(r)).filter(c=>c.a!=null);
@@ -546,7 +649,30 @@ function curLabel(){$('curName').textContent=(S.code?S.code+' · ':'')+(S.proj.n
 const safeN=s=>String(s).replace(/[\\/:*?"<>|\s]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40);
 const folderName=()=>(S.code||'SV')+(S.proj.name?'_'+safeN(S.proj.name):'');
 // ---- export ----
-function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+function dlPlain(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+const SAVEKEY='surveyfield.savemode';
+const MIMES={xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',zip:'application/zip',json:'application/json',csv:'text/csv',kml:'application/vnd.google-earth.kml+xml',geojson:'application/geo+json',png:'image/png',pdf:'application/pdf'};
+const extOf=n=>(String(n).split('.').pop()||'').toLowerCase();
+function canShareFiles(){try{return !!(navigator.canShare&&navigator.canShare({files:[new File(['x'],'a.txt',{type:'text/plain'})]})&&navigator.share)}catch(e){return false}}
+const canPick=()=>!!window.showSaveFilePicker;
+function saveMode(){let m=null;try{m=localStorage.getItem(SAVEKEY)}catch(e){}
+  if(m==='share'&&!canShareFiles())m='download';if(m==='picker'&&!canPick())m='download';
+  if(!m){m=(canShareFiles()&&matchMedia('(pointer:coarse)').matches)?'share':'download'}return m}
+function setSaveMode(m){try{localStorage.setItem(SAVEKEY,m)}catch(e){}}
+async function trySave(blob,name,mode){const ext=extOf(name),type=blob.type||MIMES[ext]||'application/octet-stream';
+  if(mode==='share'){const f=new File([blob],name,{type});if(!navigator.canShare||!navigator.canShare({files:[f]}))return'unsupported';
+    try{await navigator.share({files:[f],title:name});return'ok'}catch(e){return e&&e.name==='AbortError'?'ok':'retry'}}
+  if(mode==='picker'){if(!window.showSaveFilePicker)return'unsupported';
+    try{const h=await showSaveFilePicker({suggestedName:name,types:[{description:ext.toUpperCase()+' file',accept:{[MIMES[ext]||type]:['.'+ext]}}]});const w=await h.createWritable();await w.write(blob);await w.close();return'ok'}catch(e){return e&&e.name==='AbortError'?'ok':'retry'}}
+  return'unsupported'}
+let SVPEND=null;
+async function saveFile(blob,name){const m=saveMode();if(m==='download'){dlPlain(blob,name);return}
+  const r=await trySave(blob,name,m);
+  if(r==='ok')return;
+  if(r==='unsupported'){dlPlain(blob,name);return}
+  SVPEND={blob,name,m};$('svName').textContent=name+' ('+(blob.size/1024<1024?Math.round(blob.size/1024)+' KB':(blob.size/1048576).toFixed(1)+' MB')+')';
+  $('svDo').textContent=m==='share'?'📤 แชร์ / เลือกปลายทาง':'💾 เลือกตำแหน่งบันทึก';$('svDlg').classList.add('on')}
+const dl=(blob,name)=>{saveFile(blob,name)};
 const fname=()=>folderName()+'_'+new Date().toISOString().slice(0,10);
 function buildXlsx(){
   const wb=XLSX.utils.book_new();
@@ -562,7 +688,7 @@ function buildXlsx(){
   S.pts.forEach((x,i)=>{const g=parseLL(x.ll),u=g?utm(g.lat,g.lon):null;p.push([i+1,x.name,x.type,g?g.lat:'',g?g.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',x.note,(x.ph||[]).length||''])});
   const ws3=XLSX.utils.aoa_to_sheet(p);ws3['!cols']=[6,26,26,11,11,8,10,11,30].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws3,'จุดสำคัญ');
   return wb}
-function xlsx(){if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ต) — ใช้ปุ่ม CSV แทนได้');return}XLSX.writeFile(buildXlsx(),fname()+'.xlsx')}
+function xlsx(){if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ต) — ใช้ปุ่ม CSV แทนได้');return}dl(new Blob([XLSX.write(buildXlsx(),{type:'array',bookType:'xlsx'})],{type:MIMES.xlsx}),fname()+'.xlsx')}
 function csv(){const s=summary();const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
   const t=['รหัสงาน,ชื่อรายการงาน,ปริมาณงานรวม,หน่วย,หมวดงาน,จำนวนที่สำรวจ,ช่วง STA',...s.map(o=>[q(o.code),q(o.name),o.qty,q(o.unit),q(o.cat?o.cat.name:''),o.n,q(o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max))].join(','))].join('\r\n');
   dl(new Blob(['﻿'+t],{type:'text/csv;charset=utf-8'}),fname()+'_BOQ.csv')}
@@ -648,6 +774,15 @@ $('jobImpReplace').onchange=e=>{if(e.target.files[0])importJobs(e.target.files[0
 $('jobExp').onclick=exportJobs;$('jobReset').onclick=resetJobs;$('jeSave').onclick=saveJobEd;$('jeCancel').onclick=()=>$('jobEd').classList.remove('on');
 $('jobEd').onclick=e=>{if(e.target===$('jobEd'))$('jobEd').classList.remove('on')};
 ['jeCode','jeName','jeUnit'].forEach(id=>$(id).onkeydown=e=>{if(e.key==='Enter')saveJobEd()});
+document.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=openPdf);
+$('pdfGo').onclick=makePdf;$('pdfCancel').onclick=()=>$('pdfDlg').classList.remove('on');$('pdfDlg').onclick=e=>{if(e.target===$('pdfDlg'))$('pdfDlg').classList.remove('on')};
+$('svClose').onclick=()=>{$('svDlg').classList.remove('on');SVPEND=null};
+$('svDl').onclick=()=>{if(SVPEND)dlPlain(SVPEND.blob,SVPEND.name);$('svDlg').classList.remove('on');SVPEND=null};
+$('svDo').onclick=async()=>{if(!SVPEND)return;const p=SVPEND,r=await trySave(p.blob,p.name,p.m);if(r==='ok'){$('svDlg').classList.remove('on');SVPEND=null}else if(r==='unsupported'){dlPlain(p.blob,p.name);$('svDlg').classList.remove('on');SVPEND=null}};
+function initSaveUI(){const cur=saveMode(),sh=canShareFiles(),pk=canPick();
+  document.querySelectorAll('input[name=smode]').forEach(r=>{r.checked=r.value===cur;r.disabled=(r.value==='share'&&!sh)||(r.value==='picker'&&!pk);r.onchange=()=>{setSaveMode(r.value)}});
+  $('smShare').textContent=sh?'':'(เบราว์เซอร์/เครื่องนี้ไม่รองรับ)';$('smPick').textContent=pk?'':'(เบราว์เซอร์นี้ไม่รองรับ)'}
+initSaveUI();
 $('zipBtn').onclick=zipAll;$('pkgBtn').onclick=pkgZip;
 $('lbClose').onclick=()=>$('lb').classList.remove('on');
 $('lb').onclick=e=>{if(e.target===$('lb'))$('lb').classList.remove('on')};
