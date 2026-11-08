@@ -97,6 +97,7 @@ td.r,th.r{text-align:right}
 <main>
 <section class="tab on" id="t1">
   <div class="card"><div class="grid">
+    <div><label>รหัสโครงการ (ออกให้อัตโนมัติ)</label><input id="p_code" style="font-weight:700"></div>
     <div><label>โครงการ</label><input id="p_name"></div>
     <div><label>หน่วยงาน / สถานที่</label><input id="p_agency"></div>
     <div><label>สายทาง / ตอน</label><input id="p_route"></div>
@@ -139,6 +140,11 @@ td.r,th.r{text-align:right}
 
 <section class="tab" id="t4">
   <div class="card">
+    <h3 style="margin:0 0 8px">📦 แฟ้มโครงการ (แนะนำ — ไฟล์เดียวครบทุกอย่าง)</h3>
+    <div class="mute">รวมทุกอย่างของโครงการนี้เป็น .zip เดียว แตกออกมาได้โฟลเดอร์ <b id="pkgName">SV01_ชื่อโครงการ</b> ภายในแยกเป็น 01_Excel · 02_Photos · 03_GIS · 04_PLAN · 05_Backup เก็บเข้า Google Drive โฟลเดอร์เดียวได้เลย</div>
+    <div class="bar"><button class="b" id="pkgBtn">📦 ดาวน์โหลดแฟ้มโครงการ (.zip)</button></div>
+  </div>
+  <div class="card">
     <h3 style="margin:0 0 8px">ส่งออกเป็น Excel</h3>
     <div class="mute">ไฟล์ .xlsx มี 3 ชีต: ตารางสำรวจ (พร้อมพิกัด/UTM), สรุป BOQ, จุดสำคัญ</div>
     <div class="bar"><button class="b" id="xlsxBtn">⬇ ดาวน์โหลด Excel</button><button class="b ghost" id="csvBtn">⬇ CSV (สรุป BOQ)</button></div>
@@ -178,9 +184,12 @@ const MAXPH=4;
 const KEY1='surveyfield.v1',KEY='surveyfield.lib.v2';
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const newProj=()=>({id:uid(),created:Date.now(),updated:Date.now(),proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)},rows:[newRow()],pts:[]});
+const newProj=()=>({code:'',id:uid(),created:Date.now(),updated:Date.now(),proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)},rows:[newRow()],pts:[]});
 const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false,ph:[]});
-let LIB={cur:null,list:{}},S=null,FILTER='all';
+let LIB={cur:null,list:{},seq:0},S=null,FILTER='all';
+const CODE_PREFIX='SV';
+function nextCode(){const mx=Math.max(LIB.seq||0,...Object.values(LIB.list).map(p=>{const m=String(p.code||'').match(/^SV(\d+)$/i);return m?+m[1]:0}),0)+1;LIB.seq=mx;return CODE_PREFIX+String(mx).padStart(2,'0')}
+function ensureCodes(){Object.values(LIB.list).sort((a,b)=>a.created-b.created).forEach(p=>{if(!p.code)p.code=nextCode()})}
 function loadLib(){
   try{const t=localStorage.getItem(KEY);if(t)LIB=JSON.parse(t)}catch(e){}
   if(!LIB.list||!Object.keys(LIB.list).length){
@@ -188,7 +197,7 @@ function loadLib(){
     try{const o=localStorage.getItem(KEY1);if(o){const d=JSON.parse(o);const p=newProj();p.proj={...p.proj,...(d.proj||{})};p.rows=(d.rows||[]).map(r=>({...newRow(),...r}));if(!p.rows.length)p.rows=[newRow()];LIB.list[p.id]=p;LIB.cur=p.id}}catch(e){}
   }
   if(!LIB.cur||!LIB.list[LIB.cur]){const ks=Object.keys(LIB.list);if(ks.length)LIB.cur=ks.sort((a,b)=>LIB.list[b].updated-LIB.list[a].updated)[0];else{const p=newProj();LIB.list[p.id]=p;LIB.cur=p.id}}
-  S=LIB.list[LIB.cur];S.pts=(S.pts||[]).map(x=>({ph:[],...x}));S.rows=S.rows.map(r=>({...newRow(),...r}))
+  ensureCodes();S=LIB.list[LIB.cur];S.pts=(S.pts||[]).map(x=>({ph:[],...x}));S.rows=S.rows.map(r=>({...newRow(),...r}))
 }
 let tmr;function save(now){clearTimeout(tmr);const f=()=>{try{S.updated=Date.now();LIB.list[S.id]=S;LIB.cur=S.id;localStorage.setItem(KEY,JSON.stringify(LIB));$('saved').textContent='บันทึกแล้ว '+new Date().toLocaleTimeString('th-TH')}catch(e){$('saved').textContent='⚠ บันทึกในเครื่องไม่ได้ — ใช้ปุ่มสำรองข้อมูล'}};now?f():tmr=setTimeout(f,300)}
 // ---- photos (IndexedDB) ----
@@ -412,13 +421,28 @@ async function renderPhotos(){const box=$('photoRep'),its=photoItems();
   if(!its.length){box.innerHTML='<div class="card mute">ยังไม่มีรูปภาพ — แนบรูปได้ที่ตารางสำรวจหรือจุดสำคัญ</div>';return}
   const urls={};await Promise.all(its.flatMap(x=>x.ph).map(async id=>urls[id]=await pURL(id)));
   box.innerHTML=`<div class="card"><h3 style="margin:0">รายงานรูปภาพ — ${esc(S.proj.name||'โครงการ')}</h3><div class="mute">${esc([S.proj.route,S.proj.agency,S.proj.who,S.proj.date].filter(Boolean).join(' · '))}</div></div>`+its.map(x=>`<div class="card rep"><b>${esc(x.title)}</b><div class="mute">${esc(x.sub)}</div><div class="imgs">${x.ph.map(id=>`<img src="${urls[id]||''}" alt="">`).join('')}</div></div>`).join('')}
-const safe=s=>String(s).replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40);
+const safe=s=>safeN(s);
 async function zipAll(){const its=photoItems();if(!its.length){alert('ยังไม่มีรูปภาพ');return}
   if(!window.JSZip){alert('โหลดตัวสร้างไฟล์ zip ไม่ได้ (ต้องต่ออินเทอร์เน็ต)');return}
   const z=new JSZip(),rows=['ไฟล์,รหัสงาน,STA,พิกัด,หมายเหตุ'],q=v=>'"'+String(v).replace(/"/g,'""')+'"';
   for(const x of its){for(let k=0;k<x.ph.length;k++){const r=await pGet(x.ph[k]);if(!r)continue;const fn=safe(x.file)+'_'+(k+1)+'.jpg';z.file(fn,r.blob);rows.push([q(fn),q(x.code),q(x.sta),q(x.ll),q(x.note)].join(','))}}
   z.file('index.csv','﻿'+rows.join('\r\n'));
   dl(await z.generateAsync({type:'blob'}),fname()+'_photos.zip')}
+async function pkgZip(){
+  if(!window.JSZip){alert('โหลดตัวสร้างไฟล์ zip ไม่ได้ (ต้องต่ออินเทอร์เน็ต)');return}
+  const bt=$('pkgBtn');bt.disabled=true;const old=bt.textContent;bt.textContent='กำลังรวมไฟล์…';
+  try{const root=folderName(),z=new JSZip(),f=z.folder(root),stamp=new Date().toISOString().slice(0,10);
+    const base=(S.code||'SV')+'_'+stamp;
+    if(window.XLSX){f.folder('01_Excel').file(base+'_Survey.xlsx',XLSX.write(buildXlsx(),{type:'array',bookType:'xlsx'}))}
+    const its=photoItems(),rows=['ไฟล์,รหัสงาน,STA,พิกัด,หมายเหตุ'],q=v=>'"'+String(v).replace(/"/g,'""')+'"',pf=f.folder('02_Photos');let np=0;
+    for(const x of its){for(let k=0;k<x.ph.length;k++){const r=await pGet(x.ph[k]);if(!r)continue;const fn=safeN(x.file)+'_'+(k+1)+'.jpg';pf.file(fn,r.blob);rows.push([q(fn),q(x.code),q(x.sta),q(x.ll),q(x.note)].join(','));np++}}
+    if(np)pf.file('index.csv','\ufeff'+rows.join('\r\n'));
+    const gis=f.folder('03_GIS');if(features().length){gis.file(base+'.kml',kmlStr());gis.file(base+'.geojson',geojsonStr())}
+    const pb=await pngBlob();if(pb)f.folder('04_PLAN').file(base+'_PLAN.png',pb);
+    const o={...S,photos:await photoMap(photoIds(S))};f.folder('05_Backup').file(base+'_backup.json',JSON.stringify(o));
+    f.file('README.txt',`รหัสโครงการ: ${S.code}\nโครงการ: ${S.proj.name||''}\nสายทาง/ตอน: ${S.proj.route||''}\nหน่วยงาน: ${S.proj.agency||''}\nผู้สำรวจ: ${S.proj.who||''}\nวันที่สำรวจ: ${S.proj.date||''}\nสร้างแฟ้มเมื่อ: ${new Date().toLocaleString('th-TH')}\n\n01_Excel  = ตารางสำรวจ / สรุป BOQ / จุดสำคัญ\n02_Photos = รูปภาพ (index.csv บอกว่ารูปไหนอยู่รายการใด)\n03_GIS    = KML (Google Earth) / GeoJSON (QGIS)\n04_PLAN   = ภาพ PLAN\n05_Backup = ไฟล์สำรอง เปิดกลับในแอปได้ (ปุ่ม เปิดไฟล์ .json)\n`);
+    dl(await z.generateAsync({type:'blob',compression:'DEFLATE'}),root+'_'+stamp+'.zip')}catch(e){alert('สร้างแฟ้มไม่สำเร็จ: '+e.message)}
+  bt.textContent=old;bt.disabled=false}
 async function storeInfo(){try{const e=await navigator.storage.estimate();$('storeInfo').textContent=`พื้นที่เก็บในเครื่อง: ใช้ ${(e.usage/1048576).toFixed(1)} MB จาก ${(e.quota/1048576).toFixed(0)} MB · รูปทั้งหมดในเครื่อง ${Object.values(LIB.list).reduce((a,p)=>a+photoIds(p).length,0)} รูป`}catch(x){}}
 // ---- info / refresh ----
 function refresh(light){
@@ -426,17 +450,19 @@ function refresh(light){
   const lo=as.length?Math.min(...as.map(c=>c.a)):null,hi=as.length?Math.max(...as.map(c=>c.b)):null;
   const inc=S.rows.filter(incomplete).length,n=S.rows.filter(r=>!isBlank(r)).length;
   $('info').innerHTML=(lo==null?'ยังไม่มีข้อมูล STA — กรอกตารางด้านล่างได้เลย':`STA ${fmtSta(lo)} – ${fmtSta(hi)} · ความยาวรวมโครงการ ${nf(hi-lo)} ม.`)+` · ${n} รายการ`+(inc?` · <b class="warn">ยังไม่ครบ/ติดธง ${inc}</b>`:'');
-  $('curName').textContent=S.proj.name||'(โครงการไม่มีชื่อ)';
+  curLabel();
   const act=document.querySelector('.tab.on').id;
   if(act==='t2'||!light)renderSummary();if(act==='t3'||!light)renderPlan();
 }
+function curLabel(){$('curName').textContent=(S.code?S.code+' · ':'')+(S.proj.name||'(โครงการไม่มีชื่อ)')}
+const safeN=s=>String(s).replace(/[\\/:*?"<>|\s]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40);
+const folderName=()=>(S.code||'SV')+(S.proj.name?'_'+safeN(S.proj.name):'');
 // ---- export ----
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
-const fname=()=>'SurveyField_'+((S.proj.name||'project').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,30))+'_'+new Date().toISOString().slice(0,10);
-function xlsx(){
-  if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ต) — ใช้ปุ่ม CSV แทนได้');return}
+const fname=()=>folderName()+'_'+new Date().toISOString().slice(0,10);
+function buildXlsx(){
   const wb=XLSX.utils.book_new();
-  const a=[['ตารางบันทึกข้อมูลการสำรวจภาคสนามและการคิดปริมาณงาน'],['โครงการ',S.proj.name,'','สายทาง/ตอน',S.proj.route],['หน่วยงาน/สถานที่',S.proj.agency,'','ผู้สำรวจ',S.proj.who,'วันที่',S.proj.date],[],
+  const a=[['ตารางบันทึกข้อมูลการสำรวจภาคสนามและการคิดปริมาณงาน'],['รหัสโครงการ',S.code,'','โครงการ',S.proj.name,'สายทาง/ตอน',S.proj.route],['หน่วยงาน/สถานที่',S.proj.agency,'','ผู้สำรวจ',S.proj.who,'วันที่',S.proj.date],[],
    ['ลำดับ','STA เริ่มต้น','STA สิ้นสุด','ระยะทาง (ม.)','รหัสงาน','ชื่อรายการงาน','กว้าง','ยาว/จำนวน','ลึก/หนา','ตัวคูณ 1','ตัวคูณ 2','ปริมาณงาน','หน่วย','LEFT','CENTER','RIGHT','หมายเหตุ','Lat เริ่ม','Lon เริ่ม','Lat สิ้นสุด','Lon สิ้นสุด','UTM โซน','E เริ่ม','N เริ่ม','ติดธงตรวจสอบ','จำนวนรูป']];
   S.rows.forEach((r,i)=>{if(isBlank(r))return;const c=calc(r),it=BYCODE[(r.code||'').toUpperCase()],g1=parseLL(r.g1),g2=parseLL(r.g2),u=g1?utm(g1.lat,g1.lon):null;
     a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',num(r.m1)??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',r.note,g1?g1.lat:'',g1?g1.lon:'',g2?g2.lat:'',g2?g2.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',r.flag?'⚑':'',(r.ph||[]).length||''])});
@@ -447,8 +473,8 @@ function xlsx(){
   const p=[['จุดสำคัญ'],[],['ลำดับ','ชื่อจุด','ประเภท','Lat','Lon','UTM โซน','E','N','หมายเหตุ','จำนวนรูป']];
   S.pts.forEach((x,i)=>{const g=parseLL(x.ll),u=g?utm(g.lat,g.lon):null;p.push([i+1,x.name,x.type,g?g.lat:'',g?g.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',x.note,(x.ph||[]).length||''])});
   const ws3=XLSX.utils.aoa_to_sheet(p);ws3['!cols']=[6,26,26,11,11,8,10,11,30].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws3,'จุดสำคัญ');
-  XLSX.writeFile(wb,fname()+'.xlsx');
-}
+  return wb}
+function xlsx(){if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ต) — ใช้ปุ่ม CSV แทนได้');return}XLSX.writeFile(buildXlsx(),fname()+'.xlsx')}
 function csv(){const s=summary();const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
   const t=['รหัสงาน,ชื่อรายการงาน,ปริมาณงานรวม,หน่วย,หมวดงาน,จำนวนที่สำรวจ,ช่วง STA',...s.map(o=>[q(o.code),q(o.name),o.qty,q(o.unit),q(o.cat?o.cat.name:''),o.n,q(o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max))].join(','))].join('\r\n');
   dl(new Blob(['﻿'+t],{type:'text/csv;charset=utf-8'}),fname()+'_BOQ.csv')}
@@ -460,20 +486,23 @@ function features(){const f=[];
     if(g2)f.push({type:'Feature',properties:{...pr,kind:'end'},geometry:{type:'Point',coordinates:[g2.lon,g2.lat]}})});
   S.pts.forEach(p=>{const g=parseLL(p.ll);if(g)f.push({type:'Feature',properties:{kind:'point',name:p.name,type:p.type,note:p.note,color:'#c0392b'},geometry:{type:'Point',coordinates:[g.lon,g.lat]}})});
   return f}
-function geojson(){dl(new Blob([JSON.stringify({type:'FeatureCollection',name:S.proj.name,features:features()},null,1)],{type:'application/geo+json'}),fname()+'.geojson')}
-function kml(){const kc=h=>{h=h.replace('#','');return'ff'+h.slice(4,6)+h.slice(2,4)+h.slice(0,2)};
+const geojsonStr=()=>JSON.stringify({type:'FeatureCollection',name:(S.code||'')+' '+(S.proj.name||''),features:features()},null,1);
+function geojson(){dl(new Blob([geojsonStr()],{type:'application/geo+json'}),fname()+'.geojson')}
+function kmlStr(){const kc=h=>{h=h.replace('#','');return'ff'+h.slice(4,6)+h.slice(2,4)+h.slice(0,2)};
   const pm=features().map(f=>{const p=f.properties,col=kc(p.color||'#e08e0b');
     const nm=p.kind==='point'?(p.name||p.type):`${p.no}. ${p.code||''} ${p.kind==='start'?'(เริ่ม)':p.kind==='end'?'(สิ้นสุด)':''}`;
     const ds=[p.name,p.sta&&'STA '+p.sta,p.qty!==''&&p.qty!=null&&'ปริมาณ '+p.qty+' '+(p.unit||''),p.type,p.note].filter(Boolean).join('\n');
     const g=f.geometry.type==='Point'?`<Point><coordinates>${f.geometry.coordinates.join(',')}</coordinates></Point>`:`<LineString><tessellate>1</tessellate><coordinates>${f.geometry.coordinates.map(c=>c.join(',')).join(' ')}</coordinates></LineString>`;
     return`<Placemark><name>${esc(nm)}</name><description>${esc(ds)}</description><Style><LineStyle><color>${col}</color><width>5</width></LineStyle><IconStyle><color>${col}</color></IconStyle></Style>${g}</Placemark>`}).join('\n');
-  dl(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${esc(S.proj.name||'Survey Field')}</name>\n${pm}\n</Document></kml>`],{type:'application/vnd.google-earth.kml+xml'}),fname()+'.kml')}
-function png(){const svg=$('planbox').querySelector('svg');if(!svg){alert('ยังไม่มีภาพ PLAN');return}
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${esc((S.code||'')+' '+(S.proj.name||'Survey Field'))}</name>\n${pm}\n</Document></kml>`}
+function kml(){dl(new Blob([kmlStr()],{type:'application/vnd.google-earth.kml+xml'}),fname()+'.kml')}
+function pngBlob(){return new Promise(res=>{renderPlan();const svg=$('planbox').querySelector('svg');if(!svg)return res(null);
   const vb=svg.viewBox.baseVal,sc=2,img=new Image();
-  img.onload=()=>{const cv=document.createElement('canvas');cv.width=vb.width*sc;cv.height=vb.height*sc;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);cv.toBlob(b=>dl(b,fname()+'_PLAN.png'))};
-  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg))}
+  img.onload=()=>{const cv=document.createElement('canvas');cv.width=vb.width*sc;cv.height=vb.height*sc;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);cv.toBlob(b=>res(b))};img.onerror=()=>res(null);
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg))})}
+async function png(){const b=await pngBlob();if(!b){alert('ยังไม่มีภาพ PLAN');return}dl(b,fname()+'_PLAN.png')}
 // ---- library ----
-function projText(p){return[p.proj.name,p.proj.agency,p.proj.route,p.proj.who,p.proj.date,...p.rows.map(r=>(r.code||'')+' '+(r.note||'')),...(p.pts||[]).map(x=>x.name+' '+x.note)].join(' ').toLowerCase()}
+function projText(p){return[p.code,p.proj.name,p.proj.agency,p.proj.route,p.proj.who,p.proj.date,...p.rows.map(r=>(r.code||'')+' '+(r.note||'')),...(p.pts||[]).map(x=>x.name+' '+x.note)].join(' ').toLowerCase()}
 function renderLib(){
   const q=$('libQ').value.trim().toLowerCase(),ws=q.split(/\s+/).filter(Boolean);
   const arr=Object.values(LIB.list).filter(p=>ws.every(w=>projText(p).includes(w))).sort((a,b)=>b.updated-a.updated);
@@ -481,27 +510,29 @@ function renderLib(){
   if(!arr.length)box.innerHTML='<div class="mute">ไม่พบโครงการ</div>';
   arr.forEach(p=>{const d=document.createElement('div');d.className='pj'+(p.id===S.id?' cur':'');
     const n=p.rows.filter(r=>!isBlank(r)).length,inc=p.rows.filter(incomplete).length;
-    d.innerHTML=`<h4>${esc(p.proj.name||'(ไม่มีชื่อโครงการ)')} ${p.id===S.id?'<span class="mute">· กำลังเปิดอยู่</span>':''}</h4><div class="mute">${esc([p.proj.route,p.proj.agency].filter(Boolean).join(' · '))}</div><div class="mute">ผู้สำรวจ ${esc(p.proj.who||'-')} · วันที่ ${esc(p.proj.date||'-')} · ${n} รายการ${inc?` · <span class="warn">ยังไม่ครบ ${inc}</span>`:''} · ${(p.pts||[]).length} จุดสำคัญ · ${photoIds(p).length} รูป · แก้ไขล่าสุด ${new Date(p.updated).toLocaleString('th-TH')}</div>
+    d.innerHTML=`<h4>${esc(p.code||'')} · ${esc(p.proj.name||'(ไม่มีชื่อโครงการ)')} ${p.id===S.id?'<span class="mute">· กำลังเปิดอยู่</span>':''}</h4><div class="mute">${esc([p.proj.route,p.proj.agency].filter(Boolean).join(' · '))}</div><div class="mute">ผู้สำรวจ ${esc(p.proj.who||'-')} · วันที่ ${esc(p.proj.date||'-')} · ${n} รายการ${inc?` · <span class="warn">ยังไม่ครบ ${inc}</span>`:''} · ${(p.pts||[]).length} จุดสำคัญ · ${photoIds(p).length} รูป · แก้ไขล่าสุด ${new Date(p.updated).toLocaleString('th-TH')}</div>
     <div class="bar"><button class="b sm" data-o>เปิด</button><button class="b ghost sm" data-c>ทำซ้ำ</button><button class="b red sm" data-d>ลบ</button></div>`;
     d.querySelector('[data-o]').onclick=()=>openProj(p.id);
-    d.querySelector('[data-c]').onclick=async()=>{const c=JSON.parse(JSON.stringify(p));c.id=uid();c.created=c.updated=Date.now();c.proj.name=(c.proj.name||'โครงการ')+' (สำเนา)';
+    d.querySelector('[data-c]').onclick=async()=>{const c=JSON.parse(JSON.stringify(p));c.id=uid();c.created=c.updated=Date.now();c.proj.name=(c.proj.name||'โครงการ')+' (สำเนา)';c.code=nextCode();
       for(const o of [...c.rows,...c.pts]){const nw=[];for(const id of(o.ph||[])){const r=await pGet(id);if(r){const n=uid();await pPut({...r,id:n});nw.push(n)}}o.ph=nw}
       LIB.list[c.id]=c;save(true);renderLib()};
     d.querySelector('[data-d]').onclick=()=>{if(!confirm('ลบโครงการ "'+(p.proj.name||'ไม่มีชื่อ')+'" ถาวร? (ควรสำรองไฟล์ก่อน)'))return;photoIds(p).forEach(pDel);delete LIB.list[p.id];
-      if(p.id===S.id){const ks=Object.keys(LIB.list);if(ks.length)openProj(ks[0],true);else{const n=newProj();LIB.list[n.id]=n;openProj(n.id,true)}}else{save(true)}renderLib()};
+      if(p.id===S.id){const ks=Object.keys(LIB.list);if(ks.length)openProj(ks[0],true);else{const n=newProj();n.code=nextCode();LIB.list[n.id]=n;openProj(n.id,true)}}else{save(true)}renderLib()};
     box.appendChild(d)})}
 function openProj(id,keep){S=LIB.list[id];S.pts=S.pts||[];S.rows=S.rows.length?S.rows:[newRow()];LIB.cur=id;save(true);fillProj();renderRows();refresh();if(!keep)$('lib').classList.remove('on');else renderLib();if(document.querySelector('.tab.on').id==='t5')renderMap(true)}
 function importFile(f){f.text().then(async t=>{try{const d=JSON.parse(t);let ps=[];if(d.photos){for(const[id,du]of Object.entries(d.photos)){try{const b=await(await fetch(du)).blob();await pPut({id,blob:b,t:Date.now()})}catch(e){}}}
   if(d.list&&typeof d.list==='object')ps=Object.values(d.list);else if(d.rows)ps=[d.id?d:{...d,id:uid(),proj:d.proj||{}}];else throw 0;
-  let last=null;ps.forEach(p=>{p.proj=p.proj||{};p.rows=(p.rows||[]).map(r=>({...newRow(),...r}));if(!p.rows.length)p.rows=[newRow()];p.pts=(p.pts||[]).map(x=>({ph:[],...x}));p.id=p.id||uid();p.updated=p.updated||Date.now();p.created=p.created||p.updated;
+  let last=null;ps.forEach(p=>{p.proj=p.proj||{};p.rows=(p.rows||[]).map(r=>({...newRow(),...r}));if(!p.rows.length)p.rows=[newRow()];p.pts=(p.pts||[]).map(x=>({ph:[],...x}));p.id=p.id||uid();if(!p.code||Object.values(LIB.list).some(x=>x.code===p.code&&x.id!==p.id))p.code=nextCode();p.updated=p.updated||Date.now();p.created=p.created||p.updated;
     if(LIB.list[p.id]&&!confirm('มีโครงการ "'+(LIB.list[p.id].proj.name||'')+'" อยู่แล้ว — แทนที่ด้วยไฟล์นี้? (ยกเลิก = เก็บเป็นสำเนาใหม่)')){p.id=uid();p.proj.name=(p.proj.name||'โครงการ')+' (นำเข้า)'}
     LIB.list[p.id]=p;last=p.id});
   if(last){openProj(last);alert('นำเข้าแล้ว '+ps.length+' โครงการ')}}catch(e){alert('ไฟล์ไม่ถูกต้อง')}})}
-function fillProj(){[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
+function fillProj(){$('p_code').value=S.code||'';$('pkgName').textContent=folderName();[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
 // ---- wiring ----
 async function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t5')setTimeout(()=>renderMap(true),30);if(t==='t6')renderPhotos();if(t==='t4')storeInfo()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
-[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>{$(id).oninput=()=>{S.proj[k]=$(id).value;save();$('curName').textContent=S.proj.name||'(โครงการไม่มีชื่อ)'}});
+[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>{$(id).oninput=()=>{S.proj[k]=$(id).value;save();curLabel();$('pkgName').textContent=folderName()}});
+$('p_code').oninput=()=>{S.code=$('p_code').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'');save();curLabel();$('pkgName').textContent=folderName()};
+$('p_code').onchange=()=>{if(!S.code){S.code=nextCode();$('p_code').value=S.code;save();curLabel()}else if(Object.values(LIB.list).some(x=>x.code===S.code&&x.id!==S.id)){alert('รหัส '+S.code+' ซ้ำกับโครงการอื่น — ระบบออกรหัสใหม่ให้');S.code=nextCode();$('p_code').value=S.code;save();curLabel()}};
 const addRow=()=>{S.rows.push(newRow());save();FILTER='all';$('flt').value='all';renderRows();refresh();const l=$('rows').lastElementChild;l&&l.querySelector('[data-f=sta1]').focus()};
 $('add').onclick=addRow;$('add2').onclick=addRow;
 $('flt').onchange=()=>{FILTER=$('flt').value;renderRows()};
@@ -522,8 +553,8 @@ $('openLib').onclick=()=>{$('libQ').value='';renderLib();$('lib').classList.add(
 $('libClose').onclick=()=>$('lib').classList.remove('on');
 $('lib').onclick=e=>{if(e.target===$('lib'))$('lib').classList.remove('on')};
 $('libQ').oninput=renderLib;
-$('newProj').onclick=()=>{const p=newProj();LIB.list[p.id]=p;openProj(p.id);$('p_name').focus()};
-$('zipBtn').onclick=zipAll;
+$('newProj').onclick=()=>{const p=newProj();p.code=nextCode();LIB.list[p.id]=p;openProj(p.id);$('p_name').focus()};
+$('zipBtn').onclick=zipAll;$('pkgBtn').onclick=pkgZip;
 $('lbClose').onclick=()=>$('lb').classList.remove('on');
 $('lb').onclick=e=>{if(e.target===$('lb'))$('lb').classList.remove('on')};
 $('lbDel').onclick=async()=>{if(!LBCUR||!confirm('ลบรูปนี้?'))return;const{o,id,after}=LBCUR;o.ph=o.ph.filter(x=>x!==id);await pDel(id);save(true);$('lb').classList.remove('on');after&&after()};
