@@ -69,6 +69,7 @@ td.r,th.r{text-align:right}
 #planbox{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center}
 #planbox svg{max-width:100%;height:auto}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:13px}
+#pkMap{height:56vh;min-height:320px;border-radius:10px;border:1px solid var(--line);position:relative;z-index:1}
 #map{height:62vh;min-height:360px;border-radius:10px;border:1px solid var(--line);z-index:1}
 .pt{display:grid;gap:8px;grid-template-columns:1.2fr 1.4fr 1.6fr 2fr auto;align-items:end;margin-bottom:8px}
 @media(max-width:700px){.pt{grid-template-columns:1fr 1fr}}
@@ -261,6 +262,14 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
 </div></div>
 <div id="printRoot"></div>
 <style id="pageStyle"></style>
+<div class="ov" id="pk"><div class="box" style="max-width:920px">
+  <h3 style="margin:0 0 6px" id="pkTitle">เลือกตำแหน่ง</h3>
+  <div class="bar" style="margin-top:0"><button class="b amber" id="pkGps">📍 ใช้ตำแหน่งปัจจุบันของฉัน</button><span class="mute" id="pkGpsInfo">กำลังหาตำแหน่งปัจจุบัน…</span></div>
+  <div id="pkMap"></div>
+  <div style="margin:8px 0;font-size:14px" id="pkSel" class="mute">แตะบนแผนที่ หรือลากหมุด เพื่อเลือกตำแหน่งเอง · สลับเป็นภาพดาวเทียมได้ที่ปุ่มมุมขวาบนของแผนที่</div>
+  <div class="bar"><input id="pkTxt" placeholder="วางพิกัดจาก Google Maps เช่น 13.7563, 100.5018" style="max-width:360px"><button class="b ghost sm" id="pkGo">ไปที่พิกัดนี้</button></div>
+  <div class="bar"><button class="b" id="pkOk">✔ ยืนยันตำแหน่งนี้</button><button class="b ghost" id="pkCancel">ยกเลิก</button></div>
+</div></div>
 <div class="ov" id="lib"><div class="box">
   <div class="bar" style="margin-top:0"><h3 style="margin:0;flex:1">📂 คลังโครงการ</h3><button class="b ghost sm" id="libClose">ปิด ✕</button></div>
   <input id="libQ" placeholder="ค้นหา: ชื่อโครงการ / หน่วยงาน / สายทาง / ผู้สำรวจ / รหัสงาน / หมายเหตุ">
@@ -387,8 +396,8 @@ function renderRows(){
      <div><label>ปริมาณงาน</label><div class="qty" data-qty></div></div>
      <div class="pos"><label><input type="checkbox" data-f="L">L</label><label><input type="checkbox" data-f="C">C</label><label><input type="checkbox" data-f="R">R</label></div>
      <div class="wide"><label>หมายเหตุ</label><input data-f="note"></div>
-     <div class="wide gps"><div><label>พิกัดจุดเริ่ม (lat, lon)</label><input data-f="g1" placeholder="13.7563, 100.5018" inputmode="decimal"></div><button class="b amber sm" data-gps="1">📍</button></div>
-     <div class="wide gps"><div><label>พิกัดจุดสิ้นสุด (lat, lon)</label><input data-f="g2" placeholder="ไม่บังคับ" inputmode="decimal"></div><button class="b amber sm" data-gps="2">📍</button></div>
+     <div class="wide gps"><div><label>พิกัดจุดเริ่ม (lat, lon)</label><input data-f="g1" placeholder="13.7563, 100.5018" inputmode="decimal"></div><button class="b amber sm" data-gps="1" title="เปิดแผนที่เพื่อเลือก/ยืนยันตำแหน่ง">🗺 เลือก</button></div>
+     <div class="wide gps"><div><label>พิกัดจุดสิ้นสุด (lat, lon)</label><input data-f="g2" placeholder="ไม่บังคับ" inputmode="decimal"></div><button class="b amber sm" data-gps="2" title="เปิดแผนที่เพื่อเลือก/ยืนยันตำแหน่ง">🗺 เลือก</button></div>
      <div class="full mute" data-utm></div>
      <div class="full botrow"><div class="phwrap" data-ph></div><div class="illus"></div></div>
     </div>`;
@@ -402,9 +411,10 @@ function renderRows(){
     el.querySelector('[data-del]').onclick=()=>{if(!isBlank(r)&&!confirm('ลบรายการที่ '+(i+1)+' ?'))return;(r.ph||[]).forEach(pDel);S.rows.splice(i,1);if(!S.rows.length)S.rows.push(newRow());save();renderRows();refresh()};
     el.querySelector('[data-dup]').onclick=()=>{S.rows.splice(i+1,0,{...r,a1:'',a2:'',ph:[]});save();renderRows();refresh()};
     el.querySelector('[data-flag]').onclick=()=>{r.flag=!r.flag;save();update(el,r)};
-    el.querySelectorAll('[data-gps]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.gps,old=bt.textContent;bt.textContent='…';bt.disabled=true;
-      try{const p=await getPos();r['g'+k]=fmtLL(p.coords.latitude,p.coords.longitude);r['a'+k]=Math.round(p.coords.accuracy);el.querySelector(`[data-f=g${k}]`).value=r['g'+k];save();update(el,r)}catch(e){alert(e.message)}
-      bt.textContent=old;bt.disabled=false});
+    el.querySelectorAll('[data-gps]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.gps,old=bt.textContent;
+      const done=(lat,lon,acc)=>{r['g'+k]=fmtLL(lat,lon);r['a'+k]=acc!=null?Math.round(acc):'';el.querySelector(`[data-f=g${k}]`).value=r['g'+k];save();update(el,r)};
+      if(openPicker({title:'เลือก/ยืนยันตำแหน่ง'+(k==='1'?'จุดเริ่มต้น':'จุดสิ้นสุด')+' · รายการที่ '+(i+1)+(r.code?' ('+r.code+')':''),init:parseLL(r['g'+k]),onConfirm:c=>done(c.lat,c.lon,c.acc)}))return;
+      bt.textContent='…';bt.disabled=true;try{const p=await getPos();done(p.coords.latitude,p.coords.longitude,p.coords.accuracy)}catch(e){alert(e.message)}bt.textContent=old;bt.disabled=false});
     el.querySelector('[data-ph]').appendChild(buildStrip(r,()=>{}));
     update(el,r,true);
   });
@@ -510,9 +520,12 @@ async function renderMap(fit){
 function renderPts(){
   const box=$('pts');box.innerHTML='';
   S.pts.forEach((p,i)=>{const d=document.createElement('div');d.className='pt';
-    d.innerHTML=`<div><label>ชื่อจุด</label><input data-k="name"></div><div><label>ประเภท</label><select data-k="type">${PTYPES.map(t=>`<option>${t[1]}</option>`).join('')}</select></div><div><label>พิกัด (lat, lon)</label><input data-k="ll"></div><div><label>หมายเหตุ</label><input data-k="note"></div><div><button class="b red sm" data-x>✕</button></div><div style="grid-column:1/-1" data-ph></div>`;
+    d.innerHTML=`<div><label>ชื่อจุด</label><input data-k="name"></div><div><label>ประเภท</label><select data-k="type">${PTYPES.map(t=>`<option>${t[1]}</option>`).join('')}</select></div><div><label>พิกัด (lat, lon)</label><div style="display:flex;gap:4px"><input data-k="ll"><button class="b amber sm" data-pk title="เลือก/ยืนยันตำแหน่งบนแผนที่">🗺</button></div></div><div><label>หมายเหตุ</label><input data-k="note"></div><div><button class="b red sm" data-x>✕</button></div><div style="grid-column:1/-1" data-ph></div>`;
     d.querySelectorAll('[data-k]').forEach(el=>{el.value=p[el.dataset.k]||(el.dataset.k==='type'?PTYPES[6][1]:'');el.onchange=el.oninput=()=>{p[el.dataset.k]=el.value;save()};if(el.dataset.k==='type')el.onchange=()=>{p.type=el.value;save();renderMap()}});
     d.querySelector('[data-ph]').appendChild(buildStrip(p,()=>renderMap()));
+    d.querySelector('[data-pk]').onclick=async()=>{const set=(lat,lon)=>{p.ll=fmtLL(lat,lon);save();renderMap()};
+      if(openPicker({title:'เลือก/ยืนยันตำแหน่งจุดสำคัญ: '+(p.name||p.type),init:parseLL(p.ll),onConfirm:c=>set(c.lat,c.lon)}))return;
+      try{const g=await getPos();set(g.coords.latitude,g.coords.longitude)}catch(e){alert(e.message)}};
     d.querySelector('[data-x]').onclick=()=>{if(confirm('ลบจุดนี้?')){(p.ph||[]).forEach(pDel);S.pts.splice(i,1);save();renderMap()}};box.appendChild(d)});
   $('ptsEmpty').textContent=S.pts.length?'':'ยังไม่มีจุดสำคัญ — แตะแผนที่เพื่อเพิ่ม หรือกด "จุดสำคัญที่ตำแหน่งฉัน"';
 }
@@ -666,6 +679,35 @@ async function makePdf(){
   const done=()=>{document.body.classList.remove('pdfmode');document.title=ot;window.removeEventListener('afterprint',done)};
   window.addEventListener('afterprint',done);
   setTimeout(()=>window.print(),200)}
+// ---- location picker (map) ----
+let pkMap=null,pkLay=null,pkMarker=null,pkMe=null,pkSel=null,pkUsedGps=false,pkGpsPos=null,pkCb=null;
+const pkPinIcon=()=>L.divIcon({className:'',html:'<div style="font-size:34px;line-height:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))">📍</div>',iconSize:[34,34],iconAnchor:[17,32]});
+function pkSelect(ll,fromGps){pkSel=ll;pkUsedGps=!!fromGps;
+  if(pkMarker)pkMarker.setLatLng([ll.lat,ll.lon]);else{pkMarker=L.marker([ll.lat,ll.lon],{draggable:true,icon:pkPinIcon()}).addTo(pkMap);pkMarker.on('dragend',()=>{const p=pkMarker.getLatLng();pkSelect({lat:p.lat,lon:p.lng},false)})}
+  $('pkSel').innerHTML='ตำแหน่งที่เลือก: <b>'+fmtLL(ll.lat,ll.lon)+'</b> · '+esc(utmTxt(ll))+(fromGps&&pkGpsPos?` · <span style="color:var(--ok)">จาก GPS ±${Math.round(pkGpsPos.acc)} ม.</span>`:' · เลือกเอง')}
+function pkOthers(){const o=[];S.rows.forEach((r,i)=>{[['g1','เริ่ม'],['g2','สิ้นสุด']].forEach(([k,t])=>{const g=parseLL(r[k]);if(g)o.push({g,t:`${i+1}. ${r.code||''} (${t})`})})});S.pts.forEach(p=>{const g=parseLL(p.ll);if(g)o.push({g,t:p.name||p.type})});return o}
+function pkGetGps(){$('pkGpsInfo').textContent='กำลังหาตำแหน่งปัจจุบัน…';return getPos().then(p=>{pkGpsPos={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};
+    if(pkMe)pkLay.removeLayer(pkMe);pkMe=L.circle([pkGpsPos.lat,pkGpsPos.lon],{radius:Math.max(pkGpsPos.acc,4),color:'#1a73e8',weight:2,fillColor:'#1a73e8',fillOpacity:.2}).addTo(pkLay);
+    $('pkGpsInfo').innerHTML=`ตำแหน่งปัจจุบันของคุณ <b>${fmtLL(pkGpsPos.lat,pkGpsPos.lon)}</b> (±${Math.round(pkGpsPos.acc)} ม.)`;return pkGpsPos}).catch(e=>{$('pkGpsInfo').textContent=e.message;return null})}
+function openPicker({title,init,onConfirm}){
+  if(!window.L)return false;
+  pkCb=onConfirm;$('pkTitle').textContent=title;$('pk').classList.add('on');
+  if(!pkMap){pkMap=L.map('pkMap');
+    const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri World Imagery'});
+    osm.addTo(pkMap);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat}).addTo(pkMap);pkLay=L.layerGroup().addTo(pkMap);
+    pkMap.on('click',e=>pkSelect({lat:e.latlng.lat,lon:e.latlng.lng},false))}
+  setTimeout(()=>pkMap.invalidateSize(),60);
+  pkLay.clearLayers();if(pkMarker){pkMap.removeLayer(pkMarker);pkMarker=null}pkMe=null;pkSel=null;pkGpsPos=null;
+  $('pkSel').textContent='แตะบนแผนที่ หรือลากหมุด เพื่อเลือกตำแหน่งเอง · สลับเป็นภาพดาวเทียมได้ที่ปุ่มมุมขวาบนของแผนที่';$('pkTxt').value='';
+  pkOthers().forEach(o=>L.circleMarker([o.g.lat,o.g.lon],{radius:6,color:'#fff',weight:2,fillColor:'#6b7785',fillOpacity:.9}).bindTooltip(o.t).addTo(pkLay));
+  if(init){pkMap.setView([init.lat,init.lon],18);pkSelect(init,false)}else pkMap.setView([13.75,100.5],6);
+  pkGetGps().then(g=>{if(!g)return;if(!init&&!pkSel){pkMap.setView([g.lat,g.lon],18);pkSelect({lat:g.lat,lon:g.lon},true)}});
+  return true}
+function pkClose(){$('pk').classList.remove('on');pkCb=null}
+$('pkCancel').onclick=pkClose;$('pk').onclick=e=>{if(e.target===$('pk'))pkClose()};
+$('pkGps').onclick=async()=>{const g=pkGpsPos||await pkGetGps();if(g){pkMap.setView([g.lat,g.lon],18);pkSelect({lat:g.lat,lon:g.lon},true)}};
+$('pkGo').onclick=()=>{const g=parseLL($('pkTxt').value);if(!g){alert('รูปแบบพิกัดไม่ถูกต้อง (ตัวอย่าง 13.7563, 100.5018)');return}pkMap.setView([g.lat,g.lon],18);pkSelect(g,false)};
+$('pkOk').onclick=()=>{if(!pkSel){alert('ยังไม่ได้เลือกตำแหน่ง — แตะบนแผนที่ หรือกด "ใช้ตำแหน่งปัจจุบันของฉัน"');return}const cb=pkCb,r={lat:pkSel.lat,lon:pkSel.lon,acc:pkUsedGps&&pkGpsPos?pkGpsPos.acc:null};pkClose();cb&&cb(r)};
 // ---- info / refresh ----
 function refresh(light){
   const as=S.rows.map(r=>calc(r)).filter(c=>c.a!=null);
