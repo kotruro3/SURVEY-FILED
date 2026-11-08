@@ -71,6 +71,12 @@ td.r,th.r{text-align:right}
 .pj{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
 .pj.cur{border-color:var(--brand2);background:var(--soft)}
 .pj h4{margin:0 0 2px;font-size:16px}
+.phs .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.phs img{width:78px;height:78px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:var(--soft)}
+.phs label.b{margin:0;display:inline-block;cursor:pointer}
+.rep{break-inside:avoid;page-break-inside:avoid}
+.rep .imgs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+.rep .imgs img{width:100%;border-radius:6px;border:1px solid var(--line)}
 @media print{header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab.on{display:block!important}body{background:#fff}.card{border:0}}
 </style>
 </head>
@@ -85,6 +91,7 @@ td.r,th.r{text-align:right}
   <button data-t="t2">สรุป BOQ</button>
   <button data-t="t3">PLAN</button>
   <button data-t="t5">🗺 แผนที่</button>
+  <button data-t="t6">📷 รูปภาพ</button>
   <button data-t="t4">ส่งออก / สำรองข้อมูล</button>
 </nav>
 <main>
@@ -125,6 +132,11 @@ td.r,th.r{text-align:right}
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 8px">จุดสำคัญ / ภาพรวมโครงการ</h3><div id="pts"></div><div class="mute" id="ptsEmpty"></div></div>
 </section>
 
+<section class="tab" id="t6">
+  <div class="bar"><button class="b" id="zipBtn">⬇ ดาวน์โหลดรูปทั้งหมด (.zip)</button><button class="b ghost" onclick="window.print()">🖨 พิมพ์รายงานรูปภาพ</button><span class="mute">รูปแนบได้สูงสุด 4 รูป ต่อรายการ/ต่อจุดสำคัญ (ย่อขนาดอัตโนมัติ)</span></div>
+  <div id="photoRep"></div>
+</section>
+
 <section class="tab" id="t4">
   <div class="card">
     <h3 style="margin:0 0 8px">ส่งออกเป็น Excel</h3>
@@ -138,12 +150,14 @@ td.r,th.r{text-align:right}
   </div>
   <div class="card">
     <h3 style="margin:0 0 8px">สำรองข้อมูล / ส่งต่อ</h3>
+    <div class="mute" id="storeInfo"></div>
     <div class="mute">โครงการทั้งหมดเก็บอัตโนมัติในเบราว์เซอร์เครื่องนี้ ควรสำรองเป็นไฟล์ .json เป็นระยะ และใช้ส่งต่อให้เพื่อนร่วมงานหรือย้ายเครื่อง</div>
-    <div class="bar"><button class="b" id="jsonOut">⬇ โครงการนี้ (.json)</button><button class="b ghost" id="libOut">⬇ ทุกโครงการ (.json)</button><label class="b ghost" style="margin:0;display:inline-block;color:var(--brand);cursor:pointer">⬆ เปิดไฟล์ .json<input id="jsonIn" type="file" accept=".json" hidden></label></div>
+    <div class="bar"><button class="b" id="jsonOut">⬇ โครงการนี้ (.json รวมรูป)</button><button class="b ghost" id="libOut">⬇ ทุกโครงการ (.json รวมรูป)</button><label class="b ghost" style="margin:0;display:inline-block;color:var(--brand);cursor:pointer">⬆ เปิดไฟล์ .json<input id="jsonIn" type="file" accept=".json" hidden></label></div>
   </div>
 </section>
 </main>
 
+<div class="ov" id="lb" style="align-items:center"><div class="box" style="max-width:900px;text-align:center"><img id="lbImg" style="max-width:100%;max-height:70vh;border-radius:8px"><div class="bar" style="justify-content:center"><button class="b red" id="lbDel">🗑 ลบรูปนี้</button><button class="b ghost" id="lbClose">ปิด</button></div></div></div>
 <div class="ov" id="lib"><div class="box">
   <div class="bar" style="margin-top:0"><h3 style="margin:0;flex:1">📂 คลังโครงการ</h3><button class="b ghost sm" id="libClose">ปิด ✕</button></div>
   <input id="libQ" placeholder="ค้นหา: ชื่อโครงการ / หน่วยงาน / สายทาง / ผู้สำรวจ / รหัสงาน / หมายเหตุ">
@@ -152,6 +166,7 @@ td.r,th.r{text-align:right}
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const JOBS={"cats":[["A","งานรื้อถอน","FF8C6D62"],["B","งานเตรียมพื้นที่ / ดินตัด","FFC99A4B"],["C","งานดินถม","FF6FA35B"],["D","วัสดุคัดเลือก","FF3E8E7E"],["E","งานรื้อ/ปรับปรุงพื้นทางเดิม","FF5B8FB9"],["F","งานพื้นทาง / ไหล่ทาง","FF3C5FA0"],["G","งานผิวทาง (AC / คอนกรีต)","FF4A4A55"],["H","งานระบายน้ำ","FF2FA3C7"],["I","เครื่องหมายจราจร / ทางเท้า","FFE0873D"],["J","งานป้ายจราจร","FFC2547A"],["K","งานอื่น ๆ","FF8E8E8E"]],"items":[["A01","งานรื้อผิว AC REMOVAL OF EXISTING ASPHALT CONCRETE SURFACE","ตร.ม."],["A02","งานรื้อท่อเหลี่ยมเดิม REMOVAL OF EXISTING CURB & GUTTER","ลบ.ม."],["A03","งาน REMOVAL OF EXISTING CONCRETE BRIDGES","ลบ.ม."],["A04","งานรื้อ ผิวทางคอนกรีต REMOVE CONCRETE PAVEMENT","ตร.ม."],["A05","งาน MIILLING 5 Cm.","ตร.ม."],["A06","งาน MIILLING 10 Cm.","ตร.ม."],["A07","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.30 m.","ม."],["A08","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.40 m.","ม."],["A09","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.50 m.","ม."],["A10","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.60 m.","ม."],["A11","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 0.80 m.","ม."],["A12","งานรื้อท่อ คสล REMOVAL OF EXISTING PIPE CULVERTS 1.00 m.","ม."],["B01","งานถางป่า ขุดตอ ไถปรับ CLEARING AND GRUBBING (ขนาดเบา)","ตร.ม."],["B02","งานถางป่า ขุดตอ ไถปรับ CLEARING AND GRUBBING (ขนาดกลาง)","ตร.ม."],["B03","งานถางป่า ขุดตอ ไถปรับ CLEARING AND GRUBBING (ขนาดหนัก)","ตร.ม."],["B04","งานตัดดิน EARTH EXCAVATION","ลบ.ม."],["B05","งานตัดผินผุ SOFT ROCK EXCAVATION","ลบ.ม."],["B06","งานตัดหินแข็ง HARD ROCK EXCAVATION","ลบ.ม."],["B07","งานขุดวัสดุ ไม่เหมาะสม UNSUITABLE MATERIAL EXCAVATION","ลบ.ม."],["B08","งานขุดบริเวณดินอ่อน (เฉพาะงานขุด)","ลบ.ม."],["C01","งานตัดดิน EARTH EXCAVATION พร้อมลูกรังใส่ แทนที่","ลบ.ม"],["C02","งานตัดดิน EARTH EXCAVATION","ลบ.ม."],["C03","งานดินถมคันทาง EARTH EMBANKMENT","ลบ.ม."],["C04","งานทรายถมคันทาง SAND EMBANKMENT","ลบ.ม."],["C05","งานดินถม บริเวณเกาะกลาง EARTH FILL IN MEDIAN & ISLAND","ลบ.ม."],["C06","งานดินถมบริเวณทางเท้า EARTH FILL UNDER SIDEWALK","ลบ.ม."],["D01","งานวัสดุ คัดเลือก ก SELECTED MATERIAL A","ลบ.ม."],["D02","งานวัสดุ คัดเลือก ก SELECTED MATERIAL B","ลบ.ม."],["E01","งานรื้อพื้นทาง (หินคลุก) 10 CM +บดทับ SCARIFICATION & RECONSTRUCTION OF EXISTING BASE","ลบ.ม."],["E02","งานรื้อพื้นทาง (ลูกรัง) 10 CM +บดทับ SCARIFICATION & RECONSTRUCTION OF EXISTING BASE","ลบ.ม."],["E03","งานรื้อผิวทาง แล้วบดทับ SCARIFICATION & RECONSTRUCTION OF EXISTING BASE (AC)","ลบ.ม."],["E04","งานหินคลุกปรับระดับ CRUSHED ROCK SOIL AGGREGATE LEVELLING COURSE","ลบ.ม."],["E05","งานรองพื้นทางวัสดุมวลรวม แก้ไขจุดอ่อนตัว","ลบ.ม."],["F01","งานรองพื้นทางดินซิเมนต์ SOIL CEMENT SUBBASE","ลบ.ม."],["F02","งานพื้นทางหินคลุก+บดทับ CRUSHED ROCK SOIL AGGREGATE TYPE BASE","ลบ.ม."],["F03","งานพื้นทางหินคลุกซิเมนต์ CEMENT MODIFIED CRUSHED ROCK BASE","ลบ.ม."],["F04","งานพื้นทางดินซิเมนต์ SOIL CEMENT BASE","ลบ.ม."],["F05","งานไหล่ทางวัสดุมวลรวม SOIL AGGREATE SHOULDER","ลบ.ม."],["F06","งานCRUSHED ROCK SOIL AGGREGATE TYPE SHOULDER","ลบ.ม."],["F07","งานปรับปรุงชั้นพื้นทางเดิมด้วยวิธี PAVEMENT IN-PLACE RECYCLING หนา 15 ซม. (MIN)","ม.2"],["F08","งานปรับปรุงชั้นพื้นทางเดิมด้วยวิธี PAVEMENT IN-PLACE RECYCLING หนา 20 ซม. (MIN)","ม.2"],["F09","งาน GEOTEXTILE FOR CONCRETE PAVEMENT","ตร.ม."],["G01","งานลาดไพรม์โค้ด PRIME COAT (EAP)","ตร.ม."],["G02","งานลาดยางแอสฟัลต์ไพรม์โคท ( PRIME COAT ) MC-70","ตร.ม."],["G03","งานลาดยางแอสฟัลต์แทคโคท (TACK COAT CRS-2)","ตร.ม."],["G04","งาน CAPE SEAL","ตร.ม."],["G05","งานปรับระดับผิวทางคอนกรีตเดิมด้วยแอสฟัลต์คอนกรีต (ASPHALT CONCRETE LEVELLING )","ตัน"],["G06","งานผิวไหล่ทางแอสฟัลต์ คอนกรีต หนา 4 ซม. (ASPHALT CONCRETE SHOULDER)","ตร.ม."],["G07","งานชั้นรองผิวไหล่ทาง แอสฟัลต์ ASPHALT CONCRETE SHOULDER BINDER","ตร.ม."],["G08","งานผิวไหล่ทาง ASPHALT CONCRETE SHOULDER WEARING","ตร.ม."],["G09","งาน AC. ปรับระดับ ASPHALT CONCRETE LEVELLING COURSE","ตัน"],["G10","งานรองพื้นทาง ASPHALT CONCRETE BINDER COURSE บน PRIME COAT (หิน Basalt)","ตร.ม."],["G11","งานแอสฟัลต์ชั้นผิวทาง ASPHALT CONCRETE WEARING COURSE บน TACK COAT (หิน Basalt)","ตร.ม."],["G12","งานรองพื้นทาง ASPHALT CONCRETE BINDER COURSE บน PRIME COAT (หิน Limestone)","ตร.ม."],["G13","งานแอสฟัลต์ชั้นผิวทาง ASPHALT CONCRETE WEARING COURSE บน TACK COAT (หิน Limestone)","ตร.ม."],["G14","งานรองพื้นทาง ASPHALT CONCRETE BINDER COURSE บน PRIME COAT (หิน Granite)","ตร.ม."],["G15","งานแอสฟัลต์ชั้นผิวทาง ASPHALT CONCRETE WEARING COURSE บนผิว TACK COAT (หิน Granite)","ตร.ม."],["G16","งานทรายหยาบ ใต้ผิวทางคอนกรีต SAND CUSHION UNDER CONCRETE PAVEMENT","ลบ.ม."],["G17","งานหินคลุก ใต้ผิวทาง CRUSH ROCK SOIL AGGREGATE UNDER CONCRETE PAVEMENT","ลบ.ม."],["G18","งานผิวทางคอนกรีต PORTLAND CEMENT CONCRETE PAVEMENT 15 CM.THICK","ตร.ม."],["G19","งานรอยต่อเผื่อขยายตามขวาง EXPANSION JOINT พื้นคอนกรีตหนา 15 ซม.","ม."],["G20","งานรอยต่อเผื่อหดตัวตามขวาง CONTRACTION JOINT พื้นคอนกรีตหนา 15 ซม.","ม."],["G21","งานรอยต่อเผื่อหดตัวตามขวาง LONGITUDINAL JOINT พื้นคอนกรีตหนา 15 ซม.","ม."],["G22","งานDUMMY JOINT พื้นคอนกรีตหนา",""],["G23","งานรอยต่อตามขอบถนนคอนกรีตกับลาดยาง EDGE JOINT","ม."],["H01","งานติดตั้ง BOX CULVERTS PRECAST SIZE 2-[1.50 x 1.50]","ม."],["H02","งานติดตั้ง BOX CULVERTS PRECAST SIZE 2-[1.50 x 1.50] VER 2","ม."],["H03","งานวางท่อระบายน้ำ DIA 0.30 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H04","งานวางท่อระบายน้ำ DIA 0.40 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H05","งานวางท่อระบายน้ำ DIA 0.50 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H06","งานวางท่อระบายน้ำ DIA 0.60 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H07","งานวางท่อระบายน้ำ DIA 0.80 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H08","งานวางท่อระบายน้ำ DIA 1.00 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H09","งานวางท่อระบายน้ำ DIA 1.20 m.  Class 2 R.C. PIPE CULVERT ","ม."],["H10","งานวางท่อระบายน้ำ DIA 0.30 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H11","งานวางท่อระบายน้ำ DIA 0.40 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H12","งานวางท่อระบายน้ำ DIA 0.50 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H13","งานวางท่อระบายน้ำ DIA 0.60 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H14","งานวางท่อระบายน้ำ DIA 0.80 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H15","งานวางท่อระบายน้ำ DIA 1.00 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H16","งานวางท่อระบายน้ำ DIA 1.20 m.  Class 3 R.C. PIPE CULVERT ","ม."],["H17","งานวางท่อระบายน้ำ คสล.ธรรมดา R.C. PIPE DIA 0.30 m.","ม."],["H18","งานวางท่อระบายน้ำ คสล.ธรรมดา R.C. PIPE DIA 0.40 m.","ม."],["H19","งานวางท่อระบายน้ำ คสล.ธรรมดา R.C. PIPE DIA 0.50 m.","ม."],["H20","R.C.MANHOLE For Dia 0.40 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H21","R.C.MANHOLE For Dia 0.40 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H22","R.C.MANHOLE For Dia 0.60 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H23","R.C.MANHOLE For Dia 0.60 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H24","R.C.MANHOLE For Dia 0.80 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H25","R.C.MANHOLE For Dia 0.80 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H26","R.C.MANHOLE For Dia 1.00 M. + ฝาบ่อพักน้ำ คสล. (แบบหน่วยงาน)","ม."],["H27","R.C.MANHOLE For Dia 1.00 M. + ฝาบ่อพักน้ำ ตะแกรงเหล็ก (แบบหน่วยงาน)","ม."],["H28","HEADWALL FOR R.C. PIPE CULVERTS (END WALL) ; PLAIN CONCRETE","ม."],["H29","HEADWALL FOR R.C. PIPE CULVERTS (END WALL) ; REINFORCED CONCRETE","ม."],["H30","CONCRETE HEADWALL FOR R.C.P. 1 - DIA 0.40-60 M. (1-HDWL) S = 2 : 1 ตามแบบหน่วยงาน","ม."],["H31","CONCRETE HEADWALL FOR R.C.P. 1 - DIA 0.80 M. (1-HDWL) S = 2 : 1 ตามแบบหน่วยงาน","ม."],["H32","รางตื้นคอนกรีตเสริมเหล็ก R.C. GUTTER R.C. GUTTER (DWG.NO.DS-407)","ม."],["H33","รางระบายน้ำด้นข้าง SIDE DITCH LINING R.C.DITCH TYPE F (DWG.DS-604)","ม."],["H34","รางระบายน้ำด้นข้าง R.C.DITCH TYPE B (DWG.DS-406)","ม."],["H35","งานขอบคันหินรางตื้น MOUNTABLE CURB AND GUTTER คันหินรางตื้น (DWG.NO.RS-508)","ม."],["H36","งานขอบคันหินรางตื้น MOUNTABLE CURB ขอบคันหินแบบรถปีนได้ (DWG.NO.RS-508)","ม."],["I01","TRANSVERSE RUMBLE STRIPS 5 mm. แถบเตือนตามขวางผิวจราจร","ม."],["I02","THERMOPLASTIC PAINT (สีขาว สีเหลือง) งานตีเส้นผิว จราจร 3 มม ","ม."],["I03","ปุ่มสะท้อนแสง 2 ด้าน ROAD STUD UNI-DIRECTION","EACH"],["I04","ปุ่มสะท้อนแสง 1 ด้าน ROAD STUD BI-DIRECTION","EACH"],["I05","CONCRETE SLAB BLOCK 40X40X4 CM. แผ่นทางเท้าคอนกรีต (DWG.NO.MD-501)","ตร.ม."],["I06","CONCRETE PAVING BLOCK (DWG.MD-801)","ม."],["I07","CURB MARKING (สีน้ำพลาสติก)","ตร.ม."],["I08","CURB MARKING (สีน้ำมัน)","ตร.ม."],["J01","งานหลักนำโค้ง GUIDE POST (DWG.NO.RS-401)","ต้น"],["J02","งานเสาป้ายจราจร โลหะ","ม."],["J03","งานเสาป้ายจราจร คสล.","ม."],["J04","งานแผ่นป้ายจราจร 1","ม."],["J05","งานแผ่นป้ายจราจร 2","ม."],["J06","งานแผ่นป้ายจราจร 3","ม."],["J07","งานแผ่นป้ายจราจร 4","ม."],["J08","งานแผ่นป้ายจราจร 5","ม."],["J09","งานแผ่นป้ายจราจร 6","ม."],["K01","งานป้ายประชาสัมพันธ์ถาวร 1","ม."],["K02","งานป้ายประชาสัมพันธ์ถาวร 2","ม."],["K03","งานเทพื้นคอนกรีตภายนอก หนา 0.10 ม. + WIRE MESH","ม."],["K04","งานเทพื้นคอนกรีตปรับระดับ","ม."],["K05","งานดินถมปรับภูมิทัศน์  (EARTH FILL LANSCAPE)","ม."],["K06","งานอื่นๆ กำหนดภายหลัง 2","ม."],["K07","งานอื่นๆ กำหนดภายหลัง 3","ม."]]};
@@ -159,11 +174,12 @@ const CATS=JOBS.cats.map(c=>({k:c[0],name:c[1],color:'#'+c[2].slice(2)}));
 const ITEMS=JOBS.items.map(x=>({code:x[0],name:x[1],unit:x[2],cat:CATS.find(c=>c.k===x[0][0].toUpperCase())}));
 const BYCODE={};ITEMS.forEach(i=>BYCODE[i.code.toUpperCase()]=i);
 const PTYPES=[['🚩','จุดเริ่มต้นโครงการ'],['🏁','จุดสิ้นสุดโครงการ'],['🌉','สะพาน / ท่อลอด'],['✚','ทางแยก'],['⚡','สาธารณูปโภค (เสาไฟ/ท่อ)'],['⚠️','ปัญหา / จุดเสี่ยง'],['📷','จุดถ่ายภาพ / อื่น ๆ']];
+const MAXPH=4;
 const KEY1='surveyfield.v1',KEY='surveyfield.lib.v2';
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const newProj=()=>({id:uid(),created:Date.now(),updated:Date.now(),proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)},rows:[newRow()],pts:[]});
-const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false});
+const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false,ph:[]});
 let LIB={cur:null,list:{}},S=null,FILTER='all';
 function loadLib(){
   try{const t=localStorage.getItem(KEY);if(t)LIB=JSON.parse(t)}catch(e){}
@@ -172,9 +188,33 @@ function loadLib(){
     try{const o=localStorage.getItem(KEY1);if(o){const d=JSON.parse(o);const p=newProj();p.proj={...p.proj,...(d.proj||{})};p.rows=(d.rows||[]).map(r=>({...newRow(),...r}));if(!p.rows.length)p.rows=[newRow()];LIB.list[p.id]=p;LIB.cur=p.id}}catch(e){}
   }
   if(!LIB.cur||!LIB.list[LIB.cur]){const ks=Object.keys(LIB.list);if(ks.length)LIB.cur=ks.sort((a,b)=>LIB.list[b].updated-LIB.list[a].updated)[0];else{const p=newProj();LIB.list[p.id]=p;LIB.cur=p.id}}
-  S=LIB.list[LIB.cur];S.pts=S.pts||[];S.rows=S.rows.map(r=>({...newRow(),...r}))
+  S=LIB.list[LIB.cur];S.pts=(S.pts||[]).map(x=>({ph:[],...x}));S.rows=S.rows.map(r=>({...newRow(),...r}))
 }
 let tmr;function save(now){clearTimeout(tmr);const f=()=>{try{S.updated=Date.now();LIB.list[S.id]=S;LIB.cur=S.id;localStorage.setItem(KEY,JSON.stringify(LIB));$('saved').textContent='บันทึกแล้ว '+new Date().toLocaleTimeString('th-TH')}catch(e){$('saved').textContent='⚠ บันทึกในเครื่องไม่ได้ — ใช้ปุ่มสำรองข้อมูล'}};now?f():tmr=setTimeout(f,300)}
+// ---- photos (IndexedDB) ----
+let _db;const dbp=()=>_db||(_db=new Promise((res,rej)=>{if(!window.indexedDB)return rej(new Error('เบราว์เซอร์นี้เก็บรูปไม่ได้'));const q=indexedDB.open('surveyfield-photos',1);q.onupgradeneeded=()=>q.result.createObjectStore('p',{keyPath:'id'});q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
+async function pPut(rec){const d=await dbp();return new Promise((res,rej)=>{const t=d.transaction('p','readwrite');t.objectStore('p').put(rec);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+async function pGet(id){const d=await dbp();return new Promise((res,rej)=>{const q=d.transaction('p').objectStore('p').get(id);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+async function pDel(id){delete URLC[id];try{const d=await dbp();return new Promise(res=>{const t=d.transaction('p','readwrite');t.objectStore('p').delete(id);t.oncomplete=res;t.onerror=res})}catch(e){}}
+const URLC={};
+async function pURL(id){if(URLC[id])return URLC[id];try{const r=await pGet(id);if(!r)return'';return URLC[id]=URL.createObjectURL(r.blob)}catch(e){return''}}
+const photoIds=p=>[...p.rows.flatMap(r=>r.ph||[]),...(p.pts||[]).flatMap(x=>x.ph||[])];
+async function resizeImg(file){let bmp;try{bmp=await createImageBitmap(file)}catch(e){bmp=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(file)})}
+  const W=bmp.width||bmp.naturalWidth,H=bmp.height||bmp.naturalHeight,s=Math.min(1,1280/Math.max(W,H)),w=Math.round(W*s),h=Math.round(H*s);
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(bmp,0,0,w,h);
+  return new Promise(r=>cv.toBlob(b=>r(b),'image/jpeg',.72))}
+function blobToData(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}
+let LBCUR=null;
+function buildStrip(o,onChange){o.ph=o.ph||[];const wrap=document.createElement('div');wrap.className='phs';
+  function draw(){const n=o.ph.length;
+    wrap.innerHTML=`<label>รูปภาพ (${n}/${MAXPH})</label><div class="thumbs"></div>`+(n<MAXPH?`<div class="bar" style="margin:2px 0"><label class="b amber sm">📷 ถ่ายรูป<input type="file" accept="image/*" capture="environment" hidden data-cam></label><label class="b ghost sm">🖼 เลือกรูป<input type="file" accept="image/*" multiple hidden data-gal></label></div>`:'');
+    const th=wrap.querySelector('.thumbs');
+    o.ph.forEach(id=>{const im=document.createElement('img');im.alt='รูป';pURL(id).then(u=>{if(u)im.src=u});im.onclick=()=>openLb(o,id,()=>{draw();onChange&&onChange()});th.appendChild(im)});
+    wrap.querySelectorAll('input[type=file]').forEach(inp=>inp.onchange=async()=>{const fs=[...inp.files];inp.value='';if(!fs.length)return;
+      const room=MAXPH-o.ph.length;if(fs.length>room)alert('แนบได้สูงสุด '+MAXPH+' รูป — จะใช้ '+room+' รูปแรก');
+      try{for(const f of fs.slice(0,room)){const b=await resizeImg(f);const id=uid();await pPut({id,blob:b,t:Date.now(),pid:S.id});o.ph.push(id);save();draw()}onChange&&onChange()}catch(e){alert('บันทึกรูปไม่สำเร็จ: '+(e&&e.message||e))}})}
+  draw();return wrap}
+async function openLb(o,id,after){LBCUR={o,id,after};$('lbImg').src=await pURL(id);$('lb').classList.add('on')}
 // ---- STA / numbers ----
 function parseSta(v){v=String(v==null?'':v).trim();if(!v)return null;if(/^-?\d+(\.\d+)?$/.test(v))return +v;const m=v.match(/^(\d+)\s*\+\s*(\d+(\.\d+)?)$/);return m?(+m[1])*1000+ +m[2]:null}
 function fmtSta(m){if(m==null||isNaN(m))return'';const k=Math.floor(m/1000),r=m-k*1000;return k+'+'+(r<100?(r<10?'00':'0'):'')+(Math.round(r*100)/100)}
@@ -201,7 +241,7 @@ function utm(lat,lon){const a=6378137,f=1/298.257223563,k0=.9996,e2=f*(2-f),ep2=
 const utmTxt=ll=>{if(!ll)return'';const u=utm(ll.lat,ll.lon);return`UTM ${u.zone}N  E ${Math.round(u.e)}  N ${Math.round(u.n)}`};
 function getPos(){return new Promise((res,rej)=>{if(!navigator.geolocation)return rej(new Error('เครื่องนี้ไม่รองรับ GPS'));navigator.geolocation.getCurrentPosition(p=>res(p),e=>rej(new Error(e.code===1?'ไม่ได้รับอนุญาตใช้ตำแหน่ง — เปิดสิทธิ์ Location ให้เบราว์เซอร์':e.code===3?'หาตำแหน่งไม่ทัน ลองใหม่ในที่โล่ง':'หาตำแหน่งไม่ได้')),{enableHighAccuracy:true,timeout:25000,maximumAge:0})})}
 // ---- issues ----
-function isBlank(r){return!(r.sta1||r.sta2||r.code||r.w||r.l||r.d||r.m1||r.m2||r.L||r.C||r.R||r.note||r.g1||r.g2)}
+function isBlank(r){return!((r.ph&&r.ph.length)||r.sta1||r.sta2||r.code||r.w||r.l||r.d||r.m1||r.m2||r.L||r.C||r.R||r.note||r.g1||r.g2)}
 function issues(r){if(isBlank(r))return[];const o=[],c=calc(r);
   if(!r.code)o.push('ยังไม่เลือกรหัสงาน');else if(!BYCODE[r.code.toUpperCase()])o.push('ไม่พบรหัสงาน');
   if(c.a==null)o.push('ไม่มี STA');
@@ -235,6 +275,7 @@ function renderRows(){
      <div class="wide gps"><div><label>พิกัดจุดเริ่ม (lat, lon)</label><input data-f="g1" placeholder="13.7563, 100.5018" inputmode="decimal"></div><button class="b amber sm" data-gps="1">📍</button></div>
      <div class="wide gps"><div><label>พิกัดจุดสิ้นสุด (lat, lon)</label><input data-f="g2" placeholder="ไม่บังคับ" inputmode="decimal"></div><button class="b amber sm" data-gps="2">📍</button></div>
      <div class="full mute" data-utm></div>
+     <div class="full" data-ph></div>
     </div>`;
     box.appendChild(el);
     el.querySelectorAll('[data-f]').forEach(inp=>{
@@ -243,12 +284,13 @@ function renderRows(){
       else{inp.value=r[f]||'';inp.oninput=()=>{r[f]=inp.value;if(f==='code')showSug(el,r,inp);save();update(el,r)};
         if(f==='code'){inp.onfocus=()=>{if(inp.value&&!BYCODE[inp.value.toUpperCase()])showSug(el,r,inp)};inp.onblur=()=>setTimeout(()=>{el.querySelector('.sug').hidden=true},180);inp.onkeydown=e=>sugKey(e,el,r,inp)}}
     });
-    el.querySelector('[data-del]').onclick=()=>{if(!isBlank(r)&&!confirm('ลบรายการที่ '+(i+1)+' ?'))return;S.rows.splice(i,1);if(!S.rows.length)S.rows.push(newRow());save();renderRows();refresh()};
-    el.querySelector('[data-dup]').onclick=()=>{S.rows.splice(i+1,0,{...r,a1:'',a2:''});save();renderRows();refresh()};
+    el.querySelector('[data-del]').onclick=()=>{if(!isBlank(r)&&!confirm('ลบรายการที่ '+(i+1)+' ?'))return;(r.ph||[]).forEach(pDel);S.rows.splice(i,1);if(!S.rows.length)S.rows.push(newRow());save();renderRows();refresh()};
+    el.querySelector('[data-dup]').onclick=()=>{S.rows.splice(i+1,0,{...r,a1:'',a2:'',ph:[]});save();renderRows();refresh()};
     el.querySelector('[data-flag]').onclick=()=>{r.flag=!r.flag;save();update(el,r)};
     el.querySelectorAll('[data-gps]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.gps,old=bt.textContent;bt.textContent='…';bt.disabled=true;
       try{const p=await getPos();r['g'+k]=fmtLL(p.coords.latitude,p.coords.longitude);r['a'+k]=Math.round(p.coords.accuracy);el.querySelector(`[data-f=g${k}]`).value=r['g'+k];save();update(el,r)}catch(e){alert(e.message)}
       bt.textContent=old;bt.disabled=false});
+    el.querySelector('[data-ph]').appendChild(buildStrip(r,()=>{}));
     update(el,r,true);
   });
   if(!shown)box.innerHTML='<div class="card mute">ไม่มีรายการตามตัวกรองนี้</div>';
@@ -336,26 +378,48 @@ function initMap(){
   MAP.on('click',e=>{const ll=e.latlng;L.popup().setLatLng(ll).setContent(`<div style="font-size:13px">${fmtLL(ll.lat,ll.lng)}<br><button id="mkPt" style="margin-top:6px;padding:4px 8px">＋ เพิ่มจุดสำคัญที่นี่</button></div>`).openOn(MAP);
     setTimeout(()=>{const b=document.getElementById('mkPt');if(b)b.onclick=()=>{addPoint(fmtLL(ll.lat,ll.lng));MAP.closePopup()}},0)});
 }
-function renderMap(fit){
+async function renderMap(fit){
   if(!window.L){$('map').innerHTML='<div class="mute" style="padding:20px">โหลดแผนที่ไม่ได้ — ต้องต่ออินเทอร์เน็ต (ข้อมูลพิกัดยังบันทึกและส่งออกได้ตามปกติ)</div>';renderPts();return}
-  initMap();MAP.invalidateSize();MLAYER.clearLayers();const bs=[];
+  initMap();MAP.invalidateSize();
+  await Promise.all(photoIds(S).map(pURL));
+  const phh=o=>(o.ph||[]).length?'<div>'+o.ph.map(id=>URLC[id]?`<img src="${URLC[id]}" style="width:64px;height:64px;object-fit:cover;border-radius:4px;margin:2px 2px 0 0">`:'').join('')+'</div>':'';
+  MLAYER.clearLayers();const bs=[];
   S.rows.forEach((r,i)=>{const g1=parseLL(r.g1),g2=parseLL(r.g2);if(!g1&&!g2)return;const it=BYCODE[(r.code||'').toUpperCase()],col=it?it.cat.color:'#e08e0b',c=calc(r);
-    const info=`<b>${i+1}. ${esc(r.code||'(ยังไม่ระบุรหัส)')}</b><br>${esc(it?it.name:'')}<br>STA ${fmtSta(c.a)}${r.sta2?' – '+fmtSta(c.b):''}${c.qty?`<br>ปริมาณ ${nf(c.qty)} ${esc(it?it.unit:'')}`:''}${r.note?'<br>'+esc(r.note):''}${r.flag?'<br>⚑ ตรวจสอบภายหลัง':''}`;
+    const info=`<b>${i+1}. ${esc(r.code||'(ยังไม่ระบุรหัส)')}</b><br>${esc(it?it.name:'')}<br>STA ${fmtSta(c.a)}${r.sta2?' – '+fmtSta(c.b):''}${c.qty?`<br>ปริมาณ ${nf(c.qty)} ${esc(it?it.unit:'')}`:''}${r.note?'<br>'+esc(r.note):''}${r.flag?'<br>⚑ ตรวจสอบภายหลัง':''}${phh(r)}`;
     if(g1&&g2)L.polyline([[g1.lat,g1.lon],[g2.lat,g2.lon]],{color:col,weight:5,opacity:.8}).bindPopup(info).addTo(MLAYER);
     [[g1,'เริ่ม'],[g2,'สิ้นสุด']].forEach(([g,t])=>{if(!g)return;bs.push([g.lat,g.lon]);L.circleMarker([g.lat,g.lon],{radius:9,color:'#fff',weight:2,fillColor:col,fillOpacity:1}).bindPopup(info+`<br><i>จุด${t}</i><br>${utmTxt(g)}`).addTo(MLAYER)})});
-  S.pts.forEach(p=>{const g=parseLL(p.ll);if(!g)return;bs.push([g.lat,g.lon]);L.marker([g.lat,g.lon],{icon:pointIcon(p)}).bindPopup(`<b>${esc(p.name||p.type)}</b><br>${esc(p.type)}<br>${esc(p.note||'')}<br>${utmTxt(g)}`).addTo(MLAYER)});
+  S.pts.forEach(p=>{const g=parseLL(p.ll);if(!g)return;bs.push([g.lat,g.lon]);L.marker([g.lat,g.lon],{icon:pointIcon(p)}).bindPopup(`<b>${esc(p.name||p.type)}</b><br>${esc(p.type)}<br>${esc(p.note||'')}<br>${utmTxt(g)}${phh(p)}`).addTo(MLAYER)});
   if(fit&&bs.length)MAP.fitBounds(bs,{padding:[40,40],maxZoom:18});
   renderPts();
 }
 function renderPts(){
   const box=$('pts');box.innerHTML='';
   S.pts.forEach((p,i)=>{const d=document.createElement('div');d.className='pt';
-    d.innerHTML=`<div><label>ชื่อจุด</label><input data-k="name"></div><div><label>ประเภท</label><select data-k="type">${PTYPES.map(t=>`<option>${t[1]}</option>`).join('')}</select></div><div><label>พิกัด (lat, lon)</label><input data-k="ll"></div><div><label>หมายเหตุ</label><input data-k="note"></div><div><button class="b red sm" data-x>✕</button></div>`;
+    d.innerHTML=`<div><label>ชื่อจุด</label><input data-k="name"></div><div><label>ประเภท</label><select data-k="type">${PTYPES.map(t=>`<option>${t[1]}</option>`).join('')}</select></div><div><label>พิกัด (lat, lon)</label><input data-k="ll"></div><div><label>หมายเหตุ</label><input data-k="note"></div><div><button class="b red sm" data-x>✕</button></div><div style="grid-column:1/-1" data-ph></div>`;
     d.querySelectorAll('[data-k]').forEach(el=>{el.value=p[el.dataset.k]||(el.dataset.k==='type'?PTYPES[6][1]:'');el.onchange=el.oninput=()=>{p[el.dataset.k]=el.value;save()};if(el.dataset.k==='type')el.onchange=()=>{p.type=el.value;save();renderMap()}});
-    d.querySelector('[data-x]').onclick=()=>{if(confirm('ลบจุดนี้?')){S.pts.splice(i,1);save();renderMap()}};box.appendChild(d)});
+    d.querySelector('[data-ph]').appendChild(buildStrip(p,()=>renderMap()));
+    d.querySelector('[data-x]').onclick=()=>{if(confirm('ลบจุดนี้?')){(p.ph||[]).forEach(pDel);S.pts.splice(i,1);save();renderMap()}};box.appendChild(d)});
   $('ptsEmpty').textContent=S.pts.length?'':'ยังไม่มีจุดสำคัญ — แตะแผนที่เพื่อเพิ่ม หรือกด "จุดสำคัญที่ตำแหน่งฉัน"';
 }
-function addPoint(ll){S.pts.push({id:uid(),name:'',type:PTYPES[6][1],ll:ll||'',note:'',t:Date.now()});save();renderMap();const ins=$('pts').querySelectorAll('.pt');if(ins.length)ins[ins.length-1].querySelector('input').focus()}
+function addPoint(ll){S.pts.push({id:uid(),name:'',type:PTYPES[6][1],ll:ll||'',note:'',t:Date.now(),ph:[]});save();renderMap();const ins=$('pts').querySelectorAll('.pt');if(ins.length)ins[ins.length-1].querySelector('input').focus()}
+// ---- photo report / zip ----
+function photoItems(){const o=[];
+  S.rows.forEach((r,i)=>{if(!(r.ph||[]).length)return;const it=BYCODE[(r.code||'').toUpperCase()],c=calc(r);
+    o.push({ph:r.ph,file:`${String(i+1).padStart(2,'0')}_${r.code||'noCode'}${c.a!=null?'_STA'+fmtSta(c.a):''}`,title:`รายการที่ ${i+1}: ${r.code||'(ยังไม่ระบุรหัส)'} ${it?it.name:''}`,sub:[c.a!=null?'STA '+fmtSta(c.a)+(r.sta2?' – '+fmtSta(c.b):''):'',r.g1?'พิกัด '+r.g1:'',r.note].filter(Boolean).join(' · '),code:r.code||'',sta:c.a!=null?fmtSta(c.a):'',ll:r.g1||'',note:r.note||''})});
+  S.pts.forEach((p,i)=>{if(!(p.ph||[]).length)return;o.push({ph:p.ph,file:`PT${String(i+1).padStart(2,'0')}_${p.name||p.type}`,title:`จุดสำคัญ ${i+1}: ${p.name||p.type}`,sub:[p.type,p.ll?'พิกัด '+p.ll:'',p.note].filter(Boolean).join(' · '),code:'',sta:'',ll:p.ll||'',note:(p.type||'')+' '+(p.note||'')})});
+  return o}
+async function renderPhotos(){const box=$('photoRep'),its=photoItems();
+  if(!its.length){box.innerHTML='<div class="card mute">ยังไม่มีรูปภาพ — แนบรูปได้ที่ตารางสำรวจหรือจุดสำคัญ</div>';return}
+  const urls={};await Promise.all(its.flatMap(x=>x.ph).map(async id=>urls[id]=await pURL(id)));
+  box.innerHTML=`<div class="card"><h3 style="margin:0">รายงานรูปภาพ — ${esc(S.proj.name||'โครงการ')}</h3><div class="mute">${esc([S.proj.route,S.proj.agency,S.proj.who,S.proj.date].filter(Boolean).join(' · '))}</div></div>`+its.map(x=>`<div class="card rep"><b>${esc(x.title)}</b><div class="mute">${esc(x.sub)}</div><div class="imgs">${x.ph.map(id=>`<img src="${urls[id]||''}" alt="">`).join('')}</div></div>`).join('')}
+const safe=s=>String(s).replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40);
+async function zipAll(){const its=photoItems();if(!its.length){alert('ยังไม่มีรูปภาพ');return}
+  if(!window.JSZip){alert('โหลดตัวสร้างไฟล์ zip ไม่ได้ (ต้องต่ออินเทอร์เน็ต)');return}
+  const z=new JSZip(),rows=['ไฟล์,รหัสงาน,STA,พิกัด,หมายเหตุ'],q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  for(const x of its){for(let k=0;k<x.ph.length;k++){const r=await pGet(x.ph[k]);if(!r)continue;const fn=safe(x.file)+'_'+(k+1)+'.jpg';z.file(fn,r.blob);rows.push([q(fn),q(x.code),q(x.sta),q(x.ll),q(x.note)].join(','))}}
+  z.file('index.csv','﻿'+rows.join('\r\n'));
+  dl(await z.generateAsync({type:'blob'}),fname()+'_photos.zip')}
+async function storeInfo(){try{const e=await navigator.storage.estimate();$('storeInfo').textContent=`พื้นที่เก็บในเครื่อง: ใช้ ${(e.usage/1048576).toFixed(1)} MB จาก ${(e.quota/1048576).toFixed(0)} MB · รูปทั้งหมดในเครื่อง ${Object.values(LIB.list).reduce((a,p)=>a+photoIds(p).length,0)} รูป`}catch(x){}}
 // ---- info / refresh ----
 function refresh(light){
   const as=S.rows.map(r=>calc(r)).filter(c=>c.a!=null);
@@ -373,15 +437,15 @@ function xlsx(){
   if(!window.XLSX){alert('โหลดตัวสร้างไฟล์ Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ต) — ใช้ปุ่ม CSV แทนได้');return}
   const wb=XLSX.utils.book_new();
   const a=[['ตารางบันทึกข้อมูลการสำรวจภาคสนามและการคิดปริมาณงาน'],['โครงการ',S.proj.name,'','สายทาง/ตอน',S.proj.route],['หน่วยงาน/สถานที่',S.proj.agency,'','ผู้สำรวจ',S.proj.who,'วันที่',S.proj.date],[],
-   ['ลำดับ','STA เริ่มต้น','STA สิ้นสุด','ระยะทาง (ม.)','รหัสงาน','ชื่อรายการงาน','กว้าง','ยาว/จำนวน','ลึก/หนา','ตัวคูณ 1','ตัวคูณ 2','ปริมาณงาน','หน่วย','LEFT','CENTER','RIGHT','หมายเหตุ','Lat เริ่ม','Lon เริ่ม','Lat สิ้นสุด','Lon สิ้นสุด','UTM โซน','E เริ่ม','N เริ่ม','ติดธงตรวจสอบ']];
+   ['ลำดับ','STA เริ่มต้น','STA สิ้นสุด','ระยะทาง (ม.)','รหัสงาน','ชื่อรายการงาน','กว้าง','ยาว/จำนวน','ลึก/หนา','ตัวคูณ 1','ตัวคูณ 2','ปริมาณงาน','หน่วย','LEFT','CENTER','RIGHT','หมายเหตุ','Lat เริ่ม','Lon เริ่ม','Lat สิ้นสุด','Lon สิ้นสุด','UTM โซน','E เริ่ม','N เริ่ม','ติดธงตรวจสอบ','จำนวนรูป']];
   S.rows.forEach((r,i)=>{if(isBlank(r))return;const c=calc(r),it=BYCODE[(r.code||'').toUpperCase()],g1=parseLL(r.g1),g2=parseLL(r.g2),u=g1?utm(g1.lat,g1.lon):null;
-    a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',num(r.m1)??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',r.note,g1?g1.lat:'',g1?g1.lon:'',g2?g2.lat:'',g2?g2.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',r.flag?'⚑':''])});
+    a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',num(r.m1)??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',r.note,g1?g1.lat:'',g1?g1.lon:'',g2?g2.lat:'',g2?g2.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',r.flag?'⚑':'',(r.ph||[]).length||''])});
   const ws1=XLSX.utils.aoa_to_sheet(a);ws1['!cols']=[6,11,11,11,9,50,8,10,8,8,8,12,9,6,8,7,24,11,11,11,11,8,10,11,8].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws1,'Survey Field');
   const s=summary();const b=[['สรุปปริมาณงานก่อสร้าง (BOQ Summary)'],[],['ลำดับ','รหัสงาน','ชื่อรายการงาน','ปริมาณงานรวม','หน่วย','หมวดงาน','จำนวนที่สำรวจ','ช่วง STA']];
   s.forEach((o,i)=>b.push([i+1,o.code,o.name,Math.round(o.qty*1e4)/1e4,o.unit,o.cat?o.cat.name:'',o.n,o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max)]));
   const ws2=XLSX.utils.aoa_to_sheet(b);ws2['!cols']=[6,9,60,14,9,26,12,18].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws2,'Summary BOQ');
-  const p=[['จุดสำคัญ'],[],['ลำดับ','ชื่อจุด','ประเภท','Lat','Lon','UTM โซน','E','N','หมายเหตุ']];
-  S.pts.forEach((x,i)=>{const g=parseLL(x.ll),u=g?utm(g.lat,g.lon):null;p.push([i+1,x.name,x.type,g?g.lat:'',g?g.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',x.note])});
+  const p=[['จุดสำคัญ'],[],['ลำดับ','ชื่อจุด','ประเภท','Lat','Lon','UTM โซน','E','N','หมายเหตุ','จำนวนรูป']];
+  S.pts.forEach((x,i)=>{const g=parseLL(x.ll),u=g?utm(g.lat,g.lon):null;p.push([i+1,x.name,x.type,g?g.lat:'',g?g.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',x.note,(x.ph||[]).length||''])});
   const ws3=XLSX.utils.aoa_to_sheet(p);ws3['!cols']=[6,26,26,11,11,8,10,11,30].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws3,'จุดสำคัญ');
   XLSX.writeFile(wb,fname()+'.xlsx');
 }
@@ -417,23 +481,25 @@ function renderLib(){
   if(!arr.length)box.innerHTML='<div class="mute">ไม่พบโครงการ</div>';
   arr.forEach(p=>{const d=document.createElement('div');d.className='pj'+(p.id===S.id?' cur':'');
     const n=p.rows.filter(r=>!isBlank(r)).length,inc=p.rows.filter(incomplete).length;
-    d.innerHTML=`<h4>${esc(p.proj.name||'(ไม่มีชื่อโครงการ)')} ${p.id===S.id?'<span class="mute">· กำลังเปิดอยู่</span>':''}</h4><div class="mute">${esc([p.proj.route,p.proj.agency].filter(Boolean).join(' · '))}</div><div class="mute">ผู้สำรวจ ${esc(p.proj.who||'-')} · วันที่ ${esc(p.proj.date||'-')} · ${n} รายการ${inc?` · <span class="warn">ยังไม่ครบ ${inc}</span>`:''} · ${(p.pts||[]).length} จุดสำคัญ · แก้ไขล่าสุด ${new Date(p.updated).toLocaleString('th-TH')}</div>
+    d.innerHTML=`<h4>${esc(p.proj.name||'(ไม่มีชื่อโครงการ)')} ${p.id===S.id?'<span class="mute">· กำลังเปิดอยู่</span>':''}</h4><div class="mute">${esc([p.proj.route,p.proj.agency].filter(Boolean).join(' · '))}</div><div class="mute">ผู้สำรวจ ${esc(p.proj.who||'-')} · วันที่ ${esc(p.proj.date||'-')} · ${n} รายการ${inc?` · <span class="warn">ยังไม่ครบ ${inc}</span>`:''} · ${(p.pts||[]).length} จุดสำคัญ · ${photoIds(p).length} รูป · แก้ไขล่าสุด ${new Date(p.updated).toLocaleString('th-TH')}</div>
     <div class="bar"><button class="b sm" data-o>เปิด</button><button class="b ghost sm" data-c>ทำซ้ำ</button><button class="b red sm" data-d>ลบ</button></div>`;
     d.querySelector('[data-o]').onclick=()=>openProj(p.id);
-    d.querySelector('[data-c]').onclick=()=>{const c=JSON.parse(JSON.stringify(p));c.id=uid();c.created=c.updated=Date.now();c.proj.name=(c.proj.name||'โครงการ')+' (สำเนา)';LIB.list[c.id]=c;save(true);renderLib()};
-    d.querySelector('[data-d]').onclick=()=>{if(!confirm('ลบโครงการ "'+(p.proj.name||'ไม่มีชื่อ')+'" ถาวร? (ควรสำรองไฟล์ก่อน)'))return;delete LIB.list[p.id];
+    d.querySelector('[data-c]').onclick=async()=>{const c=JSON.parse(JSON.stringify(p));c.id=uid();c.created=c.updated=Date.now();c.proj.name=(c.proj.name||'โครงการ')+' (สำเนา)';
+      for(const o of [...c.rows,...c.pts]){const nw=[];for(const id of(o.ph||[])){const r=await pGet(id);if(r){const n=uid();await pPut({...r,id:n});nw.push(n)}}o.ph=nw}
+      LIB.list[c.id]=c;save(true);renderLib()};
+    d.querySelector('[data-d]').onclick=()=>{if(!confirm('ลบโครงการ "'+(p.proj.name||'ไม่มีชื่อ')+'" ถาวร? (ควรสำรองไฟล์ก่อน)'))return;photoIds(p).forEach(pDel);delete LIB.list[p.id];
       if(p.id===S.id){const ks=Object.keys(LIB.list);if(ks.length)openProj(ks[0],true);else{const n=newProj();LIB.list[n.id]=n;openProj(n.id,true)}}else{save(true)}renderLib()};
     box.appendChild(d)})}
 function openProj(id,keep){S=LIB.list[id];S.pts=S.pts||[];S.rows=S.rows.length?S.rows:[newRow()];LIB.cur=id;save(true);fillProj();renderRows();refresh();if(!keep)$('lib').classList.remove('on');else renderLib();if(document.querySelector('.tab.on').id==='t5')renderMap(true)}
-function importFile(f){f.text().then(t=>{try{const d=JSON.parse(t);let ps=[];
+function importFile(f){f.text().then(async t=>{try{const d=JSON.parse(t);let ps=[];if(d.photos){for(const[id,du]of Object.entries(d.photos)){try{const b=await(await fetch(du)).blob();await pPut({id,blob:b,t:Date.now()})}catch(e){}}}
   if(d.list&&typeof d.list==='object')ps=Object.values(d.list);else if(d.rows)ps=[d.id?d:{...d,id:uid(),proj:d.proj||{}}];else throw 0;
-  let last=null;ps.forEach(p=>{p.proj=p.proj||{};p.rows=(p.rows||[]).map(r=>({...newRow(),...r}));if(!p.rows.length)p.rows=[newRow()];p.pts=p.pts||[];p.id=p.id||uid();p.updated=p.updated||Date.now();p.created=p.created||p.updated;
+  let last=null;ps.forEach(p=>{p.proj=p.proj||{};p.rows=(p.rows||[]).map(r=>({...newRow(),...r}));if(!p.rows.length)p.rows=[newRow()];p.pts=(p.pts||[]).map(x=>({ph:[],...x}));p.id=p.id||uid();p.updated=p.updated||Date.now();p.created=p.created||p.updated;
     if(LIB.list[p.id]&&!confirm('มีโครงการ "'+(LIB.list[p.id].proj.name||'')+'" อยู่แล้ว — แทนที่ด้วยไฟล์นี้? (ยกเลิก = เก็บเป็นสำเนาใหม่)')){p.id=uid();p.proj.name=(p.proj.name||'โครงการ')+' (นำเข้า)'}
     LIB.list[p.id]=p;last=p.id});
   if(last){openProj(last);alert('นำเข้าแล้ว '+ps.length+' โครงการ')}}catch(e){alert('ไฟล์ไม่ถูกต้อง')}})}
 function fillProj(){[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
 // ---- wiring ----
-function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t5')setTimeout(()=>renderMap(true),30)}
+async function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t5')setTimeout(()=>renderMap(true),30);if(t==='t6')renderPhotos();if(t==='t4')storeInfo()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
 [['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>{$(id).oninput=()=>{S.proj[k]=$(id).value;save();$('curName').textContent=S.proj.name||'(โครงการไม่มีชื่อ)'}});
 const addRow=()=>{S.rows.push(newRow());save();FILTER='all';$('flt').value='all';renderRows();refresh();const l=$('rows').lastElementChild;l&&l.querySelector('[data-f=sta1]').focus()};
@@ -443,12 +509,13 @@ $('quick').onclick=async()=>{const b=$('quick');b.disabled=true;const old=b.text
   try{const p=await getPos();const r=newRow();r.g1=fmtLL(p.coords.latitude,p.coords.longitude);r.a1=Math.round(p.coords.accuracy);r.flag=true;r.note='จุดด่วน '+new Date().toLocaleTimeString('th-TH')+' — กรอกรายละเอียดภายหลัง';
     const last=S.rows[S.rows.length-1];if(last&&isBlank(last))S.rows.pop();S.rows.push(r);save(true);FILTER='all';$('flt').value='all';renderRows();refresh();const l=$('rows').lastElementChild;l&&l.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){alert(e.message)}
   b.textContent=old;b.disabled=false};
-$('clearAll').onclick=()=>{if(confirm('ล้างรายการสำรวจทั้งหมดของโครงการนี้? (ข้อมูลโครงการและจุดสำคัญไม่ถูกล้าง)')){S.rows=[newRow()];save();renderRows();refresh()}};
+$('clearAll').onclick=()=>{if(confirm('ล้างรายการสำรวจทั้งหมดของโครงการนี้ รวมรูปในรายการ? (ข้อมูลโครงการและจุดสำคัญไม่ถูกล้าง)')){S.rows.forEach(r=>(r.ph||[]).forEach(pDel));S.rows=[newRow()];save();renderRows();refresh()}};
 $('sample').onclick=()=>{if(S.rows.some(r=>!isBlank(r))&&!confirm('เพิ่มข้อมูลตัวอย่างต่อท้ายรายการเดิม?'))return;S.rows=S.rows.filter(r=>!isBlank(r));
   [['0','500','B01','12','','','C'],['100','350','B04','','','1.5','L'],['0','500','F02','7','','0.2','C'],['0','500','G11','7','','','R'],['50','100','H06','','','','L']].forEach(x=>S.rows.push({...newRow(),sta1:x[0],sta2:x[1],code:x[2],w:x[3],l:x[4],d:x[5],[x[6]]:true}));save();renderRows();refresh()};
 $('xlsxBtn').onclick=xlsx;$('csvBtn').onclick=csv;$('pngBtn').onclick=png;$('kmlBtn').onclick=kml;$('gjBtn').onclick=geojson;
-$('jsonOut').onclick=()=>dl(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}),fname()+'.json');
-$('libOut').onclick=()=>dl(new Blob([JSON.stringify(LIB,null,1)],{type:'application/json'}),'SurveyField_ALL_'+new Date().toISOString().slice(0,10)+'.json');
+async function photoMap(ids){const m={};for(const id of ids){const r=await pGet(id);if(r)m[id]=await blobToData(r.blob)}return m}
+$('jsonOut').onclick=async()=>{const b=$('jsonOut');b.disabled=true;try{const o={...S,photos:await photoMap(photoIds(S))};dl(new Blob([JSON.stringify(o)],{type:'application/json'}),fname()+'.json')}catch(e){alert('ส่งออกไม่สำเร็จ: '+e.message)}b.disabled=false};
+$('libOut').onclick=async()=>{const b=$('libOut');b.disabled=true;try{const ids=Object.values(LIB.list).flatMap(photoIds);dl(new Blob([JSON.stringify({...LIB,photos:await photoMap(ids)})],{type:'application/json'}),'SurveyField_ALL_'+new Date().toISOString().slice(0,10)+'.json')}catch(e){alert('ส่งออกไม่สำเร็จ: '+e.message)}b.disabled=false};
 $('jsonIn').onchange=e=>{if(e.target.files[0])importFile(e.target.files[0]);e.target.value=''};
 $('jsonIn2').onchange=e=>{if(e.target.files[0])importFile(e.target.files[0]);e.target.value=''};
 $('openLib').onclick=()=>{$('libQ').value='';renderLib();$('lib').classList.add('on')};
@@ -456,10 +523,15 @@ $('libClose').onclick=()=>$('lib').classList.remove('on');
 $('lib').onclick=e=>{if(e.target===$('lib'))$('lib').classList.remove('on')};
 $('libQ').oninput=renderLib;
 $('newProj').onclick=()=>{const p=newProj();LIB.list[p.id]=p;openProj(p.id);$('p_name').focus()};
+$('zipBtn').onclick=zipAll;
+$('lbClose').onclick=()=>$('lb').classList.remove('on');
+$('lb').onclick=e=>{if(e.target===$('lb'))$('lb').classList.remove('on')};
+$('lbDel').onclick=async()=>{if(!LBCUR||!confirm('ลบรูปนี้?'))return;const{o,id,after}=LBCUR;o.ph=o.ph.filter(x=>x!==id);await pDel(id);save(true);$('lb').classList.remove('on');after&&after()};
 $('mFit').onclick=()=>renderMap(true);
 $('mMe').onclick=async()=>{try{const p=await getPos();if(!window.L||!MAP)return;const ll=[p.coords.latitude,p.coords.longitude];if(ME)MAP.removeLayer(ME);ME=L.circle(ll,{radius:Math.max(p.coords.accuracy,5),color:'#1a73e8',fillOpacity:.2}).addTo(MAP);MAP.setView(ll,17)}catch(e){alert(e.message)}};
 $('mAddMe').onclick=async()=>{try{const p=await getPos();addPoint(fmtLL(p.coords.latitude,p.coords.longitude))}catch(e){alert(e.message)}};
 window.addEventListener('beforeunload',()=>save(true));
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 loadLib();fillProj();renderRows();refresh();
 </script>
 </body></html>
