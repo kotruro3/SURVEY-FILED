@@ -12,7 +12,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Sarabun",system-ui,sans-serif}
 header{background:#1f4e79;color:#fff;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-header h1{font-size:17px;margin:0;font-weight:700;flex:1;min-width:150px}
+header h1{font-size:17px;margin:0;font-weight:700;flex:1;min-width:150px;display:flex;align-items:center;gap:8px;}
 header button{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer;max-width:60vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav{display:flex;gap:2px;padding:6px 12px 0;background:var(--bg);position:sticky;top:0;z-index:500;overflow-x:auto;border-bottom:1px solid var(--line)}
 nav button{border:0;background:none;color:var(--mute);padding:9px 12px;font:inherit;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
@@ -78,11 +78,30 @@ td.r,th.r{text-align:right}
 .rep .imgs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
 .rep .imgs img{width:100%;border-radius:6px;border:1px solid var(--line)}
 @media print{header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab.on{display:block!important}body{background:#fff}.card{border:0}}
+
+/* CSS สำหรับ Logo */
+.app-logo {
+  height: 28px;
+  width: auto;
+  border-radius: 4px;
+  object-fit: contain;
+  cursor: pointer;
+  background: rgba(255,255,255,0.2);
+  padding: 2px;
+}
+.app-logo:hover {
+  background: rgba(255,255,255,0.4);
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>📐 Survey Field</h1>
+  <h1>
+    <!-- จุดสำหรับคลิกอัปโหลดโลโก้ -->
+    <img id="headLogo" class="app-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E" title="คลิกเพื่อเปลี่ยนโลโก้">
+    <input type="file" id="logoUpload" accept="image/*" hidden>
+    Survey Field
+  </h1>
   <button id="openLib" title="เปิดคลังโครงการ">📂 <span id="curName">โครงการ</span></button>
   <span class="mute" id="saved" style="color:#fff;opacity:.85;font-size:12px"></span>
 </header>
@@ -182,7 +201,7 @@ const ITEMS=JOBS.items.map(x=>({code:x[0],name:x[1],unit:x[2],cat:CATS.find(c=>c
 const BYCODE={};ITEMS.forEach(i=>BYCODE[i.code.toUpperCase()]=i);
 const PTYPES=[['🚩','จุดเริ่มต้นโครงการ'],['🏁','จุดสิ้นสุดโครงการ'],['🌉','สะพาน / ท่อลอด'],['✚','ทางแยก'],['⚡','สาธารณูปโภค (เสาไฟ/ท่อ)'],['⚠️','ปัญหา / จุดเสี่ยง'],['📷','จุดถ่ายภาพ / อื่น ๆ']];
 const MAXPH=4;
-const KEY1='surveyfield.v1',KEY='surveyfield.lib.v2';
+const KEY1='surveyfield.v1',KEY='surveyfield.lib.v2', LOGO_KEY='surveyfield.logo';
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const newProj=()=>({code:'',id:uid(),created:Date.now(),updated:Date.now(),proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)},rows:[newRow()],pts:[]});
@@ -320,7 +339,7 @@ function renderRows(){
     el.querySelector('[data-del]').onclick=()=>{if(!isBlank(r)&&!confirm('ลบรายการที่ '+(i+1)+' ?'))return;(r.ph||[]).forEach(pDel);S.rows.splice(i,1);if(!S.rows.length)S.rows.push(newRow());save();renderRows();refresh()};
     el.querySelector('[data-dup]').onclick=()=>{S.rows.splice(i+1,0,{...r,a1:'',a2:'',ph:[]});save();renderRows();refresh()};
     el.querySelector('[data-flag]').onclick=()=>{r.flag=!r.flag;save();update(el,r)};
-    el.querySelectorAll('[data-gps]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.gps,old=bt.textContent;bt.textContent='…';bt.disabled=true;
+    el.querySelectorAll('[data-gps]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.gps,old=bt.textContent;bt.disabled=true;
       try{const p=await getPos();r['g'+k]=fmtLL(p.coords.latitude,p.coords.longitude);r['a'+k]=Math.round(p.coords.accuracy);el.querySelector(`[data-f=g${k}]`).value=r['g'+k];save();update(el,r)}catch(e){alert(e.message)}
       bt.textContent=old;bt.disabled=false});
     el.querySelector('[data-ph]').appendChild(buildStrip(r,()=>{}));
@@ -587,6 +606,55 @@ $('mMe').onclick=async()=>{try{const p=await getPos();if(!window.L||!MAP)return;
 $('mAddMe').onclick=async()=>{try{const p=await getPos();addPoint(fmtLL(p.coords.latitude,p.coords.longitude))}catch(e){alert(e.message)}};
 window.addEventListener('beforeunload',()=>save(true));
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+
+// ---- Logo Handling ----
+const headLogo = $('headLogo');
+const logoUpload = $('logoUpload');
+
+// โหลดโลโก้จาก localStorage ถ้ามี
+try {
+  const savedLogo = localStorage.getItem(LOGO_KEY);
+  if (savedLogo) {
+    headLogo.src = savedLogo;
+  }
+} catch (e) {}
+
+headLogo.onclick = () => logoUpload.click();
+
+logoUpload.onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  try {
+    // ย่อขนาดโลโก้ก่อนบันทึกเพื่อประหยัดพื้นที่
+    const bmp = await createImageBitmap(file);
+    const MAX_HEIGHT = 120;
+    let w = bmp.width;
+    let h = bmp.height;
+    
+    if (h > MAX_HEIGHT) {
+      w = Math.round(w * (MAX_HEIGHT / h));
+      h = MAX_HEIGHT;
+    }
+    
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = h;
+    cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    
+    const dataUrl = cv.toDataURL('image/png');
+    headLogo.src = dataUrl;
+    
+    // บันทึกโลโก้ลง localStorage ให้จำไว้เมื่อเปิดแอปครั้งหน้า
+    localStorage.setItem(LOGO_KEY, dataUrl);
+    
+  } catch (err) {
+    alert('เปลี่ยนโลโก้ไม่สำเร็จ');
+  }
+  
+  e.target.value = '';
+};
+
 loadLib();fillProj();renderRows();refresh();
 </script>
 </body></html>
