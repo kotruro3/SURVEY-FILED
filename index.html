@@ -32,6 +32,10 @@ button.b.sm{padding:4px 9px;font-size:13px}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 .row{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c,#999);border-radius:10px;padding:10px 12px;margin-bottom:10px}
 .row.flag{box-shadow:0 0 0 2px #e08e0b inset}
+.row{position:relative}.row>*:not(.bgimg){position:relative;z-index:1}
+.bgimg{position:absolute;inset:0;border-radius:inherit;background-size:cover;background-position:center right;opacity:var(--bgo,.16);pointer-events:none;-webkit-mask-image:linear-gradient(to left,#000 5%,transparent 85%);mask-image:linear-gradient(to left,#000 5%,transparent 85%)}
+.jthumb{width:64px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--line);display:block}
+tr.dropt td{background:var(--soft)!important}
 .rowtop{display:flex;gap:8px;align-items:center;margin-bottom:6px}
 .rowtop .n{font-weight:700;color:var(--mute);min-width:26px}
 .rowtop .nm{flex:1;font-size:13px;color:var(--mute)}
@@ -141,6 +145,7 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
     <button class="b amber" id="quick" title="บันทึกพิกัดตำแหน่งปัจจุบันเป็นรายการใหม่ทันที แล้วกรอกรายละเอียดทีหลัง">⚡ จุดด่วน (จับพิกัด)</button>
     <button class="b" id="add">＋ เพิ่มรายการ</button>
     <select id="flt" style="width:auto"><option value="all">แสดงทั้งหมด</option><option value="inc">เฉพาะที่ยังไม่ครบ</option><option value="flag">เฉพาะที่ติดธง ⚑</option></select>
+    <select id="bgo" style="width:auto" title="ความเข้มของภาพพื้นหลังในการ์ด"><option value="0">ภาพพื้นหลัง: ปิด</option><option value="0.12">ภาพพื้นหลัง: จาง</option><option value="0.2">ภาพพื้นหลัง: ปานกลาง</option><option value="0.32">ภาพพื้นหลัง: เข้ม</option></select>
   </div>
   <div class="mute" style="margin:0 2px 8px">STA กรอกเป็นเมตร (150 = 0+150) หรือ 0+150 · รหัสงานพิมพ์บางคำได้ เช่น <i>ท่อ 0.60</i> · ปริมาณ = กว้าง × ยาว/จำนวน × ลึก/หนา × ตัวคูณ (ไม่ใส่ "ยาว" = ใช้ระยะจาก STA) · ติดธง ⚑ ไว้ที่รายการที่ต้องกลับมาตรวจทีหลัง</div>
   <div id="rows"></div>
@@ -179,6 +184,10 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
       <label class="b ghost sm" style="margin:0;cursor:pointer">⬆ นำเข้า (รวม/อัปเดต)<input type="file" id="jobImpMerge" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
       <label class="b ghost sm" style="margin:0;cursor:pointer">⬆ นำเข้า (แทนที่ทั้งหมด)<input type="file" id="jobImpReplace" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
       <button class="b ghost sm" id="jobExp">⬇ ส่งออก CSV</button><button class="b red sm" id="jobReset">↺ กลับเป็นรายการเริ่มต้น</button></div>
+    <div class="bar">
+      <label class="b ghost sm" style="margin:0;cursor:pointer">🖼 เพิ่มรูปหลายไฟล์ (ชื่อไฟล์ = รหัสงาน เช่น B01.jpg)<input type="file" id="jobImgBulk" accept="image/*" multiple hidden></label>
+      <button class="b ghost sm" id="jobImgZip">⬇ ส่งออกชุดรูป (images.zip) เพื่ออัปโหลดขึ้น GitHub</button><span class="mute" id="jobImgInfo"></span></div>
+    <div class="mute">รูปประกอบรายการงาน (1 รูปต่อรายการ): กดปุ่ม 🖼 ที่แถวของรายการ หรือลากไฟล์รูปไปวางบนแถวนั้น · รูปที่ใส่เก็บในเครื่องนี้ ถ้าต้องการให้ทุกเครื่องเห็น ให้ส่งออก images.zip แล้วแตกเป็นโฟลเดอร์ <b>images</b> อัปโหลดข้างไฟล์ index.html บน GitHub (แอปจะหารูป images/รหัสงาน.jpg ให้เอง)</div>
     <div class="mute">นำเข้าจาก Excel: ระบบหาแถวหัวตารางที่มีคำว่า "รหัส", "ชื่อ", "หน่วย" ให้เอง (ชีต LIST JOB นำเข้าได้เลย — หน่วยจะตัดคำว่า "บาท/" ออก) · รายการงานที่แก้เก็บในเบราว์เซอร์เครื่องนี้ ส่งต่อให้เพื่อนร่วมงานด้วยไฟล์ CSV หรือไฟล์โครงการ .json (มีรายการที่ใช้แนบไปด้วย)</div>
   </div>
   <div class="card"><div style="overflow:auto"><table id="jobT"></table></div></div>
@@ -302,8 +311,8 @@ async function pDel(id){delete URLC[id];try{const d=await dbp();return new Promi
 const URLC={};
 async function pURL(id){if(URLC[id])return URLC[id];try{const r=await pGet(id);if(!r)return'';return URLC[id]=URL.createObjectURL(r.blob)}catch(e){return''}}
 const photoIds=p=>[...p.rows.flatMap(r=>r.ph||[]),...(p.pts||[]).flatMap(x=>x.ph||[])];
-async function resizeImg(file){let bmp;try{bmp=await createImageBitmap(file)}catch(e){bmp=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(file)})}
-  const W=bmp.width||bmp.naturalWidth,H=bmp.height||bmp.naturalHeight,s=Math.min(1,1280/Math.max(W,H)),w=Math.round(W*s),h=Math.round(H*s);
+async function resizeImg(file,MAXS){MAXS=MAXS||1280;let bmp;try{bmp=await createImageBitmap(file)}catch(e){bmp=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(file)})}
+  const W=bmp.width||bmp.naturalWidth,H=bmp.height||bmp.naturalHeight,s=Math.min(1,MAXS/Math.max(W,H)),w=Math.round(W*s),h=Math.round(H*s);
   const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(bmp,0,0,w,h);
   return new Promise(r=>cv.toBlob(b=>r(b),'image/jpeg',.72))}
 function blobToData(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}
@@ -360,7 +369,7 @@ function renderRows(){
   S.rows.forEach((r,i)=>{
     if(FILTER==='inc'&&!incomplete(r))return;if(FILTER==='flag'&&!r.flag)return;shown++;
     const el=document.createElement('div');el.className='row';
-    el.innerHTML=`<div class="rowtop"><span class="n">${i+1}</span><span class="nm" data-nm></span><button class="b ghost sm" data-flag title="ติดธง ตรวจสอบภายหลัง">⚑</button><button class="b ghost sm" data-dup title="ทำซ้ำ">⧉</button><button class="b red sm" data-del title="ลบ">✕</button></div>
+    el.innerHTML=`<div class="bgimg"></div><div class="rowtop"><span class="n">${i+1}</span><span class="nm" data-nm></span><button class="b ghost sm" data-flag title="ติดธง ตรวจสอบภายหลัง">⚑</button><button class="b ghost sm" data-dup title="ทำซ้ำ">⧉</button><button class="b red sm" data-del title="ลบ">✕</button></div>
     <div class="chips" data-chips></div>
     <div class="rg">
      <div><label>STA เริ่มต้น</label><input data-f="sta1" placeholder="0+000"></div>
@@ -400,7 +409,7 @@ function renderRows(){
 }
 function update(el,r,quiet){
   const c=calc(r),it=BYCODE[(r.code||'').toUpperCase()];
-  el.style.setProperty('--c',it?it.cat.color:'#999');el.classList.toggle('flag',!!r.flag);
+  el.style.setProperty('--c',it?it.cat.color:'#999');el.classList.toggle('flag',!!r.flag);applyBg(el,it?it.code:'');
   el.querySelector('[data-nm]').innerHTML=r.code?(it?esc(it.name):'<span class="warn">! ไม่พบรหัสนี้ในรายการงาน</span>'):'';
   el.querySelector('[data-dist]').textContent=c.dist==null?'':nf(c.dist);
   el.querySelector('[data-qty]').textContent=c.qty==null?'':nf(c.qty)+(it&&it.unit?' '+it.unit:'');
@@ -538,6 +547,19 @@ async function pkgZip(){
     dl(await z.generateAsync({type:'blob',compression:'DEFLATE'}),root+'_'+stamp+'.zip')}catch(e){alert('สร้างแฟ้มไม่สำเร็จ: '+e.message)}
   bt.textContent=old;bt.disabled=false}
 async function storeInfo(){try{const e=await navigator.storage.estimate();$('storeInfo').textContent=`พื้นที่เก็บในเครื่อง: ใช้ ${(e.usage/1048576).toFixed(1)} MB จาก ${(e.quota/1048576).toFixed(0)} MB · รูปทั้งหมดในเครื่อง ${Object.values(LIB.list).reduce((a,p)=>a+photoIds(p).length,0)} รูป`}catch(x){}}
+// ---- job reference images ----
+const JIMG={};
+async function jobImg(code){code=String(code||'').toUpperCase();if(!code)return null;if(code in JIMG)return JIMG[code];
+  let u='';try{const r=await pGet('jobimg:'+code);if(r)u=URL.createObjectURL(r.blob)}catch(e){}
+  if(!u){const t='images/'+code+'.jpg';const ok=await new Promise(res=>{const im=new Image();im.onload=()=>res(true);im.onerror=()=>res(false);im.src=t});if(ok)u=t}
+  JIMG[code]=u||null;return JIMG[code]}
+async function applyBg(el,code){code=String(code||'').toUpperCase();if(el._bg===code)return;el._bg=code;const d=el.querySelector('.bgimg');if(!d)return;
+  if(!code){d.style.backgroundImage='';return}
+  const u=await jobImg(code);if(el._bg!==code)return;d.style.backgroundImage=u?`url("${u}")`:''}
+async function setJobImg(code,file){try{const b=await resizeImg(file,640);await pPut({id:'jobimg:'+code,blob:b,t:Date.now(),pid:'job'});if(JIMG[code]&&String(JIMG[code]).startsWith('blob:'))URL.revokeObjectURL(JIMG[code]);JIMG[code]=URL.createObjectURL(b);return true}catch(e){alert('บันทึกรูปไม่สำเร็จ: '+(e&&e.message||e));return false}}
+async function delJobImg(code){await pDel('jobimg:'+code);if(JIMG[code]&&String(JIMG[code]).startsWith('blob:'))URL.revokeObjectURL(JIMG[code]);delete JIMG[code]}
+async function moveJobImg(a,b){try{const r=await pGet('jobimg:'+a);if(r){await pPut({...r,id:'jobimg:'+b});await pDel('jobimg:'+a)}}catch(e){}delete JIMG[a];delete JIMG[b]}
+function refreshBgs(){document.querySelectorAll('#rows .row').forEach(el=>{el._bg=null});renderRows()}
 // ---- job manager ----
 function usageMap(){const m={};Object.values(LIB.list).forEach(p=>p.rows.forEach(r=>{if(r.code){const k=r.code.toUpperCase();m[k]=(m[k]||0)+1}}));return m}
 function renderJobs(){
@@ -545,27 +567,33 @@ function renderJobs(){
   const q=$('jobQ').value.trim().toLowerCase().split(/\s+/).filter(Boolean),cf=sel.value,um=usageMap();
   const arr=ITEMS.filter(i=>(!cf||(cf==='?'?i.cat===OTHERCAT:i.cat.k===cf))&&q.every(w=>(i.code+' '+i.name+' '+i.unit).toLowerCase().includes(w)));
   $('jobInfo').innerHTML=`รายการงานทั้งหมด <b>${ITEMS.length}</b> รายการ · แสดง ${arr.length} · `+(JOBMETA?`<b>แก้ไขเอง</b> ล่าสุด ${new Date(JOBMETA.updated).toLocaleString('th-TH')}`:'ใช้รายการเริ่มต้น (ยังไม่เคยแก้ไข)');
-  let t='<tr><th>รหัส</th><th>ชื่อรายการงาน</th><th>หน่วย</th><th>หมวด</th><th class="r">ใช้ใน (รายการ)</th><th></th></tr>';
-  arr.forEach(i=>t+=`<tr><td><b>${esc(i.code)}</b></td><td>${esc(i.name)}</td><td>${esc(i.unit)}</td><td><span class="sw" style="background:${i.cat.color}"></span>${esc(i.cat.k==='?'?'อื่น ๆ':i.cat.name)}</td><td class="r">${um[i.code]||''}</td><td style="white-space:nowrap"><button class="b ghost sm" data-e="${esc(i.code)}">แก้ไข</button> <button class="b red sm" data-x="${esc(i.code)}">ลบ</button></td></tr>`);
+  let t='<tr><th>รูป</th><th>รหัส</th><th>ชื่อรายการงาน</th><th>หน่วย</th><th>หมวด</th><th class="r">ใช้ใน (รายการ)</th><th></th></tr>';
+  arr.forEach(i=>t+=`<tr data-c="${esc(i.code)}"><td class="imgc" data-img="${esc(i.code)}" style="width:72px"></td><td><b>${esc(i.code)}</b></td><td>${esc(i.name)}</td><td>${esc(i.unit)}</td><td><span class="sw" style="background:${i.cat.color}"></span>${esc(i.cat.k==='?'?'อื่น ๆ':i.cat.name)}</td><td class="r">${um[i.code]||''}</td><td style="white-space:nowrap"><label class="b ghost sm" style="margin:0;cursor:pointer" title="ใส่/เปลี่ยนรูป">🖼<input type="file" accept="image/*" hidden data-up="${esc(i.code)}"></label> <button class="b ghost sm" data-ri="${esc(i.code)}" hidden title="ลบรูป">✕รูป</button> <button class="b ghost sm" data-e="${esc(i.code)}">แก้ไข</button> <button class="b red sm" data-x="${esc(i.code)}">ลบ</button></td></tr>`);
   if(!arr.length)t+='<tr><td colspan="6" class="mute">ไม่พบรายการ</td></tr>';
   $('jobT').innerHTML=t;
   $('jobT').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>openJobEd(b.dataset.e));
   $('jobT').querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>delJob(b.dataset.x));
+  $('jobT').querySelectorAll('[data-img]').forEach(async td=>{const c=td.dataset.img,u=await jobImg(c);if(u){const im=document.createElement('img');im.className='jthumb';im.src=u;td.appendChild(im);const rb=$('jobT').querySelector(`[data-ri="${c}"]`);if(rb&&String(u).startsWith('blob:'))rb.hidden=false}});
+  $('jobT').querySelectorAll('[data-up]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];inp.value='';if(f&&await setJobImg(inp.dataset.up,f)){renderJobs();refreshBgs()}});
+  $('jobT').querySelectorAll('[data-ri]').forEach(b=>b.onclick=async()=>{await delJobImg(b.dataset.ri);renderJobs();refreshBgs()});
+  $('jobT').querySelectorAll('tr[data-c]').forEach(tr=>{tr.ondragover=e=>{e.preventDefault();tr.classList.add('dropt')};tr.ondragleave=()=>tr.classList.remove('dropt');
+    tr.ondrop=async e=>{e.preventDefault();tr.classList.remove('dropt');const f=[...(e.dataTransfer.files||[])].find(x=>/^image\//.test(x.type));if(f&&await setJobImg(tr.dataset.c,f)){renderJobs();refreshBgs()}}});
+  (async()=>{let n=0;for(const i of ITEMS){try{if(await pGet('jobimg:'+i.code))n++}catch(e){break}}$('jobImgInfo').textContent=`รูปที่ใส่ในเครื่องนี้ ${n}/${ITEMS.length} รายการ`})();
 }
 let JEC=null;
 function openJobEd(code){JEC=code;const it=code?BYCODE[code]:null;$('jeTitle').textContent=code?'แก้ไขรายการงาน '+code:'เพิ่มรายการงานใหม่';
   $('jeCode').value=it?it.code:'';$('jeName').value=it?it.name:'';$('jeUnit').value=it?it.unit:'';
   const n=code?(usageMap()[code]||0):0;$('jeHint').textContent=code?(n?`รหัสนี้ถูกใช้ในโครงการ ${n} รายการ — ถ้าแก้ชื่อ ชื่อใหม่จะขึ้นในทุกโครงการ ถ้าแก้รหัส ระบบจะเปลี่ยนรหัสในทุกโครงการให้`:'ยังไม่ถูกใช้ในโครงการใด'):'ตัวอย่างรหัส: B20, F11 (ตัวอักษรแรกกำหนดหมวดและสีใน PLAN)';
   $('jobEd').classList.add('on');setTimeout(()=>$(code?'jeName':'jeCode').focus(),50)}
-function saveJobEd(){const code=$('jeCode').value.trim().toUpperCase().replace(/\s+/g,''),name=$('jeName').value.trim(),unit=$('jeUnit').value.trim();
+async function saveJobEd(){const code=$('jeCode').value.trim().toUpperCase().replace(/\s+/g,''),name=$('jeName').value.trim(),unit=$('jeUnit').value.trim();
   if(!code||!name){alert('กรอกรหัสงานและชื่อรายการงาน');return}
   if(code!==JEC&&BYCODE[code]){alert('รหัส '+code+' มีอยู่แล้ว');return}
   if(catOf(code)===OTHERCAT&&!confirm('รหัส '+code+' ขึ้นต้นด้วยตัวอักษรนอกหมวด A–K — จะแสดงเป็นสีเทาใน PLAN ต้องการบันทึกต่อไหม?'))return;
   const arr=itemsArr().filter(x=>x[0]!==JEC);arr.push([code,name,unit]);
-  if(JEC&&code!==JEC){let n=0;Object.values(LIB.list).forEach(p=>p.rows.forEach(r=>{if((r.code||'').toUpperCase()===JEC){r.code=code;n++}}));if(n)save(true)}
+  if(JEC&&code!==JEC){await moveJobImg(JEC,code);let n=0;Object.values(LIB.list).forEach(p=>p.rows.forEach(r=>{if((r.code||'').toUpperCase()===JEC){r.code=code;n++}}));if(n)save(true)}
   setItems(arr);saveJobs();$('jobEd').classList.remove('on');renderJobs();renderRows();refresh()}
 function delJob(code){const n=usageMap()[code]||0;if(!confirm(`ลบรายการงาน ${code} ${BYCODE[code].name}?`+(n?`\n\nรหัสนี้ถูกใช้ในโครงการ ${n} รายการ — รายการเหล่านั้นจะขึ้นเตือน "ไม่พบรหัสงาน"`:'')))return;
-  setItems(itemsArr().filter(x=>x[0]!==code));saveJobs();renderJobs();renderRows();refresh()}
+  delJobImg(code);setItems(itemsArr().filter(x=>x[0]!==code));saveJobs();renderJobs();renderRows();refresh()}
 function parseCSV(t){t=t.replace(/^﻿/,'');const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const ch=t[i];
   if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
   else if(ch==='"')q=true;else if(ch===','){r.push(c);c=''}else if(ch==='\n'){r.push(c.replace(/\r$/,''));rows.push(r);r=[];c=''}else c+=ch}
@@ -771,6 +799,12 @@ $('newProj').onclick=()=>{const p=newProj();p.code=nextCode();LIB.list[p.id]=p;o
 $('jobQ').oninput=renderJobs;$('jobCat').onchange=renderJobs;$('jobAdd').onclick=()=>openJobEd(null);
 $('jobImpMerge').onchange=e=>{if(e.target.files[0])importJobs(e.target.files[0],false);e.target.value=''};
 $('jobImpReplace').onchange=e=>{if(e.target.files[0])importJobs(e.target.files[0],true);e.target.value=''};
+$('jobImgBulk').onchange=async e=>{const fs=[...e.target.files];e.target.value='';let ok=0;const bad=[];
+  for(const f of fs){const stem=f.name.replace(/\.[^.]+$/,'').trim().toUpperCase();if(BYCODE[stem]){if(await setJobImg(stem,f))ok++}else bad.push(f.name)}
+  renderJobs();refreshBgs();alert(`ใส่รูปแล้ว ${ok} รูป`+(bad.length?`\nไม่ตรงกับรหัสงานใดเลย ${bad.length} ไฟล์: ${bad.slice(0,8).join(', ')}${bad.length>8?'…':''}\n(ตั้งชื่อไฟล์ให้ตรงรหัส เช่น B01.jpg หรือใช้ปุ่ม 🖼 ที่แถวรายการ)`:''))};
+$('jobImgZip').onclick=async()=>{if(!window.JSZip){alert('โหลดตัวสร้างไฟล์ zip ไม่ได้ (ต้องต่ออินเทอร์เน็ต)');return}
+  const z=new JSZip(),f=z.folder('images');let n=0;for(const i of ITEMS){const r=await pGet('jobimg:'+i.code);if(r){f.file(i.code+'.jpg',r.blob);n++}}
+  if(!n){alert('ยังไม่มีรูปที่ใส่ไว้ในเครื่องนี้');return}dl(await z.generateAsync({type:'blob'}),'SurveyField_images_'+new Date().toISOString().slice(0,10)+'.zip')};
 $('jobExp').onclick=exportJobs;$('jobReset').onclick=resetJobs;$('jeSave').onclick=saveJobEd;$('jeCancel').onclick=()=>$('jobEd').classList.remove('on');
 $('jobEd').onclick=e=>{if(e.target===$('jobEd'))$('jobEd').classList.remove('on')};
 ['jeCode','jeName','jeUnit'].forEach(id=>$(id).onkeydown=e=>{if(e.key==='Enter')saveJobEd()});
@@ -783,6 +817,9 @@ function initSaveUI(){const cur=saveMode(),sh=canShareFiles(),pk=canPick();
   document.querySelectorAll('input[name=smode]').forEach(r=>{r.checked=r.value===cur;r.disabled=(r.value==='share'&&!sh)||(r.value==='picker'&&!pk);r.onchange=()=>{setSaveMode(r.value)}});
   $('smShare').textContent=sh?'':'(เบราว์เซอร์/เครื่องนี้ไม่รองรับ)';$('smPick').textContent=pk?'':'(เบราว์เซอร์นี้ไม่รองรับ)'}
 initSaveUI();
+(function(){let v='0.16';try{v=localStorage.getItem('surveyfield.bgo')||'0.12'}catch(e){}
+  const s=$('bgo');[...s.options].forEach(o=>{if(o.value===v)s.value=v});if(!s.value)s.value='0.12';
+  const ap=()=>document.documentElement.style.setProperty('--bgo',s.value);ap();s.onchange=()=>{ap();try{localStorage.setItem('surveyfield.bgo',s.value)}catch(e){}}})();
 $('zipBtn').onclick=zipAll;$('pkgBtn').onclick=pkgZip;
 $('lbClose').onclick=()=>$('lb').classList.remove('on');
 $('lb').onclick=e=>{if(e.target===$('lb'))$('lb').classList.remove('on')};
