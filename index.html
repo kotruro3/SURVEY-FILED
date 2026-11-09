@@ -13,6 +13,12 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Sarabun",system-ui,sans-serif}
 header{background:#1f4e79;color:#fff;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 header h1{font-size:17px;margin:0;font-weight:700;flex:1;min-width:150px}
+#curChip{font-weight:600;font-size:14px;background:rgba(255,255,255,.15);border-radius:99px;padding:3px 12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbtns{display:flex;gap:6px;flex-wrap:wrap}
+.saved{font-size:12.5px;font-weight:600;border-radius:99px;padding:2px 10px;background:rgba(255,255,255,.15);white-space:nowrap}
+.saved.ok{background:#2e7d32;color:#fff}.saved.pend{background:#e08e0b;color:#fff}.saved.err{background:#c0392b;color:#fff}
+#toast{position:fixed;left:50%;top:14px;transform:translate(-50%,-90px);z-index:3000;background:#2e7d32;color:#fff;font-weight:700;padding:12px 22px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);transition:transform .25s;max-width:92vw;text-align:center}
+#toast.on{transform:translate(-50%,0)}#toast.err{background:#c0392b}
 header button{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer;max-width:60vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav{display:flex;gap:2px;padding:6px 12px 0;background:var(--bg);position:sticky;top:0;z-index:500;overflow-x:auto;border-bottom:1px solid var(--line)}
 nav button{border:0;background:none;color:var(--mute);padding:9px 12px;font:inherit;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
@@ -122,8 +128,13 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
 <body>
 <header>
   <h1>📐 Survey Field</h1>
-  <button id="openLib" title="เปิดคลังโครงการ">📂 <span id="curName">โครงการ</span></button>
-  <span class="mute" id="saved" style="color:#fff;opacity:.85;font-size:12px"></span>
+  <span id="curChip" title="โครงการที่เปิดอยู่">📁 <span id="curName">โครงการ</span></span>
+  <div class="hbtns">
+    <button id="hNew" title="สร้างโครงการใหม่ (Ctrl+Alt+N)">＋ New project</button>
+    <button id="openLib" title="เปิดคลังโครงการ / ค้นหา / เปิดไฟล์">📂 Open project</button>
+    <button id="hSave" title="บันทึกโครงการ (Ctrl+S)">💾 Save project</button>
+  </div>
+  <span id="saved" class="saved"></span>
 </header>
 <nav>
   <button data-t="t1" class="on">ตารางสำรวจ</button>
@@ -261,6 +272,7 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
   <div class="bar"><button class="b" id="svDo">📤 เลือกปลายทาง</button><button class="b ghost" id="svDl">⬇ ดาวน์โหลดปกติ</button><button class="b ghost" id="svClose">ปิด</button></div>
 </div></div>
 <div id="printRoot"></div>
+<div id="toast"></div>
 <style id="pageStyle"></style>
 <div class="ov" id="pk"><div class="box" style="max-width:920px">
   <h3 style="margin:0 0 6px" id="pkTitle">เลือกตำแหน่ง</h3>
@@ -314,7 +326,16 @@ function loadLib(){
   if(!LIB.cur||!LIB.list[LIB.cur]){const ks=Object.keys(LIB.list);if(ks.length)LIB.cur=ks.sort((a,b)=>LIB.list[b].updated-LIB.list[a].updated)[0];else{const p=newProj();LIB.list[p.id]=p;LIB.cur=p.id}}
   ensureCodes();S=LIB.list[LIB.cur];S.pts=(S.pts||[]).map(x=>({ph:[],...x}));S.rows=S.rows.map(r=>({...newRow(),...r}))
 }
-let tmr;function save(now){clearTimeout(tmr);const f=()=>{try{S.updated=Date.now();LIB.list[S.id]=S;LIB.cur=S.id;localStorage.setItem(KEY,JSON.stringify(LIB));$('saved').textContent='บันทึกแล้ว '+new Date().toLocaleTimeString('th-TH')}catch(e){$('saved').textContent='⚠ บันทึกในเครื่องไม่ได้ — ใช้ปุ่มสำรองข้อมูล'}};now?f():tmr=setTimeout(f,300)}
+let tmr;
+function setSaveStat(kind,txt){const e=$('saved');e.className='saved '+kind;e.textContent=txt}
+function doSave(){try{S.updated=Date.now();LIB.list[S.id]=S;LIB.cur=S.id;const s=JSON.stringify(LIB);localStorage.setItem(KEY,s);if(localStorage.getItem(KEY)!==s)throw new Error('verify');
+    setSaveStat('ok','✔ Save Complete · '+new Date().toLocaleTimeString('th-TH'));return true}
+  catch(e){setSaveStat('err','✖ Save Failed — ใช้ปุ่มสำรองข้อมูลเป็นไฟล์');return false}}
+function save(now){clearTimeout(tmr);if(now)return doSave();setSaveStat('pend','● กำลังบันทึก…');tmr=setTimeout(doSave,300);return true}
+let toastT;function toast(msg,err){const t=$('toast');t.textContent=msg;t.className=(err?'err ':'')+'on';clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2600)}
+function saveProject(){const ok=save(true);const nm=(S.code?S.code+' · ':'')+(S.proj.name||'(ไม่มีชื่อโครงการ)');
+  if(ok)toast('✔ Save Complete\n'+nm+' · '+new Date().toLocaleTimeString('th-TH'));
+  else toast('✖ Save Failed — พื้นที่เก็บข้อมูลเต็มหรือถูกบล็อก ให้ส่งออกไฟล์สำรอง (.json) ไว้ก่อน',true)}
 // ---- photos (IndexedDB) ----
 let _db;const dbp=()=>_db||(_db=new Promise((res,rej)=>{if(!window.indexedDB)return rej(new Error('เบราว์เซอร์นี้เก็บรูปไม่ได้'));const q=indexedDB.open('surveyfield-photos',1);q.onupgradeneeded=()=>q.result.createObjectStore('p',{keyPath:'id'});q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
 async function pPut(rec){const d=await dbp();return new Promise((res,rej)=>{const t=d.transaction('p','readwrite');t.objectStore('p').put(rec);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
@@ -840,7 +861,9 @@ $('openLib').onclick=()=>{$('libQ').value='';renderLib();$('lib').classList.add(
 $('libClose').onclick=()=>$('lib').classList.remove('on');
 $('lib').onclick=e=>{if(e.target===$('lib'))$('lib').classList.remove('on')};
 $('libQ').oninput=renderLib;
-$('newProj').onclick=()=>{const p=newProj();p.code=nextCode();LIB.list[p.id]=p;openProj(p.id);$('p_name').focus()};
+const makeNew=()=>{save(true);const p=newProj();p.code=nextCode();LIB.list[p.id]=p;openProj(p.id);save(true);showTab('t1');toast('✔ สร้างโครงการใหม่ '+p.code+' แล้ว — กรอกชื่อโครงการได้เลย');setTimeout(()=>$('p_name').focus(),50)};
+$('newProj').onclick=makeNew;$('hNew').onclick=makeNew;$('hSave').onclick=saveProject;
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject()}else if((e.ctrlKey||e.metaKey)&&e.altKey&&e.key.toLowerCase()==='n'){e.preventDefault();makeNew()}});
 $('jobQ').oninput=renderJobs;$('jobCat').onchange=renderJobs;$('jobAdd').onclick=()=>openJobEd(null);
 $('jobImpMerge').onchange=e=>{if(e.target.files[0])importJobs(e.target.files[0],false);e.target.value=''};
 $('jobImpReplace').onchange=e=>{if(e.target.files[0])importJobs(e.target.files[0],true);e.target.value=''};
