@@ -149,6 +149,7 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
 <section class="tab on" id="t1">
   <div class="card"><div class="grid">
     <div><label>รหัสโครงการ (ออกให้อัตโนมัติ)</label><input id="p_code" style="font-weight:700"></div>
+    <div><label>รหัสผู้ใช้ (นำหน้ารหัสโครงการ)</label><input id="u_pre" maxlength="3" placeholder="เช่น A" style="font-weight:700;text-transform:uppercase"><div class="mute" id="codeEx" style="margin-top:3px"></div></div>
     <div><label>โครงการ</label><input id="p_name"></div>
     <div><label>หน่วยงาน / สถานที่</label><input id="p_agency"></div>
     <div><label>สายทาง / ตอน</label><input id="p_route"></div>
@@ -314,8 +315,14 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const newProj=()=>({code:'',id:uid(),created:Date.now(),updated:Date.now(),proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)},rows:[newRow()],pts:[]});
 const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false,ph:[]});
 let LIB={cur:null,list:{},seq:0},S=null,FILTER='all';
-const CODE_PREFIX='SV';
-function nextCode(){const mx=Math.max(LIB.seq||0,...Object.values(LIB.list).map(p=>{const m=String(p.code||'').match(/^SV(\d+)$/i);return m?+m[1]:0}),0)+1;LIB.seq=mx;return CODE_PREFIX+String(mx).padStart(2,'0')}
+const UPKEY='surveyfield.uprefix';
+function getPre(){try{return (localStorage.getItem(UPKEY)||'A').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)||'A'}catch(e){return 'A'}}
+const beYY=()=>String((new Date().getFullYear()+543)%100).padStart(2,'0');
+const codeKey=()=>getPre()+beYY()+'-SV';
+function nextCode(){const key=codeKey(),re=new RegExp('^'+key+'(\\d+)$','i');LIB.seqs=LIB.seqs||{};
+  const mx=Math.max(LIB.seqs[key]||0,...Object.values(LIB.list).map(p=>{const m=String(p.code||'').match(re);return m?+m[1]:0}),0)+1;
+  LIB.seqs[key]=mx;return key+String(mx).padStart(2,'0')}
+function showCodeEx(){const e=$('codeEx');if(e)e.textContent='โครงการถัดไป: '+codeKey()+String(((LIB.seqs||{})[codeKey()]||0)+1).padStart(2,'0')+'  (พ.ศ. 25'+beYY()+')'}
 function ensureCodes(){Object.values(LIB.list).sort((a,b)=>a.created-b.created).forEach(p=>{if(!p.code)p.code=nextCode()})}
 function loadLib(){
   try{const t=localStorage.getItem(KEY);if(t)LIB=JSON.parse(t)}catch(e){}
@@ -327,7 +334,7 @@ function loadLib(){
   ensureCodes();S=LIB.list[LIB.cur];S.pts=(S.pts||[]).map(x=>({ph:[],...x}));S.rows=S.rows.map(r=>({...newRow(),...r}))
 }
 let tmr;
-function setSaveStat(kind,txt){const e=$('saved');e.className='saved '+kind;e.textContent=txt}
+function setSaveStat(kind,txt){try{showCodeEx()}catch(e){}const e=$('saved');e.className='saved '+kind;e.textContent=txt}
 function doSave(){try{S.updated=Date.now();LIB.list[S.id]=S;LIB.cur=S.id;const s=JSON.stringify(LIB);localStorage.setItem(KEY,s);if(localStorage.getItem(KEY)!==s)throw new Error('verify');
     setSaveStat('ok','✔ Save Complete · '+new Date().toLocaleTimeString('th-TH'));return true}
   catch(e){setSaveStat('err','✖ Save Failed — ใช้ปุ่มสำรองข้อมูลเป็นไฟล์');return false}}
@@ -834,11 +841,12 @@ function importFile(f){f.text().then(async t=>{try{const d=JSON.parse(t);let ps=
     if(LIB.list[p.id]&&!confirm('มีโครงการ "'+(LIB.list[p.id].proj.name||'')+'" อยู่แล้ว — แทนที่ด้วยไฟล์นี้? (ยกเลิก = เก็บเป็นสำเนาใหม่)')){p.id=uid();p.proj.name=(p.proj.name||'โครงการ')+' (นำเข้า)'}
     LIB.list[p.id]=p;last=p.id});
   if(last){openProj(last);alert('นำเข้าแล้ว '+ps.length+' โครงการ')}}catch(e){alert('ไฟล์ไม่ถูกต้อง')}})}
-function fillProj(){$('p_code').value=S.code||'';$('pkgName').textContent=folderName();[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
+function fillProj(){$('u_pre').value=getPre();showCodeEx();$('p_code').value=S.code||'';$('pkgName').textContent=folderName();[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
 // ---- wiring ----
 async function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t5')setTimeout(()=>renderMap(true),30);if(t==='t6')renderPhotos();if(t==='t7')renderJobs();if(t==='t4')storeInfo()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
 [['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>{$(id).oninput=()=>{S.proj[k]=$(id).value;save();curLabel();$('pkgName').textContent=folderName()}});
+$('u_pre').oninput=()=>{const v=$('u_pre').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);$('u_pre').value=v;try{localStorage.setItem(UPKEY,v||'A')}catch(e){}showCodeEx()};
 $('p_code').oninput=()=>{S.code=$('p_code').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'');save();curLabel();$('pkgName').textContent=folderName()};
 $('p_code').onchange=()=>{if(!S.code){S.code=nextCode();$('p_code').value=S.code;save();curLabel()}else if(Object.values(LIB.list).some(x=>x.code===S.code&&x.id!==S.id)){alert('รหัส '+S.code+' ซ้ำกับโครงการอื่น — ระบบออกรหัสใหม่ให้');S.code=nextCode();$('p_code').value=S.code;save();curLabel()}};
 const addRow=()=>{S.rows.push(newRow());save();FILTER='all';$('flt').value='all';renderRows();refresh();const l=$('rows').lastElementChild;l&&l.querySelector('[data-f=sta1]').focus()};
