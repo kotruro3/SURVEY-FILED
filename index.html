@@ -137,7 +137,7 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
 .plh{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.plh .sp{flex:1}.grid.g4{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}.grid.g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .envb{display:flex;flex-direction:column;gap:4px;padding:6px;background:#f2f7fb;border-radius:8px}.jobr{border-top:1px dashed #ddd;padding:6px 0}.jr1{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 @media(min-width:1100px){.wz{display:grid;grid-template-columns:minmax(420px,520px) 1fr;gap:12px;align-items:start}.wzR{position:sticky;top:8px;max-height:96vh;overflow:auto}}
-</style>
+.badge{background:#0b6b4f;color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:3px}.chips{display:flex;gap:4px}.warn{color:#b3261e;font-size:12px;font-weight:700}.obic svg{width:34px;height:34px}.plseg.ob{border-left-color:#2e86c1}</style>
 </head>
 <body>
 <header>
@@ -610,6 +610,7 @@ async function pkgZip(){
     if(np)pf.file('index.csv','\ufeff'+rows.join('\r\n'));
     const gis=f.folder('03_GIS');if(features().length){gis.file(base+'.kml',kmlStr());gis.file(base+'.geojson',geojsonStr())}
     const pbs=await pngBlobs();pbs.forEach((pb,i)=>f.folder('04_PLAN').file(base+'_PLAN'+(pbs.length>1?'_'+(i+1):'')+'.png',pb));
+    if(((G().ob||[]).length||(G().pc||[]).length))f.folder('01_Excel').file(base+'_ExistingSurvey.csv',obCsv(G()));
     const o={...S,jobs:usedJobs([S]),photos:await photoMap(photoIds(S))};f.folder('05_Backup').file(base+'_backup.json',JSON.stringify(o));
     f.file('README.txt',`รหัสโครงการ: ${S.code}\nโครงการ: ${S.proj.name||''}\nสายทาง/ตอน: ${S.proj.route||''}\nหน่วยงาน: ${S.proj.agency||''}\nผู้สำรวจ: ${S.proj.who||''}\nวันที่สำรวจ: ${S.proj.date||''}\nสร้างแฟ้มเมื่อ: ${new Date().toLocaleString('th-TH')}\n\n01_Excel  = ตารางสำรวจ / สรุป BOQ / จุดสำคัญ\n02_Photos = รูปภาพ (index.csv บอกว่ารูปไหนอยู่รายการใด)\n03_GIS    = KML (Google Earth) / GeoJSON (QGIS)\n04_PLAN   = ภาพ PLAN\n05_Backup = ไฟล์สำรอง เปิดกลับในแอปได้ (ปุ่ม เปิดไฟล์ .json)\n`);
     dl(await z.generateAsync({type:'blob',compression:'DEFLATE'}),root+'_'+stamp+'.zip')}catch(e){problem('EXPORT_FAIL',e.message)}
@@ -943,7 +944,7 @@ window.addEventListener('beforeunload',()=>save(true));
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 // ===================== v12 : PLAN SHEETS (แนวทาง · ทิศ · ความกว้าง · มาตราส่วน · แบ่งแผ่น · รูปตัด) =====================
 const GEO_STD=[100,150,200,250,300,400,500,750,1000,2000,2500,5000,10000,20000];
-const defGeo=()=>({mode:'sheet',hd:0,layout:'north',sta0:'',segs:[],w0:5,ws:[],tick:'',scale:'',sheetLen:'',secs:[],rcurve:15,rowl:'',rowr:'',vex:'4',jx:[],pv:[],pl:null,plm:0,rz:[],env:[],step:'1'});
+const defGeo=()=>({mode:'sheet',hd:0,layout:'north',sta0:'',segs:[],w0:5,ws:[],tick:'',scale:'',sheetLen:'',secs:[],rcurve:15,rowl:'',rowr:'',vex:'4',jx:[],pv:[],ob:[],pc:[],obtab:'D',pl:null,plm:0,rz:[],env:[],step:'1'});
 function G(){if(!S.geo)S.geo=defGeo();else{const d=defGeo();for(const k in d)if(S.geo[k]===undefined)S.geo[k]=d[k]}const g=S.geo;g.mode='sheet';if(typeof plPrep==='function')plPrep(g);return g}
 const gnum=(v,d)=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:(d===undefined?0:d)};
 const DEG=Math.PI/180;
@@ -1053,7 +1054,7 @@ function sheetSvg(M,idx){
   // road
   const T0=sam(s0,s1,st),L=[],R=[];T0.forEach(t=>{const w=wf(t+sta0);L.push(P(t,w[0]));R.push(P(t,-w[1]))});
   o.push(`<polygon points="${pstr(L.concat(R.slice().reverse()))}" fill="#a9b1ba" stroke="none"/><polyline points="${pstr(L)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/><polyline points="${pstr(R)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/>`);
-  o.push(jxSvg({g,wf,sta0,P,k,s0,s1,pstr,f1}));o.push(pvSvg({g,P,k,s0,s1,sta0,ang,wf}));
+  o.push(pcSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang}));o.push(jxSvg({g,wf,sta0,P,k,s0,s1,pstr,f1}));o.push(pvSvg({g,P,k,s0,s1,sta0,ang,wf}));
   // ROW lines
   {const zl=(g.rz&&g.rz.length)?g.rz:[{a:sta0,b:sta0+M.total,l:gnum(g.rowl,0),r:gnum(g.rowr,0)}];
   [[0,1],[1,-1]].forEach(([ix,sg])=>{const runs=[];let cur=null;T0.forEach(t=>{const r=rowAt(g,t+sta0)[ix];if(r>0){(cur=cur||[]).push(P(t,sg*r))}else if(cur){runs.push(cur);cur=null}});if(cur)runs.push(cur);
@@ -1066,6 +1067,7 @@ function sheetSvg(M,idx){
     const fill=water?'#cfe8f7':home?'#f3e4cc':'url(#ea'+idx+')',sk=water?'#3b82b8':'#9a8458';
     o.push(`<polygon points="${pstr(P1.concat(P2.slice().reverse()))}" fill="${fill}" stroke="${sk}" stroke-width="1"><title>${esc(e.t)}</title></polygon>`);
     if((B-A)*k>=60){const m=(A+B)/2,p=P(m,sg*(e0(m)+e.w/2));o.push(`<text transform="translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)})" font-size="11" font-weight="700" fill="${sk}" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${esc(e.t)}${e.name?' '+esc(cut(e.name,14)):''} ${f1(e.w)} ม.</text>`)}});
+  o.push(obSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1}));
   const rl0=Math.max(gnum(g.rowl,0),...(g.rz||[]).map(z=>z.l)),rr0=Math.max(gnum(g.rowr,0),...(g.rz||[]).map(z=>z.r));
   // centre items
   inR.filter(b=>b.z==='C').forEach(b=>{const T=sam(b.a-sta0,b.b-sta0,st);if(T.length<2)return;const A=[],B=[];
@@ -1124,7 +1126,7 @@ function sheetSvg(M,idx){
   o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#c0392b" stroke-width="2"/><text x="${px+44}" y="${y}" font-size="13">ขีด STA</text>`);y+=22;
   if(secIn.length||hasSec){o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#d35400" stroke-width="2" stroke-dasharray="8 3"/><text x="${px+44}" y="${y}" font-size="13">แนวตัดรูปตัด</text>`);y+=22}
   if(g.segs.some(s=>s.t!=='L')){o.push(`<circle cx="${px+23}" cy="${y-5}" r="4" fill="#8e44ad"/><text x="${px+44}" y="${y}" font-size="13">จุดต้น/ปลายโค้ง (PC/PT)</text>`);y+=22}
-  y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">รายการงานในแผ่นนี้</text>`);y+=30;
+  y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">รายการงานในแผ่นนี้</text>`);y+=30;
   const seen=new Set(),list=[];inR.forEach(b=>{const key=b.code+'|'+b.i;if(seen.has(key))return;seen.add(key);list.push(b)});
   const maxRows=Math.floor(((hasSec?720:1010)-y)/21);
   list.slice(0,maxRows).forEach(b=>{o.push(`<rect x="${px+12}" y="${y-10}" width="10" height="10" fill="${b.it?b.it.cat.color:'#888'}"/><text x="${px+28}" y="${y}" font-size="12"><tspan font-weight="700">${esc(b.code)}</tspan> ${esc(cut(b.it?b.it.name:'ไม่พบรหัส',17))}</text><text x="${px+pw-10}" y="${y}" font-size="11" fill="#555" text-anchor="end">${fmtSta(b.a)}–${fmtSta(b.b)}</text>`);y+=21});
@@ -1320,6 +1322,105 @@ function jxCuts(g){const cuts=[];(g.jx||[]).forEach(j=>{const ts=parseSta(j.sta)
 function cutEnv(env,cuts){if(!cuts.length)return env;let out=[];env.forEach(e=>{let segs=[[e.a,e.b]];cuts.forEach(([ca,cb])=>{const n=[];segs.forEach(([a,b])=>{if(cb<=a||ca>=b)n.push([a,b]);else{if(ca>a)n.push([a,ca]);if(cb<b)n.push([cb,b])}});segs=n});segs.forEach(([a,b])=>{if(b-a>.3)out.push({...e,a,b})})});return out}
 
 // ===== v17: PLAN BUILDER (3 ขั้นตอน) =====
+// ===== v19: สำรวจสภาพเดิม (ระบายน้ำ / สาธารณูปโภค / สิ่งปลูกสร้างริมทาง / สภาพผิวทาง) =====
+const OB_CAT={D:'💧 ระบายน้ำ',U:'⚡ สาธารณูปโภค/สิ่งกีดขวาง',B:'🏠 สิ่งปลูกสร้างริมทาง',P:'🛣 สภาพผิวทางเดิม'};
+const OB={
+ pipe_x:{c:'D',n:'ท่อลอดถนน',s:'ท่อลอด',g:'cross',col:'#1f77b4',sz:'Ø0.60 ม.'},
+ pipe_l:{c:'D',n:'ท่อระบายน้ำตามแนว',s:'ท่อ',g:'ln',col:'#2e86c1',dash:'10 4',w:.6,sz:'Ø0.60 ม.',szh:'เช่น Ø0.60 ม.'},
+ ditch:{c:'D',n:'คูข้างทาง/รางดิน',s:'คู',g:'ln',col:'#2e86c1',fill:'#d6ecf9',band:1,w:1.5,sz:'',szh:'ลึก/ทิศน้ำไหล'},
+ gutter:{c:'D',n:'รางระบายน้ำ คสล.',s:'รางน้ำ',g:'ln',col:'#566573',fill:'#cfd8dc',band:1,w:.6,sz:'',szh:'เช่น 0.40×0.40'},
+ mh:{c:'D',n:'บ่อพัก/ฝาบ่อ',s:'บ่อพัก',g:'pt',sh:'sq',col:'#5d6d7e',ch:'บ',sz:'',szh:'เช่น 0.80×0.80'},
+ inlet:{c:'D',n:'ช่องรับน้ำ/ตะแกรง',s:'ตะแกรง',g:'pt',sh:'sq',col:'#2e86c1',ch:'ช',sz:''},
+ pole_e:{c:'U',n:'เสาไฟฟ้า',s:'เสาไฟ',g:'pt',col:'#c0392b',ch:'ฟ',sz:'',szh:'เช่น คอนกรีต 12 ม.'},
+ pole_t:{c:'U',n:'เสาโทรศัพท์/สื่อสาร',s:'เสาโทร',g:'pt',col:'#8e44ad',ch:'ท',sz:''},
+ pole_l:{c:'U',n:'เสาไฟส่องสว่าง',s:'ไฟส่อง',g:'pt',col:'#d4ac0d',ch:'ส',sz:''},
+ cab:{c:'U',n:'ตู้/หม้อแปลง',s:'ตู้',g:'pt',sh:'sq',col:'#7f8c8d',ch:'ต',sz:''},
+ valve:{c:'U',n:'วาล์ว/มาตรน้ำ',s:'วาล์ว',g:'pt',col:'#117a8b',ch:'ป',sz:''},
+ tree:{c:'U',n:'ต้นไม้',s:'ต้นไม้',g:'pt',sh:'tree',col:'#3c9d3c',sz:'',szh:'ชนิด/เส้นผ่านศูนย์กลาง'},
+ sign:{c:'U',n:'ป้ายจราจร/ป้ายอื่น',s:'ป้าย',g:'pt',sh:'tri',col:'#e67e22',ch:'!',sz:''},
+ water:{c:'U',n:'ท่อประปา',s:'ท่อประปา',g:'ln',col:'#117a8b',dash:'8 3 2 3',w:0,sz:'',szh:'เช่น PVC Ø100'},
+ cable:{c:'U',n:'แนวสายไฟ/สายสื่อสาร',s:'สาย',g:'ln',col:'#c0392b',dash:'3 4',w:0,sz:''},
+ guard:{c:'U',n:'ราวกันอันตราย',s:'ราวกัน',g:'ln',col:'#7f8c8d',dash:'12 3',w:0,sz:''},
+ house:{c:'B',n:'บ้าน/อาคาร',s:'อาคาร',g:'rect',col:'#8a6d3b',fill:'#f3e4cc',w:8,sz:''},
+ fence:{c:'B',n:'รั้ว',s:'รั้ว',g:'ln',col:'#4a4a4a',dash:'2 5',w:0,sz:''},
+ wall:{c:'B',n:'กำแพง/กันดิน',s:'กำแพง',g:'ln',col:'#2b2f36',w:0,thick:3,sz:''},
+ drive:{c:'B',n:'ทางเข้า-ออก (ปากทาง)',s:'ทางเข้า',g:'drive',col:'#2b2f36',fill:'#a9b1ba',w:4,len:6,sz:''},
+ bridge:{c:'B',n:'สะพาน/คอสะพาน',s:'สะพาน',g:'span',col:'#444',fill:'#d0d3d6',sz:'',szh:'เช่น กว้าง 6.00 ม.'},
+ walk:{c:'B',n:'ทางเท้า/ขอบทาง',s:'ทางเท้า',g:'ln',col:'#8c8672',fill:'#e4dfd2',band:1,w:1.5,sz:''}
+};
+const OB_F={pt:['sta','side','off','sz','cond','note'],ln:['sta','sta2','side','off','w','sz','cond','note'],cross:['sta','sz','cond','note'],rect:['sta','sta2','side','off','w','cond','note'],span:['sta','sta2','sz','cond','note'],drive:['sta','side','w','len','cond','note']};
+const OB_L={sta:'STA',sta2:'STA ถึง',off:'ระยะจากกึ่งกลางทาง (ม.)',w:'กว้าง (ม.)',len:'ยาว (ม.)',sz:'ขนาด/ข้อมูล',cond:'สภาพ',note:'หมายเหตุ / ชื่อ / เลขที่'};
+const COND=['','ดี','พอใช้','ชำรุด'];
+const PC_COND={'ดี':'#2ecc71','พอใช้':'#f1c40f','ชำรุดมาก':'#e74c3c'};
+const PC_DMG=['แตกร้าวตาข่าย','หลุมบ่อ','ยุบตัว/ร่องล้อ','ผิวหลุดร่อน','ขอบทางชำรุด','น้ำท่วมขัง','ลูกรังสึกหรอ','ฝุ่นมาก'];
+function symG(key,x,y,r,bad){const d=OB[key];if(!d)return'';const st=bad?'#c0392b':'#222',sw=bad?2.2:1.1,col=d.col;
+ const tx=d.ch?`<text x="${x}" y="${(y+r*.38).toFixed(1)}" font-size="${(r*1.15).toFixed(1)}" font-weight="700" fill="#fff" text-anchor="middle">${d.ch}</text>`:'';
+ if(d.sh==='sq')return `<rect x="${(x-r).toFixed(1)}" y="${(y-r).toFixed(1)}" width="${2*r}" height="${2*r}" fill="${col}" stroke="${st}" stroke-width="${sw}"/>${tx}`;
+ if(d.sh==='tri')return `<polygon points="${x},${(y-r*1.2).toFixed(1)} ${(x-r*1.15).toFixed(1)},${(y+r*.85).toFixed(1)} ${(x+r*1.15).toFixed(1)},${(y+r*.85).toFixed(1)}" fill="${col}" stroke="${st}" stroke-width="${sw}"/>${tx}`;
+ if(d.sh==='tree')return `<circle cx="${x}" cy="${y}" r="${r*1.15}" fill="#b7e1a1" stroke="${bad?st:'#3c7d2a'}" stroke-width="${sw}"/><circle cx="${x}" cy="${y}" r="${r*.35}" fill="#6b4a2b"/>`;
+ return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="${st}" stroke-width="${sw}"/>${tx}`}
+function objIcon(key){const d=OB[key];let s=`<svg viewBox="0 0 44 44" width="46" height="46"><rect x=".5" y=".5" width="43" height="43" rx="8" fill="#f4f7fa" stroke="#9fb3c8"/>`;
+ if(d.g==='pt')s+=symG(key,22,22,10);
+ else if(d.g==='ln'){if(d.band)s+=`<rect x="5" y="15" width="34" height="14" fill="${d.fill}" stroke="${d.col}" stroke-width="1.3" stroke-dasharray="${d.dash||'none'}"/>`;else s+=`<line x1="5" y1="22" x2="39" y2="22" stroke="${d.col}" stroke-width="${d.thick||(d.w?5:2)}" ${d.dash?`stroke-dasharray="${d.dash}"`:''}/>`}
+ else if(d.g==='cross')s+=`<line x1="5" y1="22" x2="39" y2="22" stroke="${d.col}" stroke-width="5"/><circle cx="5" cy="22" r="3.5" fill="#fff" stroke="${d.col}" stroke-width="2"/><circle cx="39" cy="22" r="3.5" fill="#fff" stroke="${d.col}" stroke-width="2"/>`;
+ else if(d.g==='rect')s+=`<rect x="8" y="12" width="28" height="20" fill="${d.fill}" stroke="${d.col}" stroke-width="1.6"/><line x1="8" y1="12" x2="36" y2="32" stroke="${d.col}" stroke-width=".8"/>`;
+ else if(d.g==='span')s+=`<rect x="6" y="9" width="32" height="26" fill="${d.fill}" stroke="${d.col}" stroke-width="1.5"/><line x1="6" y1="16" x2="38" y2="16" stroke="${d.col}"/><line x1="6" y1="28" x2="38" y2="28" stroke="${d.col}"/>`;
+ else if(d.g==='drive')s+=`<rect x="4" y="25" width="36" height="6" fill="#a9b1ba"/><rect x="16" y="8" width="12" height="18" fill="${d.fill}" stroke="${d.col}" stroke-width="1.4"/>`;
+ return s+'</svg>'}
+function obDefOff(g,key,sta,side){const ts=parseSta(sta);const pl=g.pl||[];const seg=pl.find(p=>ts!=null&&ts>=p._a-1e-6&&ts<=p._b+1e-6)||pl[pl.length-1];const hw=seg?(side==='R'?seg._wr:seg._wl)||3:3;const d=OB[key];
+ return Math.round((hw+(d.g==='rect'?5:d.g==='ln'?.5:2))*10)/10}
+function newOb(g,key){const d=OB[key];const last=(g.ob||[]).filter(o=>OB[o.k]&&OB[o.k].c===d.c).slice(-1)[0];const sta=last?last.sta:(g.sta0||'0+000');
+ return{id:uid(),k:key,sta,sta2:d.g==='ln'||d.g==='rect'||d.g==='span'?(last&&last.sta2)||sta:'',side:'L',off:obDefOff(g,key,sta,'L'),w:d.w==null?'':d.w,len:d.len||'',sz:d.sz||'',cond:'',note:''}}
+function obCsv(g){const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';const r=[['หมวด','ชนิด','STA','STA ถึง','ด้าน','ระยะจากกึ่งกลาง(ม.)','กว้าง(ม.)','ยาว(ม.)','ขนาด/ข้อมูล','สภาพ','หมายเหตุ'].map(q).join(',')];
+ const ds={L:'ซ้าย',R:'ขวา',C:'กลาง'};[...(g.ob||[])].sort((a,b)=>(parseSta(a.sta)||0)-(parseSta(b.sta)||0)).forEach(o=>{const d=OB[o.k];if(!d)return;r.push([OB_CAT[d.c].replace(/^\S+\s/,''),d.n,o.sta,o.sta2,ds[o.side]||'',o.off,o.w,o.len,o.sz,o.cond,o.note].map(q).join(','))});
+ (g.pc||[]).forEach(p=>r.push(['สภาพผิวทางเดิม',p.type||'',p.a,p.b,'','','','',p.dmg||'',p.cond||'',p.note||''].map(q).join(',')));return '﻿'+r.join('\r\n')}
+function obSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1}=c;const o=[],PV='#a9b1ba';
+ const nrm=t=>{const a=P(t,0),b=P(t,1);let x=b[0]-a[0],y=b[1]-a[1];const l=Math.hypot(x,y)||1;return[x/l,y/l]};
+ const txt=(p,s,sz,col,anc)=>`<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" font-size="${sz||9.5}" font-weight="600" fill="${col||'#222'}" text-anchor="${anc||'middle'}" paint-order="stroke" stroke="#fff" stroke-width="2.6">${esc(s)}</text>`;
+ (g.ob||[]).forEach(ob=>{const d=OB[ob.k];if(!d)return;const ts=parseSta(ob.sta);if(ts==null)return;let t=ts-sta0,t2=parseSta(ob.sta2);t2=t2==null?t:t2-sta0;if(t2<t){const q=t;t=t2;t2=q}
+  if(t2<s0-4||t>s1+4)return;const sg=ob.side==='L'?1:ob.side==='R'?-1:0,off=gnum(ob.off,4),w=gnum(ob.w,0),bad=ob.cond==='ชำรุด';const lab=(d.s+(ob.sz?' '+ob.sz:'')+(d.g==='rect'&&ob.note?' '+ob.note:''));
+  if(d.g==='pt'){const p=P(t,sg*off),n=nrm(t),pn=[p[0]+n[0]*sg*13,p[1]+n[1]*sg*13];o.push(`<g><title>${esc(d.n)} STA ${esc(ob.sta)}</title>${symG(ob.k,p[0],p[1],6,bad)}</g>`,txt(sg===0?[p[0],p[1]-12]:pn,lab+(ob.note&&d.g==='pt'?' ('+ob.note+')':''),9))}
+  else if(d.g==='cross'){const w0=wf(ts),pa=P(t,w0[0]+2),pb=P(t,-(w0[1]+2));o.push(`<polyline points="${pstr([pa,pb])}" stroke="${d.col}" stroke-width="3.2" fill="none"${bad?' stroke-dasharray="6 3"':''}/><circle cx="${pa[0].toFixed(1)}" cy="${pa[1].toFixed(1)}" r="3.5" fill="#fff" stroke="${d.col}" stroke-width="2"/><circle cx="${pb[0].toFixed(1)}" cy="${pb[1].toFixed(1)}" r="3.5" fill="#fff" stroke="${d.col}" stroke-width="2"/>`,txt([pa[0],pa[1]-8],lab+(ob.note?' ('+ob.note+')':''),9.5,d.col))}
+  else if(d.g==='ln'||d.g==='rect'){const A=Math.max(t,s0),B=Math.min(t2,s1);if(B-A<=.05&&d.g==='ln')return;const T=sam(A,Math.max(B,A+.1),st),y1=sg*off,y2=sg*(off+w);
+   if(d.g==='rect'){const P1=[P(t,y1),P(t2,y1),P(t2,y2),P(t,y2)];o.push(`<polygon points="${pstr(P1)}" fill="${d.fill}" stroke="${bad?'#c0392b':d.col}" stroke-width="1.4"><title>${esc(d.n)}</title></polygon>`);const m=P((t+t2)/2,(y1+y2)/2);o.push(txt(m,lab||'อาคาร',9.5,d.col));return}
+   if(d.band&&w*k>=3){const L1=T.map(x=>P(x,y1)),L2=T.map(x=>P(x,y2));o.push(`<polygon points="${pstr(L1.concat(L2.reverse()))}" fill="${d.fill}" stroke="${bad?'#c0392b':d.col}" stroke-width="1.1" ${d.dash?`stroke-dasharray="${d.dash}"`:''}><title>${esc(d.n)}</title></polygon>`)}
+   else o.push(`<polyline points="${pstr(T.map(x=>P(x,sg*(off+w/2))))}" fill="none" stroke="${bad?'#c0392b':d.col}" stroke-width="${Math.max(d.thick||0,d.w?Math.max(2,w*k):1.6).toFixed(1)}" ${d.dash?`stroke-dasharray="${d.dash}"`:''} stroke-linejoin="round"><title>${esc(d.n)}</title></polyline>`);
+   if((B-A)*k>=50){const m=(A+B)/2,p=P(m,sg*(off+w)),n=nrm(m);o.push(`<text transform="translate(${(p[0]+n[0]*sg*0).toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)}) translate(0,${sg>=0?-4:11})" font-size="9.5" font-weight="600" fill="${d.col}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6">${esc(lab)}</text>`)}}
+  else if(d.g==='span'){const A=Math.max(t,s0-2),B=Math.min(t2,s1+2),w0=wf(ts),e=Math.max(w0[0],w0[1])+1.2;o.push(`<polygon points="${pstr([P(t,e),P(t2,e),P(t2,-e),P(t,-e)])}" fill="${d.fill}" fill-opacity=".75" stroke="${d.col}" stroke-width="1.8"/>`,txt(P((t+t2)/2,0),'สะพาน/คอสะพาน'+(ob.sz?' '+ob.sz:''),10,'#222'))}
+  else if(d.g==='drive'&&sg!==0){const w0=wf(ts),hw=sg>0?w0[0]:w0[1],ww=Math.max(1,gnum(ob.w,4)),L=Math.max(1,gnum(ob.len,6));const a=P(t-ww/2,sg*hw),b=P(t+ww/2,sg*hw),c2=P(t+ww/2,sg*(hw+L)),d2=P(t-ww/2,sg*(hw+L));
+   o.push(`<polygon points="${pstr([a,b,c2,d2])}" fill="${d.fill}" stroke="none"/><polyline points="${pstr([a,b])}" stroke="${PV}" stroke-width="3.6"/><polyline points="${pstr([a,d2,c2,b])}" fill="none" stroke="${d.col}" stroke-width="1.4"/>`,txt(P(t,sg*(hw+L+1.2)),'ทางเข้า'+(ob.note?' '+ob.note:'')+' '+f1(ww)+' ม.',9,'#333'))}
+ });return o.join('')}
+function pcSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang}=c;const o=[];(g.pc||[]).forEach(p=>{const a=parseSta(p.a),b=parseSta(p.b);if(a==null||b==null||b<=a)return;const A=Math.max(a-sta0,s0),B=Math.min(b-sta0,s1);if(B-A<=.05)return;
+  const T=sam(A,B,st),col=PC_COND[p.cond]||'#95a5a6';const Lp=T.map(t=>P(t,wf(t+sta0)[0])),Rp=T.map(t=>P(t,-wf(t+sta0)[1]));
+  o.push(`<polygon points="${pstr(Lp.concat(Rp.reverse()))}" fill="${col}" fill-opacity=".42" stroke="${col}" stroke-width="1" stroke-dasharray="5 3"><title>${esc((p.type||'')+' '+(p.cond||''))}</title></polygon>`);
+  if((B-A)*k>=70){const m=(A+B)/2,q=P(m,0);o.push(`<text transform="translate(${q[0].toFixed(1)},${q[1].toFixed(1)}) rotate(${ang(m).toFixed(1)}) translate(0,3)" font-size="9.5" font-weight="700" fill="#222" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6">${esc([p.type,p.cond,p.dmg].filter(Boolean).join(' · '))}</text>`)}});return o.join('')}
+function obLegend(g,o,px,y){const kinds=[...new Set((g.ob||[]).map(x=>x.k).filter(k=>OB[k]))];const pcs=[...new Set((g.pc||[]).map(p=>p.cond).filter(Boolean))];if(!kinds.length&&!pcs.length)return y;
+ o.push(`<text x="${px+12}" y="${y+2}" font-size="12.5" font-weight="700" fill="#1f3a5f">สำรวจสภาพเดิม</text>`);y+=20;
+ kinds.slice(0,10).forEach(k=>{const d=OB[k];let ic;if(d.g==='pt')ic=symG(k,px+23,y-5,5);else if(d.g==='ln')ic=`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="${d.col}" stroke-width="${d.band?5:2}" ${d.dash?`stroke-dasharray="${d.dash}"`:''}/>`;else ic=`<rect x="${px+12}" y="${y-11}" width="22" height="12" fill="${d.fill||d.col}" stroke="${d.col}"/>`;o.push(ic+`<text x="${px+44}" y="${y}" font-size="12">${esc(cut(d.n,28))}</text>`);y+=19});
+ pcs.forEach(cn=>{o.push(`<rect x="${px+12}" y="${y-11}" width="22" height="12" fill="${PC_COND[cn]}" fill-opacity=".55" stroke="${PC_COND[cn]}"/><text x="${px+44}" y="${y}" font-size="12">ผิวทางเดิม: ${esc(cn)}</text>`);y+=19});return y+4}
+// ---------- UI ----------
+function surveyUI(g){const tab=g.obtab||'D',h=[];const sta0=parseSta(g.sta0)||0,end=g._end!=null?g._end:1e9;
+ const cnt=c=>c==='P'?(g.pc||[]).length:(g.ob||[]).filter(o=>OB[o.k]&&OB[o.k].c===c).length;
+ h.push(`<div class="mute" style="margin:6px 0">บันทึกสิ่งที่พบจริงในพื้นที่ โดยระบุ <b>STA + ด้าน (ซ้าย/ขวา) + ระยะจากกึ่งกลางทาง</b> — แปลนวาดสัญลักษณ์ให้ทันที ยังไม่เกี่ยวกับการคิดราคา</div>`);
+ h.push(`<div class="wzs">${Object.keys(OB_CAT).map(c=>`<button class="b sm ${tab===c?'':'ghost'}" data-act="obtab" data-v="${c}">${OB_CAT[c]} <span class="badge">${cnt(c)}</span></button>`).join('')}</div>`);
+ const ds=[['L','ซ้าย'],['C','กลาง'],['R','ขวา']];
+ if(tab!=='P'){const keys=Object.keys(OB).filter(k=>OB[k].c===tab);
+  h.push(`<div style="font-weight:700;margin-top:8px">เลือกสิ่งที่พบ แล้วกดเพิ่ม</div><div class="jxpick">${keys.map(k=>`<button class="b ghost" data-act="addOb" data-t="${k}" title="${OB[k].n}">${objIcon(k)}<span>${OB[k].n}</span></button>`).join('')}</div>`);
+  (g.ob||[]).forEach((o,i)=>{const d=OB[o.k];if(!d||d.c!==tab)return;const fs=OB_F[d.g],ts=parseSta(o.sta),out=ts==null||ts<sta0-1e-6||ts>end+1e-6;
+   const inp=f=>{const lab=f==='w'?(d.g==='rect'?'ลึกจากขอบ (ม.)':d.g==='drive'?'กว้างปากทาง (ม.)':'กว้าง (ม.)'):OB_L[f];
+    if(f==='side')return `<div><label>ด้าน</label><div class="chips">${ds.map(([v,n])=>`<button class="b sm ${o.side===v?'':'ghost'}" data-act="obside" data-i="${i}" data-v="${v}">${n}</button>`).join('')}</div></div>`;
+    if(f==='cond')return `<div><label>สภาพ</label><select data-ob="${i}" data-f="cond">${COND.map(x=>`<option value="${x}"${o.cond===x?' selected':''}>${x||'ไม่ระบุ'}</option>`).join('')}</select></div>`;
+    const num=['off','w','len'].includes(f);return `<div><label>${lab}</label><input data-ob="${i}" data-f="${f}" ${num?'type="number" step="any" inputmode="decimal"':''} ${f==='sta'||f==='sta2'?'list="dlSta"':''} value="${esc(o[f]==null?'':o[f])}" ${f==='sz'&&d.szh?`placeholder="${d.szh}"`:''}></div>`};
+   h.push(`<div class="plseg ob"><div class="plh"><span class="obic">${objIcon(o.k)}</span><b>${d.n}</b><span class="mute">STA ${esc(o.sta||'-')}${o.sta2?' – '+esc(o.sta2):''}</span>${out?'<span class="warn">⚠ STA อยู่นอกผัง</span>':''}<span class="sp"></span><button class="b red sm" data-act="delOb" data-i="${i}">✕</button></div><div class="grid g4">${fs.map(inp).join('')}</div></div>`)});
+  if(!(g.ob||[]).some(o=>OB[o.k]&&OB[o.k].c===tab))h.push(`<div class="mute" style="padding:8px">ยังไม่มีรายการในหมวดนี้ — กดไอคอนด้านบนเพื่อเพิ่ม</div>`)}
+ else{h.push(`<datalist id="dlPcT">${['ลาดยาง (AC)','คอนกรีต (CC)','ลูกรัง','หินคลุก','ดิน'].map(v=>`<option value="${v}">`).join('')}</datalist><datalist id="dlPcD">${PC_DMG.map(v=>`<option value="${v}">`).join('')}</datalist>`);
+  h.push(`<div class="mute">แบ่งตามช่วง STA ที่สภาพผิวทางเดิมต่างกัน — แปลนจะลงสีทับผิวทาง (เขียว=ดี เหลือง=พอใช้ แดง=ชำรุดมาก)</div>`);
+  (g.pc||[]).forEach((p,i)=>{h.push(`<div class="plseg ob"><div class="plh"><b>ช่วงสภาพผิวทางเดิม #${i+1}</b><span class="sp"></span><button class="b red sm" data-act="delPc" data-i="${i}">✕</button></div><div class="grid g4"><div><label>STA เริ่ม</label><input data-pc="${i}" data-f="a" list="dlSta" value="${esc(p.a)}"></div><div><label>STA ถึง</label><input data-pc="${i}" data-f="b" list="dlSta" value="${esc(p.b)}"></div><div><label>ชนิดผิวเดิม</label><input data-pc="${i}" data-f="type" list="dlPcT" value="${esc(p.type||'')}"></div><div><label>สภาพ</label><select data-pc="${i}" data-f="cond">${['','ดี','พอใช้','ชำรุดมาก'].map(x=>`<option value="${x}"${(p.cond||'')===x?' selected':''}>${x||'ไม่ระบุ'}</option>`).join('')}</select></div><div><label>ลักษณะความเสียหาย</label><input data-pc="${i}" data-f="dmg" list="dlPcD" value="${esc(p.dmg||'')}"></div><div><label>หมายเหตุ</label><input data-pc="${i}" data-f="note" value="${esc(p.note||'')}"></div></div></div>`)});
+  h.push(`<div class="bar"><button class="b sm" data-act="addPc">＋ เพิ่มช่วงสภาพผิวทาง</button></div>`)}
+ h.push(`<div class="bar"><button class="b ghost sm" data-act="sortOb">↕ เรียงตาม STA</button><button class="b ghost sm" data-act="csvOb">⬇ CSV รายการสำรวจ</button></div>`);
+h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="1">← ① ผังช่วง</button><button class="b" data-act="step" data-v="2">ไปขั้นที่ ③ รายการงาน →</button></div>`);
+ return h.join('')}
+
 const ENV_T=['','คลอง','แม่น้ำ','ร่องน้ำ/ลำเหมือง','บ้านเรือน/อาคาร','อื่นๆ'];
 function rowAt(g,t){const z=g.rz||[];if(z.length){for(const q of z)if(t>=q.a-1e-9&&t<q.b+1e-9)return[q.l,q.r];return[0,0]}return[gnum(g.rowl,0),gnum(g.rowr,0)]}
 function extentAt(g,t,w){const rw=rowAt(g,t);let l=Math.max(w[0],rw[0]),r=Math.max(w[1],rw[1]);
@@ -1349,7 +1450,7 @@ function compilePL(g){
     if(typeof S!=='undefined'&&S.rows)S.rows.forEach(r=>{if(r.sg===p.id&&!r.fx){r.sta1=fmtSta(p._a);r.sta2=fmtSta(p._b)}});
     acc+=L});
   g.env=cutEnv(g.env,jxCuts(g));g._end=acc}
-const WZ_STEPS=[['1','① บันทึกผังช่วง (STA)'],['2','② รายการงาน'],['3','③ รูปตัด SECTION']];
+const WZ_STEPS=[['1','① ผังช่วง (STA)'],['s','② สำรวจสภาพเดิม'],['2','③ รายการงาน'],['3','④ รูปตัด SECTION']];
 const plSta=p=>'STA '+fmtSta(p._a)+' – '+fmtSta(p._b)+' · ยาว '+Math.round((p._b-p._a||0)*100)/100+' ม.';
 const plWi=p=>'ผิวทางรวม ≈ '+Math.round(((p._wl||0)+(p._wr||0))*100)/100+' ม.';
 const plTot=g=>{const s=parseSta(g.sta0)||0,e=g._end!=null?g._end:s;return 'รวม '+Math.round((e-s)*100)/100+' ม. · สิ้นสุด STA '+fmtSta(e)};
@@ -1404,8 +1505,8 @@ function geoUI(){
     if(!pl.length)h.push(`<div class="mute" style="padding:10px">ยังไม่มีช่วง — กดปุ่มด้านล่างเพื่อเริ่มบันทึกช่วงแรกของโครงการ</div>`);
     h.push(`<datalist id="dlPv">${PV_OPT.map(v=>`<option value="${v}">`).join('')}</datalist><datalist id="dlSta">${pl.map(p=>`<option value="${fmtSta(p._a)}">`).join('')}${pl.length?`<option value="${fmtSta(pl[pl.length-1]._b)}">`:''}</datalist>`);
     const tot=pl.reduce((a,p)=>a+(p._b-p._a||0),0);
-    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง"],["CL","โค้งซ้าย"],["CR","โค้งขวา"]].map(([t,n])=>`<button class="b ghost" data-act="${t==="L"?"addL":t==="CL"?"addCL":"addCR"}" title="เพิ่ม${n}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="2">ไปขั้นที่ ② กำหนดรายการงาน →</button></div>`);
-  }else if(step==='2'){
+    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง"],["CL","โค้งซ้าย"],["CR","โค้งขวา"]].map(([t,n])=>`<button class="b ghost" data-act="${t==="L"?"addL":t==="CL"?"addCL":"addCR"}" title="เพิ่ม${n}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
+  }else if(step==='s'){h.push(surveyUI(g))}else if(step==='2'){
     h.push(`<div class="mute" style="margin:6px 0">กำหนดรายการงาน (JOB LIST) ตามแต่ละช่วง — แปลนจะอัปเดตภาพตามรายการงานที่เลือก (ช่วง STA ตามผังที่บันทึกไว้ในขั้นที่ ①)</div>`);
     if(!pl.length)h.push(`<div class="gsec">ยังไม่มีช่วงในผัง — กลับไปบันทึกผังในขั้นที่ ① ก่อน<div class="bar"><button class="b" data-act="step" data-v="1">← ไปขั้นที่ ①</button></div></div>`);
     h.push(`<datalist id="dlJob">${ITEMS.map(it=>`<option value="${esc(it.code)}" label="${esc(it.code+' — '+it.name)}">${esc(it.name)}</option>`).join('')}</datalist>`);
@@ -1417,22 +1518,24 @@ function geoUI(){
          ${r.fx?`<div class="jr1"><input data-rw="${ri}" data-f="sta1" value="${esc(r.sta1)}" placeholder="STA เริ่ม" style="width:100px"><input data-rw="${ri}" data-f="sta2" value="${esc(r.sta2)}" placeholder="STA ถึง" style="width:100px"></div>`:''}</div>`)});
       h.push(`<div class="bar"><button class="b sm" data-act="addJob" data-i="${i}">＋ เพิ่มรายการงานในช่วงนี้</button>${i>0?`<button class="b ghost sm" data-act="cpJob" data-i="${i}">คัดลอกรายการจากช่วงที่ ${i}</button>`:''}</div></div>`)});
     const un=S.rows.filter(r=>!r.sg&&!isBlank(r)).length;if(un)h.push(`<div class="mute">มี ${un} แถวในแท็บ ③ TABLE ที่ไม่ได้ผูกกับช่วง — ยังแสดงบนแปลนตาม STA ของแถวนั้นๆ</div>`);
-    h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="1">← ① ผังช่วง</button><button class="b" data-act="step" data-v="3">ไปขั้นที่ ③ รูปตัด →</button></div>`);
+    h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="s">← ② สำรวจสภาพเดิม</button><button class="b" data-act="step" data-v="3">ไปขั้นที่ ④ รูปตัด →</button></div>`);
   }else if(step==='3'){
     h.push(`<div class="mute" style="margin:6px 0">เลือก STA ตำแหน่งตัด กำหนดชั้นวัสดุ แล้วกด "สร้าง SECTION" — รูปตัดแสดงใต้แปลนของแผ่นนั้น</div>`);
     if(pl.length){h.push(`<div class="gsec"><b>เลือกตำแหน่งตัดอย่างเร็ว</b><div class="bar"><select id="secQ">${pl.map((p,i)=>[['ต้นช่วง',p._a],['กลางช่วง',(p._a+p._b)/2],['ปลายช่วง',p._b]].map(([n,v])=>`<option value="${v}">ช่วงที่ ${i+1} · ${n} (STA ${fmtSta(v)})</option>`).join('')).join('')}</select><button class="b ghost sm" data-act="addSecQ">＋ เพิ่มรูปตัดตรงนี้</button></div></div>`)}
     h.push(secEditor(g));
-    h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="2">← ② รายการงาน</button><button class="b" data-act="mkSec">🧩 สร้าง SECTION</button></div>`);
+    h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="2">← ③ รายการงาน</button><button class="b" data-act="mkSec">🧩 สร้าง SECTION</button></div>`);
   }else{h.push(scH);h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="1">← กลับ</button></div>`)}
   window._ui=1;try{$('geoCard').innerHTML=`<div id="wzbody">${h.join('')}</div>`}finally{window._ui=0}}
 (function(){const gc=$('geoCard');
   gc.addEventListener('input',e=>{if(window._ui)return;const el=e.target,g=G();
+    if(el.dataset.ob!==undefined||el.dataset.pc!==undefined){const o=el.dataset.ob!==undefined?g.ob[+el.dataset.ob]:g.pc[+el.dataset.pc];if(!o)return;if(el.tagName!=='SELECT')o[el.dataset.f]=el.value;geoRedraw();return}
     if(el.dataset.jx!==undefined){const j=g.jx[+el.dataset.jx];if(!j)return;if(el.dataset.lg!==undefined)j.legs[+el.dataset.lg][el.dataset.f]=el.value;else if(el.tagName!=='SELECT')j[el.dataset.f]=el.value;geoRedraw();const a=el.closest('.jx');if(a){const x=a.querySelector('.jxarea');if(x)x.textContent='พื้นที่ผิวทางโดยประมาณ '+jxArea(j)+' ตร.ม.'}return}
     if(el.dataset.sf!==undefined){g.secs[+el.dataset.sf][el.dataset.f]=el.value;geoRedraw();return}
     if(el.dataset.sl!==undefined&&el.tagName!=='SELECT'){const l=g.secs[+el.dataset.sl].layers[+el.dataset.j];if(!l)return;l[el.dataset.f]=el.dataset.f==='code'?el.value.trim().toUpperCase():el.value;geoRedraw();if(el.dataset.f==='code'){const sp=document.querySelector('[data-sli="'+el.dataset.sl+':'+el.dataset.j+'"]');const it=BYCODE[l.code];if(sp)sp.innerHTML=it?'<span class="jname">'+esc(it.code)+' · '+esc(it.name)+'</span>':(l.code?'<span style="color:#b3261e">ไม่พบรหัสงานนี้</span>':'ยังไม่ผูกรหัสรายการงาน')}return}
     if(el.dataset.pl!==undefined){const p=g.pl[+el.dataset.pl];if(!p)return;if(el.dataset.env){p['e'+el.dataset.env]=p['e'+el.dataset.env]||{t:'',w:'',n:''};p['e'+el.dataset.env][el.dataset.f]=el.value}else p[el.dataset.f]=el.value;geoRedraw();plLabels()}
     else if(el.dataset.rw!==undefined){const r=S.rows[+el.dataset.rw];if(!r)return;const f=el.dataset.f;r[f]=f==='code'?el.value.trim().toUpperCase():el.value;if(f==='sta1'||f==='sta2')r.fx=1;geoRedraw();clearTimeout(window._rwT);window._rwT=setTimeout(()=>{renderRows();refresh()},300);plLabels()}});
   gc.addEventListener('change',e=>{if(window._ui)return;const el=e.target;
+    if(el.dataset.ob!==undefined||el.dataset.pc!==undefined){const g=G(),o=el.dataset.ob!==undefined?g.ob[+el.dataset.ob]:g.pc[+el.dataset.pc];if(o){o[el.dataset.f]=el.value;save();renderPlan()}return}
     if(el.dataset.jx!==undefined&&el.tagName==='SELECT'){const g=G(),j=g.jx[+el.dataset.jx];if(el.dataset.f==='type'){j.type=el.value;j.legs=el.value==='R'?rbLegs(+j.n||4):jxLegDef(el.value);if(!j.Ro)j.Ro=15;if(!j.Ri)j.Ri=8}else if(el.dataset.f==='n'){j.n=+el.value;j.legs=rbLegs(j.n,j.legs)}save();geoUI();renderPlan();return}
     if(el.dataset.jx!==undefined||el.dataset.sf!==undefined||el.dataset.sl!==undefined){const g=G();if(el.dataset.sl!==undefined&&el.tagName==='SELECT'){const l=g.secs[+el.dataset.sl].layers[+el.dataset.j];if(el.dataset.f==='mat'){l.n=el.value==='__oth'?'':el.value}else l[el.dataset.f]=el.value;save();geoUI();renderPlan();return}save();renderPlan();return}if(el.dataset.pl!==undefined||el.dataset.rw!==undefined||el.dataset.p==='sta0'||el.dataset.p==='hd'){const g=G();if(el.dataset.pl!==undefined&&el.dataset.f==='t'&&!el.dataset.env){const p=g.pl[+el.dataset.pl];if(p.t==='L'){p.len=p.len||50}else{p.ang=p.ang||30;p.R=p.R||20}}
       if(el.dataset.p==='sta0'&&parseSta(el.value)==null&&el.value.trim()!==''){toast('รูปแบบ STA ไม่ถูกต้อง เช่น 0+000',true)}
@@ -1467,6 +1570,14 @@ function geoUI(){
       let made=0;(s.layers||[]).forEach((l,j)=>{if(!l.code)return;const src=s.id+':'+j;let r=S.rows.find(r=>r.src===src);if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src};S.rows.push(r)}
         const wd=seg?(seg._wl||0)+(seg._wr||0):0;Object.assign(r,{code:l.code,sta1:fmtSta(a),sta2:fmtSta(bb),d:String(Math.round(gnum(l.t,0)*10)/1000),w:wd?String(Math.round(wd*100)/100):'',C:true,L:false,R:false,sg:(seg&&!ranged)?seg.id:undefined,fx:(ranged||!seg)?1:0});made++});
       if(!made){problem('SEC_NOCODE');return}renderRows();refresh();toast('✔ สร้าง/อัปเดต '+made+' รายการงานแล้ว (ดูในขั้น ②)')}
+    else if(act==='obtab'){g.obtab=d.v}
+    else if(act==='addOb'){g.ob.push(newOb(g,d.t))}
+    else if(act==='delOb'){g.ob.splice(i,1)}
+    else if(act==='obside'){const o=g.ob[i];const was=o.side;o.side=d.v;if(d.v==='C')o.off=0;else if(was==='C'||was===undefined||gnum(o.off,0)===0)o.off=obDefOff(g,o.k,o.sta,d.v)}
+    else if(act==='addPc'){const last=g.pc[g.pc.length-1];g.pc.push({a:last?last.b:(g.sta0||'0+000'),b:'',type:'',cond:'',dmg:'',note:''})}
+    else if(act==='delPc'){g.pc.splice(i,1)}
+    else if(act==='sortOb'){g.ob.sort((a,b)=>(parseSta(a.sta)||0)-(parseSta(b.sta)||0))}
+    else if(act==='csvOb'){dl(new Blob([obCsv(g)],{type:'text/csv;charset=utf-8'}),(S.code||'SV')+'_ExistingSurvey.csv');return}
     else if(act==='mkSec'){if(!g.secs.length){problem('SEC_NONE');return}const bad=g.secs.filter(s=>parseSta(s.sta)==null);if(bad.length){problem('SEC_STA');return}
       const lo=parseSta(g.sta0)||0,hi=g._end!=null?g._end:1e9;const out=g.secs.filter(s=>parseSta(s.sta)<lo-1e-6||parseSta(s.sta)>hi+1e-6);if(g.pl.length&&out.length){problem('SEC_RANGE',out.map(s=>s.sta).join(', '));return}
       save();renderPlan();toast('✔ สร้างรูปตัด '+g.secs.length+' รูปแล้ว');$('planbox').scrollIntoView({behavior:'smooth',block:'start'});return}
@@ -1542,7 +1653,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v18';
+const APPVER='v19';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
