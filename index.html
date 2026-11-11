@@ -1303,6 +1303,22 @@ function pvSvg(c){const{g,P,k,s0,s1,sta0,ang,wf}=c;const o=[];(g.pv||[]).forEach
   const txt=(z.o?'ผิวทางเดิม: '+z.o:'')+(z.o&&z.n?'  →  ':'')+(z.n?'ผิวทางใหม่: '+z.n:'');
   o.push(`<text transform="translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)})" font-size="11" font-weight="700" fill="#1b5e20" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${esc(cut(txt,60))}</text>`)});return o.join('')}
 
+function segIcon(t){const bg='<rect x="9" y="9" width="42" height="42" rx="4" transform="rotate(45 30 30)" fill="#f6c90e" stroke="#222" stroke-width="1.5"/>';
+  const hd=(m,x)=>m?x:60-x;let body;
+  if(t==='L')body='<line x1="30" y1="50" x2="30" y2="26" stroke="#111" stroke-width="5"/><polygon points="30,10 20,27 40,27" fill="#111"/>';
+  else{const m=t==='CL',X=x=>m?x:60-x;body=`<path d="M${X(36)} 50 V38 Q${X(36)} 28 ${X(25)} 23" fill="none" stroke="#111" stroke-width="5"/><polygon points="${X(15)},15 ${X(30)},15 ${X(22)},30" fill="#111" transform="rotate(${m?-8:8} 30 22)"/>`}
+  return `<svg viewBox="0 0 60 60" width="52" height="52">${bg}${body}</svg>`}
+function envSplit(g){const out=[];(g.env||[]).forEach(e=>{let gaps=[];(g.jx||[]).forEach(j=>{const ts=parseSta(j.sta);if(ts==null)return;
+    if(j.type==='R'){const r=gnum(j.Ro,15)+3;gaps.push([ts-r,ts+r]);return}
+    (j.legs||[]).forEach(l=>{const a=gnum(l.a,0)*Math.PI/180,s=Math.sin(a),c=Math.cos(a);if(Math.abs(s)<.05)return;if((s>0?'L':'R')!==e.side)return;
+      const ctr=ts+gnum(l.off,0),half=gnum(l.w,5)/2/Math.abs(s)+gnum(j.rk,6)+3+4*Math.abs(c/s);gaps.push([ctr-half,ctr+half])})});
+  gaps.sort((x,y)=>x[0]-y[0]);let a=e.a;const b=e.b;gaps.forEach(([g0,g1])=>{if(g1<=a||g0>=b)return;if(g0>a)out.push(Object.assign({},e,{a:a,b:g0}));a=Math.max(a,g1)});if(a<b)out.push(Object.assign({},e,{a:a,b:b}))});return out}
+
+function jxCuts(g){const cuts=[];(g.jx||[]).forEach(j=>{const ts=parseSta(j.sta);if(ts==null)return;
+  if(j.type==='R'){const Ro=gnum(j.Ro,15);cuts.push([ts-Ro-3,ts+Ro+3]);(j.legs||[]).forEach(l=>{const a=gnum(l.a,0)*Math.PI/180,s=Math.abs(Math.sin(a))||.3,h=gnum(l.w,5)/(2*s)+3,x=Math.min(gnum(l.len,40),18)/Math.tan(Math.max(.3,Math.abs(a)))*Math.sign(Math.cos(a)||1);cuts.push([ts+Math.min(0,x)-h,ts+Math.max(0,x)+h])});return}
+  (j.legs||[]).forEach(l=>{const a=gnum(l.a,0)*Math.PI/180,s=Math.max(.3,Math.abs(Math.sin(a))),h=gnum(l.w,5)/(2*s)+gnum(j.rk,6)+1.5,off=gnum(l.off,0),x=(18*Math.cos(a)/Math.max(.3,Math.abs(Math.sin(a))))*Math.sign(Math.sin(a)||1)*Math.sign(Math.sin(a)||1);cuts.push([ts+off+Math.min(0,x)-h,ts+off+Math.max(0,x)+h])})});return cuts}
+function cutEnv(env,cuts){if(!cuts.length)return env;let out=[];env.forEach(e=>{let segs=[[e.a,e.b]];cuts.forEach(([ca,cb])=>{const n=[];segs.forEach(([a,b])=>{if(cb<=a||ca>=b)n.push([a,b]);else{if(ca>a)n.push([a,ca]);if(cb<b)n.push([cb,b])}});segs=n});segs.forEach(([a,b])=>{if(b-a>.3)out.push({...e,a,b})})});return out}
+
 // ===== v17: PLAN BUILDER (3 ขั้นตอน) =====
 const ENV_T=['','คลอง','แม่น้ำ','ร่องน้ำ/ลำเหมือง','บ้านเรือน/อาคาร','อื่นๆ'];
 function rowAt(g,t){const z=g.rz||[];if(z.length){for(const q of z)if(t>=q.a-1e-9&&t<q.b+1e-9)return[q.l,q.r];return[0,0]}return[gnum(g.rowl,0),gnum(g.rowr,0)]}
@@ -1332,7 +1348,7 @@ function compilePL(g){
       [['L',p.eL],['R',p.eR]].forEach(([sd,e])=>{if(e&&e.t&&gnum(e.w)>0)g.env.push({a:acc,b:acc+L,side:sd,t:e.t,w:gnum(e.w),name:e.n||''})})}
     if(typeof S!=='undefined'&&S.rows)S.rows.forEach(r=>{if(r.sg===p.id&&!r.fx){r.sta1=fmtSta(p._a);r.sta2=fmtSta(p._b)}});
     acc+=L});
-  g._end=acc}
+  g.env=cutEnv(g.env,jxCuts(g));g._end=acc}
 const WZ_STEPS=[['1','① บันทึกผังช่วง (STA)'],['2','② รายการงาน'],['3','③ รูปตัด SECTION']];
 const plSta=p=>'STA '+fmtSta(p._a)+' – '+fmtSta(p._b)+' · ยาว '+Math.round((p._b-p._a||0)*100)/100+' ม.';
 const plWi=p=>'ผิวทางรวม ≈ '+Math.round(((p._wl||0)+(p._wr||0))*100)/100+' ม.';
@@ -1387,10 +1403,8 @@ function geoUI(){
       <div class="grid g2"><div><label>ผิวทางเดิม</label><input list="dlPv" data-pl="${i}" data-f="pvO" value="${esc(p.pvO||'')}" placeholder="เช่น ลูกรัง / ลาดยาง / ว่าง=ไม่มี"></div><div><label>ผิวทางใหม่</label><input list="dlPv" data-pl="${i}" data-f="pvN" value="${esc(p.pvN||'')}" placeholder="เช่น ลาดยาง (AC) / คอนกรีต (CC)"></div></div><div class="mute plwi">${plWi(p)} · ช่องที่เว้นว่าง = ใช้ค่าเดียวกับช่วงก่อน</div></div>`)});
     if(!pl.length)h.push(`<div class="mute" style="padding:10px">ยังไม่มีช่วง — กดปุ่มด้านล่างเพื่อเริ่มบันทึกช่วงแรกของโครงการ</div>`);
     h.push(`<datalist id="dlPv">${PV_OPT.map(v=>`<option value="${v}">`).join('')}</datalist><datalist id="dlSta">${pl.map(p=>`<option value="${fmtSta(p._a)}">`).join('')}${pl.length?`<option value="${fmtSta(pl[pl.length-1]._b)}">`:''}</datalist>`);
-    h.push(jxCards(g));
     const tot=pl.reduce((a,p)=>a+(p._b-p._a||0),0);
-    h.push(`<div class="bar"><button class="b sm" data-act="addL">＋ ช่วงตรง</button><button class="b ghost sm" data-act="addCL">＋ โค้งซ้าย</button><button class="b ghost sm" data-act="addCR">＋ โค้งขวา</button><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>
-      <div class="bar"><button class="b" data-act="step" data-v="2">ไปขั้นที่ ② กำหนดรายการงาน →</button></div>`);
+    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง"],["CL","โค้งซ้าย"],["CR","โค้งขวา"]].map(([t,n])=>`<button class="b ghost" data-act="${t==="L"?"addL":t==="CL"?"addCL":"addCR"}" title="เพิ่ม${n}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="2">ไปขั้นที่ ② กำหนดรายการงาน →</button></div>`);
   }else if(step==='2'){
     h.push(`<div class="mute" style="margin:6px 0">กำหนดรายการงาน (JOB LIST) ตามแต่ละช่วง — แปลนจะอัปเดตภาพตามรายการงานที่เลือก (ช่วง STA ตามผังที่บันทึกไว้ในขั้นที่ ①)</div>`);
     if(!pl.length)h.push(`<div class="gsec">ยังไม่มีช่วงในผัง — กลับไปบันทึกผังในขั้นที่ ① ก่อน<div class="bar"><button class="b" data-act="step" data-v="1">← ไปขั้นที่ ①</button></div></div>`);
