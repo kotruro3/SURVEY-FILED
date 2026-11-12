@@ -621,6 +621,7 @@ async function pkgZip(){
     if(np)pf.file('index.csv','\ufeff'+rows.join('\r\n'));
     const gis=f.folder('03_GIS');if(features().length){gis.file(base+'.kml',kmlStr());gis.file(base+'.geojson',geojsonStr())}
     try{if(G().mp){const mb=await mmPngBlob();if(mb)f.folder('04_PLAN').file(base+'_MAP.png',mb)}}catch(e){}
+     try{const dx=dxfBuild({th:2.5,utm:!!G().mp,jobs:true,osm:true});if(dx)f.folder('06_CAD').file(base+'_PLAN.dxf',dx.text)}catch(e){}
      const pbs=await pngBlobs();pbs.forEach((pb,i)=>f.folder('04_PLAN').file(base+'_PLAN'+(pbs.length>1?'_'+(i+1):'')+'.png',pb));
     if(((G().ob||[]).length||(G().pc||[]).length))f.folder('01_Excel').file(base+'_ExistingSurvey.csv',obCsv(G()));
     const o={...S,jobs:usedJobs([S]),photos:await photoMap(photoIds(S))};f.folder('05_Backup').file(base+'_backup.json',JSON.stringify(o));
@@ -1665,7 +1666,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v20';
+const APPVER='v21';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -2003,6 +2004,111 @@ $('mkMapBtn').onclick=()=>openMakeMap();$('mmRe').onclick=()=>renderMapSheet();
 $('mmPng').onclick=async()=>{const b=await mmPngBlob();if(!b){toast('ยังไม่มีแผนที่สังเขป — กด MAKE MAP ก่อน',true);return}dl(b,fname()+'_MAP.png')};
 $('mmSvgB').onclick=()=>{if(!MMSVG){toast('ยังไม่มีแผนที่สังเขป — กด MAKE MAP ก่อน',true);return}dl(new Blob([MMSVG],{type:'image/svg+xml'}),fname()+'_MAP.svg')};
 $('mmPdf').onclick=()=>{if(!MMSVG){toast('ยังไม่มีแผนที่สังเขป — กด MAKE MAP ก่อน',true);return}const w=window.open('','_blank');if(!w){toast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — อนุญาต pop-up แล้วลองใหม่',true);return}w.document.write('<title>'+esc(S.code||'MAP')+'</title><style>@page{size:A4 landscape;margin:0}body{margin:0}svg{width:100vw;height:auto}</style>'+MMSVG);w.document.close();setTimeout(()=>w.print(),400)};
+
+// ===== v21: EXPORT DXF (เปิดด้วย AutoCAD / BricsCAD / DraftSight / QGIS ได้ — แล้ว Save As DWG) =====
+const DXF_ACI=[[1,255,0,0],[2,255,255,0],[3,0,200,0],[4,0,200,200],[5,0,0,255],[6,200,0,200],[7,0,0,0],[8,128,128,128],[30,255,127,0],[94,120,170,230],[84,150,210,150],[41,200,150,90]];
+const dxfCol=hex=>{const m=String(hex||'').match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);if(!m)return 7;const r=parseInt(m[1],16),g=parseInt(m[2],16),b=parseInt(m[3],16);let best=7,bd=1e9;DXF_ACI.forEach(([c,R,G,B])=>{const d=(R-r)**2+(G-g)**2+(B-b)**2;if(d<bd){bd=d;best=c}});return best};
+const dxfStr=s=>String(s==null?'':s).replace(/[\r\n]+/g,' ').replace(/[^\x20-\x7e]/g,ch=>{const c=ch.codePointAt(0);return c>0xffff?'':'\\U+'+c.toString(16).toUpperCase().padStart(4,'0')});
+function dxfBuild(op){
+  const g=G();compilePL(g);const s0=parseSta(g.sta0)||0,len=Math.max(0,(g._end!=null?g._end:s0)-s0);if(!(len>0))return null;
+  const pts=buildAlign(g,len),wf=widthFn(g),H=op.th;let ox=0,oy=0,zone='';
+  if(op.utm&&g.mp){const u=utm(g.mp.lat,g.mp.lon);ox=u.e;oy=u.n;zone=u.zone+'N'}
+  const layers={},ents=[];const lay=(n,c,lt)=>{if(!layers[n])layers[n]={c:c||7,lt:lt||'CONTINUOUS'};return n};
+  const f=v=>(Math.round(v*1000)/1000).toString();
+  const W=(c,v)=>ents.push(c+'\n'+v);
+  const wp=(x,y)=>[x+ox,y+oy];
+  const pl=(layer,arr,closed)=>{if(arr.length<2)return;W(0,'POLYLINE');W(8,layer);W(66,1);W(10,0);W(20,0);W(30,0);W(70,closed?1:0);arr.forEach(p=>{const q=wp(p[0],p[1]);W(0,'VERTEX');W(8,layer);W(10,f(q[0]));W(20,f(q[1]));W(30,0)});W(0,'SEQEND');W(8,layer)};
+  const ln=(layer,a,b)=>pl(layer,[a,b]);
+  const ci=(layer,p,r)=>{const q=wp(p[0],p[1]);W(0,'CIRCLE');W(8,layer);W(10,f(q[0]));W(20,f(q[1]));W(30,0);W(40,f(r))};
+  const tx=(layer,p,str,h,rot,al)=>{if(!str)return;const q=wp(p[0],p[1]);W(0,'TEXT');W(8,layer);W(7,'THAI');W(10,f(q[0]));W(20,f(q[1]));W(30,0);W(40,f(h||H));W(1,dxfStr(str));if(rot)W(50,f(rot));if(al){W(72,al==='c'?1:al==='r'?2:0);W(11,f(q[0]));W(21,f(q[1]));W(31,0);W(73,al==='c'?2:al==='r'?2:0)}else W(73,0)};
+  const A=t=>ptAt(pts,Math.max(0,Math.min(len,t))),O=(t,off)=>{const p=A(t);return offPt(p,off)},ang=t=>A(t).a/DEG;
+  const samp=(a,b,st)=>{const o=[];st=st||1;for(let t=a;t<b-1e-9;t+=st)o.push(t);o.push(b);return o};
+  const rel=sta=>{const v=parseSta(sta);return v==null?null:v-s0};
+  const bnd=[1e18,1e18,-1e18,-1e18];const tb=p=>{bnd[0]=Math.min(bnd[0],p[0]);bnd[1]=Math.min(bnd[1],p[1]);bnd[2]=Math.max(bnd[2],p[0]);bnd[3]=Math.max(bnd[3],p[1])};
+  pts.forEach(p=>tb([p.x,p.y]));
+  // ---- แนวทาง + ขอบผิวทาง + STA
+  const T=samp(0,len,1);
+  pl(lay('PL_CENTER',1,'CENTER'),T.map(t=>{const p=A(t);return[p.x,p.y]}));
+  pl(lay('PL_EDGE_L',3),T.map(t=>O(t,wf(t+s0)[0])));pl(lay('PL_EDGE_R',3),T.map(t=>O(t,-wf(t+s0)[1])));
+  const stepM=len>3000?100:20,stepL=stepM*5;
+  for(let s=Math.ceil(s0/stepM)*stepM;s<=s0+len+1e-6;s+=stepM){const t=s-s0,maj=Math.abs(s/stepL-Math.round(s/stepL))<1e-9,L=maj?3:1.5;ln(lay('PL_STA',2),O(t,L),O(t,-L));
+    if(maj){const p=O(t,-L-H*.4);let a=ang(t);tx('PL_STA_TXT',p,fmtSta(s),H,a>90&&a<=270?a-180:a,'c')}}
+  tx('PL_STA_TXT',O(0,wf(s0)[0]+4),'START STA '+fmtSta(s0),H*1.2,0);tx('PL_STA_TXT',O(len,wf(s0+len)[0]+4),'END STA '+fmtSta(s0+len),H*1.2,0);
+  curvesList(g,s0).forEach((c,i)=>{const a=c.a,b=c.b;[[a,'PC'],[b,'PT']].forEach(([t,n])=>{const p=A(t);ci(lay('PL_CURVE',6),[p.x,p.y],H*.35);tx('PL_CURVE',[p.x+H*.5,p.y+H*.5],n+(i+1)+' '+fmtSta(s0+t),H*.8)});
+    const m=A((a+b)/2);tx('PL_CURVE',O((a+b)/2,(c.t==='CL'?1:-1)*(c.R*.3+1)),(c.t==='CL'?'โค้งซ้าย':'โค้งขวา')+' R='+f(c.R)+' Δ='+f(c.D)+'°',H*.8,0,'c')});
+  // ---- ROW
+  (g.rz||[]).forEach(z=>{const a=z.a-s0,b=z.b-s0;if(b<=a)return;const TT=samp(Math.max(0,a),Math.min(len,b),2);if(z.l>0)pl(lay('PL_ROW',5,'DASHED'),TT.map(t=>O(t,z.l)));if(z.r>0)pl(lay('PL_ROW',5,'DASHED'),TT.map(t=>O(t,-z.r)))});
+  // ---- สภาพแวดล้อมข้างทาง
+  (g.env||[]).forEach(e=>{const a=Math.max(0,e.a-s0),b=Math.min(len,e.b-s0);if(b<=a)return;const sg=e.side==='L'?1:-1,TT=samp(a,b,2);
+    const base=t=>{const w=wf(t+s0);return sg>0?w[0]:w[1]},P1=TT.map(t=>O(t,sg*base(t))),P2=TT.map(t=>O(t,sg*(base(t)+e.w)));pl(lay('ENV',9),P1.concat(P2.reverse()),true);
+    const m=(a+b)/2;if((b-a)>H*6)tx('ENV',O(m,sg*(base(m)+e.w/2)),(e.name||e.t),H*.8,0,'c')});
+  // ---- ผิวทางเดิม (pc)
+  (g.pc||[]).forEach(p=>{const a=rel(p.a),b=rel(p.b);if(a==null||b==null||b<=a)return;const A_=Math.max(0,a),B_=Math.min(len,b),TT=samp(A_,B_,2),col=dxfCol(PC_COND[p.cond]);
+    pl(lay('PAVE_'+(({'ดี':'GOOD','พอใช้':'FAIR','ชำรุดมาก':'BAD'})[p.cond]||'NA'),col,'DASHED'),TT.map(t=>O(t,wf(t+s0)[0])).concat(TT.slice().reverse().map(t=>O(t,-wf(t+s0)[1]))),true);const m=(A_+B_)/2;tx('PAVE_'+(({'ดี':'GOOD','พอใช้':'FAIR','ชำรุดมาก':'BAD'})[p.cond]||'NA'),O(m,0),[p.type,p.cond,p.dmg].filter(Boolean).join(' '),H*.8,0,'c')});
+  // ---- วัตถุสำรวจ
+  (g.ob||[]).forEach(ob=>{const d=OB[ob.k];if(!d)return;const ts=rel(ob.sta);if(ts==null)return;let t=ts,t2=rel(ob.sta2);t2=t2==null?t:t2;if(t2<t){const q=t;t=t2;t2=q}
+    const L=lay('OB_'+d.c,dxfCol(d.col)),sg=ob.side==='L'?1:ob.side==='R'?-1:0,off=gnum(ob.off,4),w=gnum(ob.w,0),lab=d.s+(ob.sz?' '+ob.sz:'')+(ob.note?' ('+ob.note+')':'');
+    if(d.g==='pt'){const p=O(t,sg*off);ci(L,p,Math.max(.3,H*.25));tx(L,[p[0]+H*.5,p[1]+H*.5],lab,H*.8);tb(p)}
+    else if(d.g==='cross'){const w0=wf(ts+s0);ln(L,O(t,w0[0]+2),O(t,-(w0[1]+2)));tx(L,O(t,w0[0]+2+H),lab,H*.8)}
+    else if(d.g==='ln'){const a=Math.max(0,t),b=Math.min(len,Math.max(t2,t+.1));if(b-a<=.05)return;const TT=samp(a,b,2);
+      if(d.band&&w>0){pl(L,TT.map(x=>O(x,sg*off)));pl(L,TT.map(x=>O(x,sg*(off+w))))}else pl(L,TT.map(x=>O(x,sg*(off+w/2))));
+      const m=(a+b)/2;if(b-a>H*5){let r=ang(m);tx(L,O(m,sg*(off+w)+(sg>=0?H*.5:-H*1.3)),lab,H*.8,r>90&&r<=270?r-180:r,'c')}}
+    else if(d.g==='rect'){const y1=sg*off,y2=sg*(off+w);pl(L,[O(t,y1),O(t2,y1),O(t2,y2),O(t,y2)],true);tx(L,O((t+t2)/2,(y1+y2)/2),lab||'อาคาร',H*.8,0,'c')}
+    else if(d.g==='span'){const w0=wf(ts+s0),e=Math.max(w0[0],w0[1])+1.2;pl(L,[O(t,e),O(t2,e),O(t2,-e),O(t,-e)],true);tx(L,O((t+t2)/2,0),'สะพาน/คอสะพาน'+(ob.sz?' '+ob.sz:''),H*.8,0,'c')}
+    else if(d.g==='drive'&&sg!==0){const w0=wf(ts+s0),hw=sg>0?w0[0]:w0[1],ww=Math.max(1,w||4),Ld=Math.max(1,gnum(ob.len,6));pl(L,[O(t-ww/2,sg*hw),O(t+ww/2,sg*hw),O(t+ww/2,sg*(hw+Ld)),O(t-ww/2,sg*(hw+Ld))],true);tx(L,O(t,sg*(hw+Ld+1)),'ทางเข้า'+(ob.note?' '+ob.note:''),H*.8,0,'c')}});
+  // ---- ทางแยก/วงเวียน
+  (g.jx||[]).forEach((j,i)=>{const t=rel(j.sta);if(t==null||t<0||t>len)return;const p=A(t),L=lay('JX',6);
+    if(j.type==='R'){const Ro=gnum(j.Ro,15),Ri=gnum(j.Ri,6);ci(L,[p.x,p.y],Ro);ci(L,[p.x,p.y],Ri)}
+    (j.legs||[]).forEach(l=>{const q=A(t+gnum(l.off,0)),an=q.a+gnum(l.a,0)*DEG,ln_=gnum(l.len,30),hw=gnum(l.w,5)/2,dx=Math.cos(an),dy=Math.sin(an),nx=-dy,ny=dx;
+      [1,-1].forEach(s=>ln(L,[q.x+nx*hw*s,q.y+ny*hw*s],[q.x+nx*hw*s+dx*ln_,q.y+ny*hw*s+dy*ln_]));ln(lay('PL_CENTER',1,'CENTER'),[q.x,q.y],[q.x+dx*ln_,q.y+dy*ln_]);tb([q.x+dx*ln_,q.y+dy*ln_])});
+    tx(L,[p.x+H,p.y+H],(JX_T&&JX_T[j.type]||j.type)+' #'+(i+1)+' STA '+fmtSta(s0+t),H*.9)});
+  // ---- รายการงาน (JOB) ตาม STA
+  if(op.jobs)S.rows.forEach((r,i)=>{const c=calc(r);if(!r.code||c.a==null)return;const a=c.a-s0,b=(c.b==null?c.a:c.b)-s0;if(b<0||a>len)return;const it=BYCODE[String(r.code).toUpperCase()],cat=it&&it.cat,L=lay('JOB',dxfCol(cat&&cat.color)||2);
+    const lab=r.code+(it?' '+it.name:'')+(c.qty?' '+nf(c.qty)+' '+(it.unit||''):'');const sides=[r.L&&'L',r.C&&'C',r.R&&'R'].filter(Boolean);if(!sides.length)sides.push('C');
+    sides.forEach(sd=>{const A_=Math.max(0,a),B_=Math.min(len,Math.max(b,a+.1)),TT=samp(A_,B_,2),w=wf(A_+s0),off=sd==='L'?w[0]*.5:sd==='R'?-w[1]*.5:0;pl(L,TT.map(t=>O(t,off)));const m=(A_+B_)/2;let rr=ang(m);tx(L,O(m,off+H*.4),(sides.length>1?sd+': ':'')+lab,H*.7,rr>90&&rr<=270?rr-180:rr,'c')})});
+  // ---- OSM
+  if(op.osm&&g.osm&&g.mp){const mp=g.mp,kx=111320*Math.cos(mp.lat*DEG),ky=110574,XY=q=>[(q[1]-mp.lon)*kx,(q[0]-mp.lat)*ky];
+    const names={wat:['OSM_WATER',5],for:['OSM_FOREST',3],res:['OSM_RESIDENTIAL',41],frm:['OSM_FARM',2],bld:['OSM_BUILDING',8]};
+    (g.osm.polys||[]).forEach(q=>{const n=names[q.k];if(!n)return;const P=q.p.map(XY);pl(lay(n[0],n[1]),P,true);if(q.n&&P.length){const c=P[0];tx(n[0],c,q.n,H*.8)}});
+    (g.osm.lines||[]).forEach(q=>{const P=q.p.map(XY);pl(lay(q.k==='ww'?'OSM_WATERWAY':'OSM_ROAD',q.k==='ww'?5:30),P);if(q.n&&P.length)tx(q.k==='ww'?'OSM_WATERWAY':'OSM_ROAD',P[P.length>>1],q.n,H*.8)});
+    (g.osm.pois||[]).forEach(q=>{const P=XY([q.la,q.lo]),nm=q.k==='pl'?'OSM_PLACE':'OSM_POI';lay(nm,q.k==='pl'?8:6);if(q.k!=='pl')ci(nm,P,H*.35);tx(nm,[P[0]+H*.5,P[1]+H*.3],(q.n||q.s||''),q.k==='pl'?H*1.1:H*.8)});
+    (g.osm.trees||[]).forEach(q=>ci(lay('OSM_TREE',3),XY(q),.8))}
+  // ---- ชื่อแบบ
+  const tbx=[bnd[0],bnd[1]-H*6];
+  tx(lay('TITLE',7),tbx,'โครงการ: '+(S.proj.name||'-')+'   สายทาง: '+(S.proj.route||'-'),H*1.3);tx('TITLE',[tbx[0],tbx[1]-H*2],'หน่วยงาน: '+(S.proj.agency||'-')+'   รหัส: '+(S.code||'-')+'   STA '+fmtSta(s0)+' - '+fmtSta(s0+len),H);
+  tx('TITLE',[tbx[0],tbx[1]-H*3.7],'พิกัด: '+(ox?('UTM โซน '+zone+' (WGS84) หน่วยเมตร'):'พิกัดท้องถิ่น (จุดเริ่ม = 0,0 ทิศเหนือ = +Y)')+'   สร้างจาก Survey Field '+APPVER+'   '+new Date().toISOString().slice(0,10),H*.8);
+  // ---- ประกอบไฟล์
+  const o=[];const P=(c,v)=>o.push(c+'\n'+v);
+  P(0,'SECTION');P(2,'HEADER');P(9,'$ACADVER');P(1,'AC1009');P(9,'$INSBASE');o.push('10\n0\n20\n0\n30\n0');P(0,'ENDSEC');
+  P(0,'SECTION');P(2,'TABLES');
+  P(0,'TABLE');P(2,'LTYPE');P(70,3);
+  o.push('0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0');
+  o.push('0\nLTYPE\n2\nDASHED\n70\n0\n3\nDashed\n72\n65\n73\n2\n40\n'+f(H*1.5)+'\n49\n'+f(H)+'\n49\n'+f(-H*.5));
+  o.push('0\nLTYPE\n2\nCENTER\n70\n0\n3\nCenter\n72\n65\n73\n4\n40\n'+f(H*4)+'\n49\n'+f(H*2.5)+'\n49\n'+f(-H*.5)+'\n49\n'+f(H*.5)+'\n49\n'+f(-H*.5));
+  P(0,'ENDTAB');
+  const names=Object.keys(layers);P(0,'TABLE');P(2,'LAYER');P(70,names.length);names.forEach(n=>o.push('0\nLAYER\n2\n'+n+'\n70\n0\n62\n'+layers[n].c+'\n6\n'+layers[n].lt));P(0,'ENDTAB');
+  P(0,'TABLE');P(2,'STYLE');P(70,1);o.push('0\nSTYLE\n2\nTHAI\n70\n0\n40\n0\n41\n1\n50\n0\n71\n0\n42\n2.5\n3\ntahoma.ttf\n4\n');P(0,'ENDTAB');
+  P(0,'ENDSEC');P(0,'SECTION');P(2,'ENTITIES');o.push(ents.join('\n'));P(0,'ENDSEC');P(0,'EOF');
+  return{text:o.join('\n')+'\n',layers:names,count:ents.filter((_,i)=>true).length,len,zone}}
+// ---- dialog ----
+(function(){const d=document.createElement('div');d.id='dxfD';d.className='ov';
+ d.innerHTML=`<div class="box" style="max-width:520px"><div style="font-size:17px;font-weight:700">📐 ส่งออก DXF (AutoCAD)</div>
+ <div class="mute" style="margin:6px 0">ได้แนวทาง ขอบผิวทาง ROW STA/ป้ายโค้ง ทางแยก/วงเวียน สภาพแวดล้อมข้างทาง ผิวทางเดิม วัตถุสำรวจ รายการงาน และข้อความ แยกตาม Layer · เปิดด้วย AutoCAD / BricsCAD / DraftSight แล้ว <b>Save As → DWG</b> ได้</div>
+ <div class="grid g2"><div><label>ขนาดตัวอักษรตามมาตราส่วนพิมพ์ 1:</label><input id="dxfN" type="number" value="1000" min="100" step="100"></div>
+ <div><label>ระบบพิกัด</label><select id="dxfC"><option value="loc">พิกัดท้องถิ่น (จุดเริ่ม 0,0)</option><option value="utm">UTM จริง (ต้องใช้ MAKE MAP ก่อน)</option></select></div></div>
+ <label class="clrc"><input type="checkbox" id="dxfJ" checked> รวมรายการงาน (JOB) ตาม STA</label>
+ <label class="clrc"><input type="checkbox" id="dxfO" checked> รวมข้อมูลสภาพแวดล้อม OSM (ถ้าดึงไว้แล้ว + มีจุดเริ่มต้นจาก MAKE MAP)</label>
+ <div style="display:flex;gap:8px;margin-top:10px"><button id="dxfGo" class="b">⬇ ดาวน์โหลด .dxf</button><button id="dxfNo" class="b ghost">ยกเลิก</button></div></div>`;
+ document.body.appendChild(d);const close=()=>d.classList.remove('on');
+ window.openDxf=()=>{$('dxfC').value=G().mp?'utm':'loc';d.classList.add('on')};
+ $('dxfNo').onclick=close;d.addEventListener('click',e=>{if(e.target===d)close()});
+ $('dxfGo').onclick=()=>{try{const N=Math.max(100,gnum($('dxfN').value,1000)),utmOn=$('dxfC').value==='utm';
+   if(utmOn&&!G().mp){toast('ยังไม่มีจุดเริ่มต้นจาก MAKE MAP — ใช้พิกัดท้องถิ่นแทน',true)}
+   const r=dxfBuild({th:N*0.0025,utm:utmOn,jobs:$('dxfJ').checked,osm:$('dxfO').checked});if(!r){problem('PLAN_EMPTY');return}
+   dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_PLAN.dxf');close();toast('✔ ส่งออก DXF แล้ว · '+r.layers.length+' Layer · ยาว '+Math.round(r.len)+' ม.'+(r.zone?' · UTM '+r.zone:''))}catch(e){problem('EXPORT_FAIL',e&&e.message)}};
+ const b=document.createElement('button');b.className='b ghost';b.id='dxfBtn';b.textContent='⬇ DXF (AutoCAD)';b.onclick=window.openDxf;const k=$('gjBtn');k.parentNode.insertBefore(b,k.nextSibling);
+ const b2=document.createElement('button');b2.className='b ghost sm';b2.textContent='⬇ DXF (AutoCAD)';b2.onclick=window.openDxf;const ex=$('mmExp');ex.appendChild(document.createTextNode(' '));ex.appendChild(b2);
+})();
 
 loadJobs();
 loadLib();fillProj();renderRows();refresh();geoUI();renderPlan();
