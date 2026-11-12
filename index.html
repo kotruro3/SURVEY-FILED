@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 :root{--bg:#f4f6f9;--card:#fff;--ink:#1d2733;--mute:#6b7785;--line:#d9dee5;--brand:#1f4e79;--brand2:#2e75b6;--warn:#c0392b;--ok:#2e7d32;--soft:#eaf1f8;--amber:#b7791f}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12171d;--card:#1b222b;--ink:#e6ebf0;--mute:#93a0ae;--line:#2f3a46;--brand:#7fb2e5;--brand2:#5a9bd8;--soft:#22303e;--amber:#e0b050}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Sarabun",system-ui,sans-serif}
 header{background:#1f4e79;color:#fff;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -137,7 +136,47 @@ header,nav,.bar,.noprint{display:none!important}.tab{display:none!important}.tab
 .plh{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.plh .sp{flex:1}.grid.g4{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}.grid.g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .envb{display:flex;flex-direction:column;gap:4px;padding:6px;background:#f2f7fb;border-radius:8px}.jobr{border-top:1px dashed #ddd;padding:6px 0}.jr1{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 @media(min-width:1100px){.wz{display:grid;grid-template-columns:minmax(420px,520px) 1fr;gap:12px;align-items:start}.wzR{position:sticky;top:8px;max-height:96vh;overflow:auto}}
-.badge{background:#0b6b4f;color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:3px}.chips{display:flex;gap:4px}.warn{color:#b3261e;font-size:12px;font-weight:700}.obic svg{width:34px;height:34px}.plseg.ob{border-left-color:#2e86c1}#clr{z-index:2000}#clr .clrl{margin:4px 0 8px;padding-left:20px;line-height:1.5}#clr .clrc{display:block;margin:6px 0;line-height:1.4}#clr button{padding:8px 12px;border-radius:8px;border:1px solid #bbb;background:#fff;font:inherit}#mm{z-index:2100}.chip{display:inline-flex;gap:4px;align-items:center;margin:2px 8px 2px 0;font-size:13px}.sv20{border:1px dashed #d32f2f;border-radius:8px;padding:8px;margin:8px 0;background:#fff7f6}</style>
+.badge{background:#0b6b4f;color:#fff;border-radius:10px;padding:0 6px;font-size:11px;margin-left:3px}.chips{display:flex;gap:4px}.warn{color:#b3261e;font-size:12px;font-weight:700}.obic svg{width:34px;height:34px}.plseg.ob{border-left-color:#2e86c1}#clr{z-index:2000}#clr .clrl{margin:4px 0 8px;padding-left:20px;line-height:1.5}#clr .clrc{display:block;margin:6px 0;line-height:1.4}#clr button{padding:8px 12px;border-radius:8px;border:1px solid #bbb;background:#fff;font:inherit}#mm{z-index:2100}.chip{display:inline-flex;gap:4px;align-items:center;margin:2px 8px 2px 0;font-size:13px}.sv20{border:1px dashed #d32f2f;border-radius:8px;padding:8px;margin:8px 0;background:#fff7f6}/* ===== v23: โทนสี 3 แบบ + ขนาดตัวอักษร 3 ระดับ + popup เลือกรายการงาน ===== */
+:root,:root[data-theme=a]{--k:1.25;--bg:#eef1f5;--card:#fff;--ink:#0a0a0a;--mute:#3d4852;--line:#5b6772;--brand:#0b2f6b;--brand2:#0b2f6b;--btn:#0b2f6b;--onbtn:#fff;--warn:#a30000;--ok:#005a1e;--soft:#e3ecfb;--amber:#8a4b00;--hdr:#0b2f6b;--hdrt:#fff;--focus:#ffb300;--pop-bg:#fff3b8;--pop-bd:#0b2f6b;--pop-ink:#111;--pop-hl:#0b2f6b;--pop-hlt:#fff}
+:root[data-theme=b]{--bg:#fff6dc;--card:#fffdf5;--ink:#141414;--mute:#4a4233;--line:#7a6d4d;--brand:#0f4d2a;--brand2:#0f4d2a;--btn:#0f4d2a;--onbtn:#fff;--warn:#9b1c00;--ok:#0f4d2a;--soft:#f1e6c2;--amber:#8a4b00;--hdr:#0f4d2a;--hdrt:#fff;--focus:#d98200;--pop-bg:#dcecf9;--pop-bd:#0f4d2a;--pop-ink:#111;--pop-hl:#0f4d2a;--pop-hlt:#fff}
+:root[data-theme=c]{--bg:#101214;--card:#1b1e22;--ink:#fff;--mute:#c9ced4;--line:#8a929b;--brand:#ffc933;--brand2:#ffc933;--btn:#ffc933;--onbtn:#101214;--warn:#ff7a6b;--ok:#6ee08a;--soft:#2a2f36;--amber:#ffc933;--hdr:#000;--hdrt:#ffc933;--focus:#ffc933;--pop-bg:#0d2a4a;--pop-bd:#ffc933;--pop-ink:#fff;--pop-hl:#ffc933;--pop-hlt:#101214}
+:root[data-fs=s]{--k:1}:root[data-fs=l]{--k:1.25}:root[data-fs=xl]{--k:1.5}
+body{font-size:calc(15px*var(--k))}
+header{background:var(--hdr);color:var(--hdrt)}header h1{font-size:calc(17px*var(--k))}
+header button{color:var(--hdrt);border-color:var(--hdrt);font-size:calc(14px*var(--k));min-height:40px;background:rgba(255,255,255,.12)}
+#curChip,.saved{color:var(--hdrt);font-size:calc(13.5px*var(--k))}
+nav button{font-size:calc(15px*var(--k));padding:calc(10px*var(--k)) 14px;color:var(--mute)}nav button.on{color:var(--brand);border-color:var(--brand);border-bottom-width:4px}
+:root[data-theme=c] nav button.on{color:#ffc933}
+label{font-size:calc(13.5px*var(--k));color:var(--mute);font-weight:600}
+input,select,textarea{font-size:calc(15px*var(--k));border:2px solid var(--line);border-radius:9px;padding:calc(7px*var(--k)) 10px;min-height:calc(40px*var(--k)*.9)}
+input:focus,select:focus,textarea:focus{outline:4px solid var(--focus);outline-offset:0}
+button.b{background:var(--btn);border:2px solid var(--btn);color:var(--onbtn);font-size:calc(15px*var(--k));padding:calc(8px*var(--k)) 16px;min-height:44px;border-radius:10px;font-weight:700}
+button.b.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+button.b.red{border-color:var(--warn);color:var(--warn);background:transparent}
+button.b.amber{background:#e08e0b;border-color:#e08e0b;color:#101214}
+button.b.sm{font-size:calc(13.5px*var(--k));min-height:38px;padding:6px 12px}
+.card{border:2px solid var(--line)}.mute{color:var(--mute)}
+.qty{font-size:calc(18px*var(--k))}.warn{font-size:calc(13px*var(--k))}
+.plseg{background:var(--card)!important;border-color:var(--line)}
+#hlp button,#clr button,#dxfD button{background:var(--card);color:var(--ink);border:2px solid var(--line)}
+.sv20{background:var(--soft)}
+.ov .box{background:var(--pop-bg);color:var(--pop-ink);border:3px solid var(--pop-bd)}
+.ov .box .mute,.ov .box label{color:var(--pop-ink);opacity:.85}
+.ov .box input,.ov .box select,.ov .box textarea{background:#fff;color:#111}
+.ov .box button.b.ghost{color:var(--pop-ink);border-color:var(--pop-ink)}
+#acp{position:fixed;z-index:4000;display:none;background:var(--pop-bg);border:3px solid var(--pop-bd);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.45);overflow:auto;overscroll-behavior:contain}
+#acp .acr{padding:calc(9px*var(--k)) 14px;border-bottom:1px solid rgba(128,128,128,.45);color:var(--pop-ink);font-size:calc(15.5px*var(--k));line-height:1.35;white-space:normal;word-break:break-word;cursor:pointer}
+#acp .acr b{font-weight:800;margin-right:6px}#acp .acr i{font-style:normal;opacity:.8;margin-left:6px;white-space:nowrap}
+#acp .acr.hi,#acp .acr:active{background:var(--pop-hl);color:var(--pop-hlt)}
+#acp .ach{padding:8px 14px;font-weight:700;color:var(--pop-ink);opacity:.85;font-size:calc(13.5px*var(--k))}
+.sug{background:var(--pop-bg)!important;border:3px solid var(--pop-bd)!important;max-height:min(60vh,420px);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.45)}
+.sug div{padding:calc(9px*var(--k)) 14px;font-size:calc(15.5px*var(--k));color:var(--pop-ink);white-space:normal;line-height:1.35;border-bottom:1px solid rgba(128,128,128,.45)}
+.sug div:hover,.sug div.act{background:var(--pop-hl);color:var(--pop-hlt)}
+.sug b{color:inherit;font-weight:800}
+header{padding:6px 12px;gap:6px}header h1{font-size:18px}
+header button{font-size:14px;min-height:36px;padding:3px 9px}
+#curChip,.saved{font-size:13.5px}
+</style>
 </head>
 <body>
 <header>
@@ -1674,7 +1713,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v22';
+const APPVER='v23';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -2117,6 +2156,36 @@ function dxfBuild(op){
    dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_PLAN.dxf');close();toast('✔ ส่งออก DXF แล้ว · '+r.layers.length+' Layer · ยาว '+Math.round(r.len)+' ม.'+(r.zone?' · UTM '+r.zone:''))}catch(e){problem('EXPORT_FAIL',e&&e.message)}};
  const b=document.createElement('button');b.className='b ghost';b.id='dxfBtn';b.textContent='⬇ DXF (AutoCAD)';b.onclick=window.openDxf;const k=$('gjBtn');k.parentNode.insertBefore(b,k.nextSibling);
  const b2=document.createElement('button');b2.className='b ghost sm';b2.textContent='⬇ DXF (AutoCAD)';b2.onclick=window.openDxf;const ex=$('mmExp');ex.appendChild(document.createTextNode(' '));ex.appendChild(b2);
+})();
+
+// ===== v23: โทนสี / ขนาดตัวอักษร / popup เลือกรหัสรายการงาน =====
+(function(){
+ const R=document.documentElement,TH=['a','b','c'],THN={a:'A ขาว–กรมท่า',b:'B ครีม–เขียว',c:'C ดำ–เหลือง'},FS=['s','l','xl'],FSN={s:'ปกติ',l:'ใหญ่',xl:'ใหญ่มาก'};
+ const rd=(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}},wr=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+ let th=rd('sf.theme','a'),fs=rd('sf.fs','l');if(!TH.includes(th))th='a';if(!FS.includes(fs))fs='l';
+ const bT=document.createElement('button'),bF=document.createElement('button');bT.id='thBtn';bF.id='fsBtn';
+ const apply=()=>{R.dataset.theme=th;R.dataset.fs=fs;bT.textContent='🎨 โทน '+THN[th];bF.textContent='ก ตัวอักษร: '+FSN[fs];bT.title='กดเพื่อสลับโทนสี (A → B → C)';bF.title='กดเพื่อสลับขนาดตัวอักษร (ปกติ → ใหญ่ → ใหญ่มาก)'};
+ bT.onclick=()=>{th=TH[(TH.indexOf(th)+1)%3];wr('sf.theme',th);apply()};bF.onclick=()=>{fs=FS[(FS.indexOf(fs)+1)%3];wr('sf.fs',fs);apply()};
+ const sv=$('saved');sv.parentNode.insertBefore(bT,sv);sv.parentNode.insertBefore(bF,sv);apply();
+ // ---- popup เลือกรายการงาน (แทน datalist ของเบราว์เซอร์ ซึ่งแต่งสี/ขนาดไม่ได้)
+ const pop=document.createElement('div');pop.id='acp';document.body.appendChild(pop);let cur=null,hi=-1,list=[];
+ const hide=()=>{pop.style.display='none';cur=null;hi=-1};
+ const place=()=>{if(!cur)return;const r=cur.getBoundingClientRect(),vw=innerWidth,vh=innerHeight,w=Math.min(vw-16,Math.max(r.width,Math.min(560,vw-16)));let left=Math.max(8,Math.min(r.left,vw-w-8));
+  const below=vh-r.bottom-10,above=r.top-10;pop.style.width=w+'px';pop.style.left=left+'px';
+  if(below>=240||below>=above){pop.style.top=(r.bottom+4)+'px';pop.style.bottom='auto';pop.style.maxHeight=Math.max(160,below-4)+'px'}else{pop.style.bottom=(vh-r.top+4)+'px';pop.style.top='auto';pop.style.maxHeight=Math.max(160,above-4)+'px'}};
+ const render=()=>{const q=cur.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  list=ITEMS.filter(it=>{const s=(it.code+' '+it.name).toLowerCase();return q.every(t=>s.includes(t))}).slice(0,60);
+  pop.innerHTML=(q.length?'':'<div class="ach">พิมพ์รหัสหรือคำในชื่อรายการงานเพื่อค้นหา</div>')+(list.length?list.map((it,i)=>`<div class="acr${i===hi?' hi':''}" data-i="${i}"><b>${esc(it.code)}</b>${esc(it.name)}<i>${esc(it.unit||'')}</i></div>`).join(''):'<div class="ach">ไม่พบรายการงานที่ตรงกับคำค้น</div>');
+  pop.style.display='block';place()};
+ const pick=i=>{const it=list[i];if(!it||!cur)return;const el=cur;el.value=it.code;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));hide()};
+ const isJob=e=>e&&e.matches&&e.matches('input[list=dlJob],input[list=dlJob2],input[data-jl]');
+ document.addEventListener('focusin',e=>{const t=e.target;if(isJob(t)){if(t.getAttribute('list')){t.dataset.jl=t.getAttribute('list');t.removeAttribute('list')}cur=t;hi=-1;render()}else if(cur&&!pop.contains(t))hide()});
+ document.addEventListener('input',e=>{if(isJob(e.target)&&e.isTrusted){cur=e.target;hi=-1;render()}});
+ document.addEventListener('keydown',e=>{if(!cur||pop.style.display!=='block')return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();hi=Math.max(0,Math.min(list.length-1,hi+(e.key==='ArrowDown'?1:-1)));render();const h=pop.querySelector('.hi');if(h)h.scrollIntoView({block:'nearest'})}
+  else if(e.key==='Enter'&&hi>=0){e.preventDefault();pick(hi)}else if(e.key==='Escape')hide()});
+ pop.addEventListener('pointerdown',e=>{const r=e.target.closest('.acr');if(r){e.preventDefault();pick(+r.dataset.i)}else e.preventDefault()});
+ document.addEventListener('focusout',e=>{if(isJob(e.target))setTimeout(()=>{if(document.activeElement!==cur)hide()},120)});
+ addEventListener('resize',place);document.addEventListener('scroll',place,true);
 })();
 
 loadJobs();
