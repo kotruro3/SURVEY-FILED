@@ -195,7 +195,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <span id="saved" class="saved"></span>
 </header>
 <nav>
-  <button data-t="t3" class="on" title="ขั้นที่ 1 — วาดแปลนและรูปตัด แล้วดูว่า PLAN อยู่ส่วนไหนของพื้นที่">① PLAN / SECTION</button>
+  <button data-t="t3" class="on" title="ขั้นที่ 1 — วาดแปลนและรูปตัด แล้วดูว่า PLAN อยู่ส่วนไหนของพื้นที่">① STA</button>
   <button data-t="t5" title="ขั้นที่ 2 — พิกัดและตำแหน่งสถานที่ดำเนินการ ว่าอยู่ตรงส่วนไหนของโลก">② LOCATION</button>
   <button data-t="t1" title="ขั้นที่ 3 — ตารางสำรวจ STA / ปริมาณงาน">③ TABLE</button>
   <button data-t="t6" title="ขั้นที่ 4 — รูปถ่ายสภาพปัจจุบันภาคสนามเพื่อวิเคราะห์">④ PHOTO</button>
@@ -1055,14 +1055,15 @@ function planModel(){
   const sl=segLen(g);let total=Math.max(sl,dMax!=null?dMax-sta0:0,10);
   const secsMax=(g.secs||[]).map(x=>parseSta(x.sta)).filter(v=>v!=null).map(v=>v-sta0);if(secsMax.length)total=Math.max(total,Math.max(...secsMax)+1);
   const pts=buildAlign(g,total);total=pts[pts.length-1].s;
-  const hasSec=(g.secs||[]).length>0;
-  const area={x0:30,y0:60,x1:1110,y1:hasSec?700:1020};
+  const hasSec=false; // รูปตัดย้ายไปแผ่นใหม่ท้ายชุด PLAN/PROFILE
+  const pos=effPos(g),ps=pos==='off'?null:profScale(g),pfB=!!ps&&(pos==='p'||pos==='h'),pfV=!!ps&&pos==='v',hasBot=hasSec||pfB,lay=(pfB&&pos==='p')?'along':g.layout;
+  const area={x0:(pfB&&pos==='p')?130:30,y0:60,x1:pfV?770:1110,y1:pfB?590:(hasSec?700:1020)};
   const wf=widthFn(g);let maxHalf=0;for(let t=0;t<=total;t+=Math.max(1,total/80)){const w=wf(t+sta0);const ex=extentAt(g,t+sta0,w);maxHalf=Math.max(maxHalf,ex[0],ex[1])}
   maxHalf=Math.max(maxHalf,gnum(g.rowl,0),gnum(g.rowr,0));
   const maxW=Math.max(0,...bars.filter(b=>b.z!=='C').map(b=>Math.max(b.w,1)))*2;
   const mg=maxHalf+Math.min(8,maxW)+4;
   const AW=area.x1-area.x0-90,AH=area.y1-area.y0-110;
-  const fits=(s0,s1,N)=>{const f=chunkFrame(pts,s0,s1,g.layout,mg),k=5000/N;return f.bw*k<=AW&&f.bh*k<=AH};
+  const fits=(s0,s1,N)=>{const f=chunkFrame(pts,s0,s1,lay,mg),k=5000/N;return f.bw*k<=AW&&f.bh*k<=AH};
   const userN=gnum(g.scale,0)>0?gnum(g.scale):0,userL=gnum(g.sheetLen,0)>0?gnum(g.sheetLen):0;
   let N=userN,chunks=[];
   const greedy=(N)=>{const out=[];let s0=0;while(s0<total-.01){let e=Math.min(total,s0+10);if(!fits(s0,e,N)){out.push([s0,e]);s0=e;continue}
@@ -1073,14 +1074,56 @@ function planModel(){
   else{
     if(!N){const one=GEO_STD.filter(n=>n<=1000).find(n=>fits(0,total,n));if(one){N=one;chunks=[[0,total]]}else{N=1000;chunks=greedy(N)}}
     else chunks=greedy(N)}
-  return{g,bars,un,sta0,total,pts,wf,area,mg,N,chunks,hasSec,AW,AH}}
+  return{g,bars,un,sta0,total,pts,wf,area,mg,N,chunks,hasSec,AW,AH,pos,ps,pfB,pfV,hasBot,lay}}
 function tickSteps(g,k){let major=gnum(g.tick,0);if(!(major>0)){major=[5,10,20,25,50,100,250,500,1000,2000,5000].find(m=>m*k>=75)||5000}
   let minor=0;for(const d of [5,4,2]){if(major%d===0||major/d>=1){const m=major/d;if(m*k>=7&&Math.abs(m-Math.round(m*100)/100)<1e-9){minor=m;break}}}
   return{major,minor}}
 function curvesList(g,sta0){let s=0;const out=[];g.segs.forEach(sg=>{if(sg.t==='L')s+=Math.max(0,gnum(sg.len));else{const R=gnum(sg.R),D=gnum(sg.ang);if(R>0&&D>0){const L=R*D*DEG;out.push({a:s,b:s+L,t:sg.t,R,D});s+=L}}});return out}
+// ---- จัดวางป้ายข้อความไม่ให้ทับกัน: ย้ายออกนอกเขตทาง + เส้นชี้ (leader) ----
+function relabel(str,C){const{g,P,wf,sta0,s0,s1,k,area}=C,RAD=Math.PI/180;
+  const step=Math.max(1,6/k),S=[];for(let t=s0;t<=s1+1e-6;t+=step){const c=P(t,0),q=P(t,1);let nx=q[0]-c[0],ny=q[1]-c[1];const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+    const w=wf(t+sta0),ex=extentAt(g,t+sta0,w);S.push({x:c[0],y:c[1],nx,ny,tx:ny,ty:-nx,cl:ex[0]*k+3,cr:ex[1]*k+3})}
+  if(!S.length)return str;
+  const near=(x,y)=>{let b=null,bd=1e18;for(const s of S){const d=(s.x-x)**2+(s.y-y)**2;if(d<bd){bd=d;b=s}}return b};
+  const bad=(x,y)=>{const s=near(x,y);const dx=x-s.x,dy=y-s.y,al=dx*s.tx+dy*s.ty;if(Math.abs(al)>step*k*1.2+4)return false;const d=dx*s.nx+dy*s.ny;return d>=0?d<s.cl:-d<s.cr};
+  const pts=b=>{const xs=[b.x0,(b.x0+b.x1)/2,b.x1],ys=[b.y0,(b.y0+b.y1)/2,b.y1],o=[];xs.forEach(x=>ys.forEach(y=>o.push([x,y])));return o};
+  const inRoad=b=>pts(b).some(p=>bad(p[0],p[1]));
+  const placed=[];const hit=b=>placed.some(p=>b.x0<p.x1+1.5&&b.x1>p.x0-1.5&&b.y0<p.y1+1&&b.y1>p.y0-1);
+  const inA=b=>b.x0>=area.x0+3&&b.x1<=area.x1-3&&b.y0>=area.y0+3&&b.y1<=area.y1-3;
+  const items=[];
+  str=str.replace(/<text\b([^>]*)>([^<]*)<\/text>/g,(m,at,tx)=>{
+    if(!/paint-order="stroke"/.test(at)||/fill="#c0392b"[^>]*font-size="13"|font-size="13"[^>]*fill="#c0392b"/.test(at)){const mm=at.match(/transform="translate\(([-\d.]+),([-\d.]+)\)/),xx=at.match(/\bx="([-\d.]+)"/),yy=at.match(/\by="([-\d.]+)"/);
+      const fsz=+(at.match(/font-size="([\d.]+)"/)||[0,10])[1],w=tx.length*fsz*.55,ax=mm?+mm[1]:xx?+xx[1]:null,ay=mm?+mm[2]:yy?+yy[1]:null;if(ax!=null&&/fill="#c0392b"/.test(at)&&fsz===13)placed.push({x0:ax-w/2,x1:ax+w/2,y0:ay-fsz,y1:ay+4});return m}
+    if(/fill="#1f3a5f"/.test(at)){const xx=at.match(/\bx="([-\d.]+)"/),yy=at.match(/\by="([-\d.]+)"/),fsz=+(at.match(/font-size="([\d.]+)"/)||[0,10])[1],w=tx.length*fsz*.55;if(xx&&yy)placed.push({x0:+xx[1]-w/2,x1:+xx[1]+w/2,y0:+yy[1]-fsz,y1:+yy[1]+4});return m}
+    const fsz=+(at.match(/font-size="([\d.]+)"/)||[0,10])[1],fw=/font-weight="(700|600)"/.test(at),W=Math.max(8,[...tx].length*fsz*(fw?.58:.52)),Hh=fsz+2;
+    let ax,ay,rot=0,anc=(at.match(/text-anchor="(\w+)"/)||[0,'start'])[1];
+    const mt=at.match(/transform="translate\(([-\d.]+),([-\d.]+)\)(?: rotate\(([-\d.]+)\))?(?: translate\(([-\d.]+),([-\d.]+)\))?"/);
+    if(mt){ax=+mt[1];ay=+mt[2];rot=+(mt[3]||0);const dy=+(mt[5]||0),dx=+(mt[4]||0),a=rot*RAD;ax+=dx*Math.cos(a)-dy*Math.sin(a);ay+=dx*Math.sin(a)+dy*Math.cos(a)}
+    else{const xx=at.match(/\bx="([-\d.]+)"/),yy=at.match(/\by="([-\d.]+)"/);if(!xx||!yy)return m;ax=+xx[1];ay=+yy[1]}
+    if(!(ax>area.x0&&ax<area.x1&&ay>area.y0&&ay<area.y1))return m;
+    items.push({at,tx,fsz,fw,W,Hh,ax,ay,rot,anc,m,idx:items.length});return '\u0001'+(items.length-1)+'\u0001'});
+  // วางตามลำดับ: ป้ายที่อยู่นอกเขตทางและไม่ชนกันอยู่ที่เดิม
+  const out=[];let alt=0;
+  items.forEach(it=>{const{W,Hh,fsz}=it;
+    let cx=it.ax,cy=it.ay;if(it.anc==='start')cx+=W/2;else if(it.anc==='end')cx-=W/2;cy-=Hh*.3;
+    const a=it.rot*RAD,c=Math.abs(Math.cos(a)),s=Math.abs(Math.sin(a)),bw=W*c+Hh*s,bh=W*s+Hh*c,orig={x0:cx-bw/2,x1:cx+bw/2,y0:cy-bh/2,y1:cy+bh/2};
+    let box=null,moved=false;
+    if(inA(orig)&&!hit(orig)&&!inRoad(orig)){box=orig;placed.push(orig);out[it.idx]=it.m;return}
+    const sn=near(it.ax,it.ay);let d0=(it.ax-sn.x)*sn.nx+(it.ay-sn.y)*sn.ny;const pref=Math.abs(d0)<1?((alt++%2)?1:-1):(d0>=0?1:-1);
+    const lbl={x:it.ax,y:it.ay};let best=null;
+    for(let ring=0;ring<14&&!best;ring++){for(const side of [pref,-pref]){const base=(side>0?sn.cl:sn.cr)+Hh*.7+ring*Hh*1.05;
+        for(const sh of [0,1,-1,2,-2,3,-3]){const ex=sn.tx*sh*W*.55*(ring>1?1:.5),ey=sn.ty*sh*W*.55*(ring>1?1:.5),px=sn.x+sn.nx*side*base+ex+(Math.abs(sn.nx)>.5?side*sn.nx*W/2*Math.abs(sn.nx):0),py=sn.y+sn.ny*side*base+ey;
+          const b={x0:px-W/2,x1:px+W/2,y0:py-Hh/2,y1:py+Hh/2};if(inA(b)&&!hit(b)&&!inRoad(b)){best={b,cx:px,cy:py};break}}if(best)break}}
+    if(!best){placed.push(orig);out[it.idx]=it.m;return}
+    placed.push(best.b);
+    let fill=(it.at.match(/fill="([^"]+)"/)||[0,'#222'])[1];if(/^#f{3}$|^#ffffff$/i.test(fill))fill='#222';
+    const b=best.b,lx=Math.max(b.x0,Math.min(it.ax,b.x1)),ly=Math.max(b.y0,Math.min(it.ay,b.y1));
+    const attrs=it.at.replace(/\s*transform="[^"]*"/,'').replace(/\s*\b[xy]="[-\d.]+"/g,'').replace(/\s*text-anchor="\w+"/,'').replace(/\s*dominant-baseline="[^"]*"/,'').replace(/\s*fill="[^"]*"/,'');
+    out[it.idx]=`<g class="lbl"><line x1="${it.ax.toFixed(1)}" y1="${it.ay.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="#555" stroke-width=".7"/><circle cx="${it.ax.toFixed(1)}" cy="${it.ay.toFixed(1)}" r="1.8" fill="#555"/><text x="${best.cx.toFixed(1)}" y="${(best.cy+Hh*.3).toFixed(1)}" text-anchor="middle" fill="${fill}"${attrs}>${it.tx}</text></g>`});
+  return str.replace(/\u0001(\d+)\u0001/g,(m,i)=>out[+i])}
 function sheetSvg(M,idx){
   const{g,bars,sta0,pts,wf,area,N,chunks,hasSec}=M;const[s0,s1]=chunks[idx];const k=5000/N;
-  const fr=chunkFrame(pts,s0,s1,g.layout,M.mg);
+  const fr=chunkFrame(pts,s0,s1,M.lay,M.mg);
   const cxm=(fr.x0+fr.x1)/2,cym=(fr.y0+fr.y1)/2,acx=(area.x0+area.x1)/2,acy=(area.y0+area.y1)/2;
   const SX=(x,y)=>{const rx=fr.c*x-fr.sn*y,ry=fr.sn*x+fr.c*y;return[acx+(rx-cxm)*k,acy-(ry-cym)*k]};
   const P=(s,o)=>{const p=ptAt(pts,s),q=offPt(p,o||0);return SX(q[0],q[1])};
@@ -1097,6 +1140,7 @@ function sheetSvg(M,idx){
 <rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="#111" stroke-width="3"/><rect x="20" y="20" width="${W-40}" height="${H-40}" fill="none" stroke="#111"/>
 <text x="32" y="50" font-size="22" font-weight="700" fill="#1f3a5f">แปลนแสดงที่ตั้งและรายการงาน (PLAN) · มาตราส่วน 1:${N}</text>
 <rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}" fill="url(#gr${idx})" stroke="#333"/><g clip-path="url(#clp${idx})">`);
+  const gi0=o.length;
   // side strips (L/R) lane stacking
   const inR=bars.filter(b=>b.b>=s0+sta0&&b.a<=s1+sta0);
   const stackM={1:0,'-1':0},lanesInfo=[];
@@ -1171,6 +1215,7 @@ function sheetSvg(M,idx){
   if(idx===0){const p=P(0,0);o.push(`<text x="${p[0].toFixed(1)}" y="${(p[1]-16).toFixed(1)}" font-size="12" font-weight="700" fill="#1f3a5f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${g.sv?'ช่วงนำ (ไม่สำรวจ)':'จุดเริ่มต้น'}</text>`)}
   {const sv=parseSta(g.sv);if(sv!=null){const t=sv-sta0;if(t>=s0-1e-6&&t<=s1+1e-6){const w=wf(sv),a1=P(t,w[0]+5),b1=P(t,-(w[1]+5)),m1=P(t,w[0]+8);o.push(`<polyline points="${pstr([a1,b1])}" stroke="#d32f2f" stroke-width="2" stroke-dasharray="6 3" fill="none"/><text x="${m1[0].toFixed(1)}" y="${m1[1].toFixed(1)}" font-size="12" font-weight="700" fill="#d32f2f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">จุดเริ่มสำรวจ STA ${fmtSta(sv)} (ขอบเขตทางแยก)</text>`)}}}
   if(idx===chunks.length-1){const p=P(M.total,0);o.push(`<text x="${p[0].toFixed(1)}" y="${(p[1]-16).toFixed(1)}" font-size="12" font-weight="700" fill="#1f3a5f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">จุดสิ้นสุด</text>`)}
+  {const body=relabel(o.splice(gi0).join(''),{g,P,wf,sta0,s0,s1,k,area});o.push(body)}
   o.push('</g>');
   // north arrow
   const na=fr.th,nx=area.x1-50,ny=area.y0+58;const rotN=-(Math.PI/2-(Math.PI/2))/1; // north vector (0,1) rotated by -th => screen angle
@@ -1184,7 +1229,7 @@ function sheetSvg(M,idx){
   o.push(`<text x="${(bx+4*sb*k+12).toFixed(1)}" y="${by+9}" font-size="12">ม.</text>`);
   // ---- right panel: legend + items ----
   const px=1125,pw=340;
-  o.push(`<rect x="${px}" y="60" width="${pw}" height="${hasSec?670:960}" fill="#f7f9fb" stroke="#333"/><text x="${px+12}" y="86" font-size="17" font-weight="700" fill="#1f3a5f">สัญลักษณ์ / รายการงาน</text>`);
+  o.push(`<rect x="${px}" y="60" width="${pw}" height="${M.hasBot?670:960}" fill="#f7f9fb" stroke="#333"/><text x="${px+12}" y="86" font-size="17" font-weight="700" fill="#1f3a5f">สัญลักษณ์ / รายการงาน</text>`);
   const cats=new Map();inR.forEach(b=>{const c=b.it?b.it.cat:{k:'?',name:'ไม่พบรหัส',color:'#8e8e8e'};cats.set(c.k,c)});
   let y=110;[...cats.values()].slice(0,8).forEach(c=>{o.push(`<rect x="${px+12}" y="${y-12}" width="22" height="14" fill="${c.color}" stroke="#333"/><text x="${px+44}" y="${y}" font-size="13">${esc(cut(c.name,32))}</text>`);y+=22});
   o.push(`<rect x="${px+12}" y="${y-12}" width="22" height="14" fill="#a9b1ba" stroke="#2b2f36"/><text x="${px+44}" y="${y}" font-size="13">ผิวทาง (กว้างตามช่วงที่กรอก)</text>`);y+=22;
@@ -1194,17 +1239,23 @@ function sheetSvg(M,idx){
   if(g.segs.some(s=>s.t!=='L')){o.push(`<circle cx="${px+23}" cy="${y-5}" r="4" fill="#8e44ad"/><text x="${px+44}" y="${y}" font-size="13">จุดต้น/ปลายโค้ง (PC/PT)</text>`);y+=22}
   y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">รายการงานในแผ่นนี้</text>`);y+=30;
   const seen=new Set(),list=[];inR.forEach(b=>{const key=b.code+'|'+b.i;if(seen.has(key))return;seen.add(key);list.push(b)});
-  const maxRows=Math.floor(((hasSec?720:1010)-y)/21);
+  const maxRows=Math.floor(((M.hasBot?720:1010)-y)/21);
   list.slice(0,maxRows).forEach(b=>{o.push(`<rect x="${px+12}" y="${y-10}" width="10" height="10" fill="${b.it?b.it.cat.color:'#888'}"/><text x="${px+28}" y="${y}" font-size="12"><tspan font-weight="700">${esc(b.code)}</tspan> ${esc(cut(b.it?b.it.name:'ไม่พบรหัส',17))}</text><text x="${px+pw-10}" y="${y}" font-size="11" fill="#555" text-anchor="end">${fmtSta(b.a)}–${fmtSta(b.b)}</text>`);y+=21});
   if(list.length>maxRows)o.push(`<text x="${px+12}" y="${y}" font-size="12" fill="#777">… และอีก ${list.length-maxRows} รายการ (ดูในตารางสำรวจ)</text>`);
+  // PROFILE บนแผ่น PLAN
+  if(M.ps){const ps=M.ps,sa=s0+sta0,sb=s1+sta0,eN=elN(g);
+    if(M.pfB){let X,hl=N;o.push(`<rect x="30" y="600" width="1080" height="420" fill="#fff" stroke="#333"/>`);
+      if(M.pos==='p')X=s=>P(s-sta0,0)[0];else{const Lc=Math.max(1,sb-sa);hl=[100,200,250,500,1000,2000,2500,5000].find(n=>Lc*5000/n<=1080-100-40)||5000;X=s=>140+(s-sa)*5000/hl}
+      o.push(profH(g,{id:'p'+idx,x:30,y:600,w:1080,h:420,sa,sb,X,LW:100,ps,Nv:gnum(eN.vs,0),hl}))}
+    else if(M.pfV)o.push(profV(g,{id:'v'+idx,x:780,y:60,w:330,h:hasSec?640:960,sa,sb,ps}))}
   // title block
   const P0=S.proj,tb=[['โครงการ',P0.name||'-'],['หน่วยงาน',P0.agency||'-'],['สายทาง',P0.route||fmtSta(sta0)+' – '+fmtSta(sta0+M.total)],['ผู้สำรวจ',P0.who||'-'],['วันที่',P0.date||'-'],['รหัส',S.code||'-'],['แผ่นที่',`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`]];
-  const ty=hasSec?740:1021-7*0;if(hasSec){o.push(`<rect x="${px}" y="${ty}" width="${pw}" height="280" fill="#fff" stroke="#333"/>`);
+  const ty=M.hasBot?740:1021-7*0;if(M.hasBot){o.push(`<rect x="${px}" y="${ty}" width="${pw}" height="280" fill="#fff" stroke="#333"/>`);
     tb.forEach(([a,b],i)=>{const yy=ty+i*40;o.push(`<line x1="${px}" y1="${yy+40}" x2="${px+pw}" y2="${yy+40}" stroke="#999"/><text x="${px+10}" y="${yy+25}" font-size="12" fill="#666">${a}</text><text x="${px+78}" y="${yy+25}" font-size="${i===6?12:14}" font-weight="700">${esc(cut(b,i===6?30:26))}</text>`)})}
   else{ // compact title block bottom of the right panel when no sections
     const ty2=700;o.push(`<rect x="${px}" y="${ty2}" width="${pw}" height="320" fill="#fff" stroke="#333"/>`);tb.forEach(([a,b],i)=>{const yy=ty2+i*45;o.push(`<line x1="${px}" y1="${yy+45}" x2="${px+pw}" y2="${yy+45}" stroke="#999"/><text x="${px+10}" y="${yy+28}" font-size="12" fill="#666">${a}</text><text x="${px+78}" y="${yy+28}" font-size="${i===6?12:14}" font-weight="700">${esc(cut(b,i===6?30:26))}</text>`)})}
   // sections panel
-  if(hasSec){o.push(`<rect x="30" y="710" width="1080" height="310" fill="#fff" stroke="#333"/>`);
+  if(hasSec&&!M.pfB){o.push(`<rect x="30" y="710" width="1080" height="310" fill="#fff" stroke="#333"/>`);
     if(!secIn.length)o.push(`<text x="570" y="870" font-size="15" fill="#888" text-anchor="middle">ไม่มีรูปตัดที่ตำแหน่งในแผ่นนี้</text>`);
     else{const n=Math.min(4,secIn.length),cw=1080/n;secIn.slice(0,n).forEach((q,j)=>o.push(secSvg(M,q,30+j*cw,710,cw,310)));
       if(secIn.length>4)o.push(`<text x="1100" y="1012" font-size="11" fill="#c0392b" text-anchor="end">มีรูปตัดอีก ${secIn.length-4} รูปในแผ่นนี้ (แสดงสูงสุด 4)</text>`)}}
@@ -1250,12 +1301,26 @@ function secSvg(M,q,x0,y0,w,h){
     o.push(`<text x="${cx}" y="${dy2+20}" font-size="13" font-weight="700" fill="#333" text-anchor="middle">ความกว้างเขตทาง ${f2(rl+rr)} ม.${rl>0&&rr>0&&Math.abs(rl-rr)>.005?' (ซ้าย '+f2(rl)+' / ขวา '+f2(rr)+')':''}</text>`)}
   const xv=cx-xl*ux-ex-10;o.push(`<line x1="${xv}" y1="${Y(wl,0)}" x2="${xv}" y2="${Y(wl,T)}" stroke="#333"/><line x1="${xv-5}" y1="${Y(wl,0)}" x2="${xv+5}" y2="${Y(wl,0)}" stroke="#333"/><line x1="${xv-5}" y1="${Y(wl,T)}" x2="${xv+5}" y2="${Y(wl,T)}" stroke="#333"/><text transform="translate(${xv-8},${(Y(wl,0)+Y(wl,T))/2}) rotate(-90)" font-size="12.5" text-anchor="middle" font-weight="700">รวม ${Math.round(T*1000)/10} ซม.</text>`);
   return o.join('')}
+function secSheets(M){const g=M.g,sta0=M.sta0,L=[];(g.secs||[]).forEach((sc,i)=>{const t=parseSta(sc.sta);if(t==null)return;L.push({sc,i,s:t-sta0})});L.sort((a,b)=>a.s-b.s);if(!L.length)return[];
+  const per=4,np=Math.ceil(L.length/per),out=[];
+  for(let pi=0;pi<np;pi++){const part=L.slice(pi*per,pi*per+per),id='x'+pi,W=1485,H=1050,o=[],P0=S.proj,tb=g.tb||{};
+    const T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz}" ${ex||''}>${esc(t)}</text>`),kv=(x,y,l,v)=>{T(x,y,l,10,'fill="#666"');T(x,y+18,v||'-',14,'font-weight="700"')};
+    o.push(`<svg class="sheet secsheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Sarabun,Tahoma,sans-serif"><rect width="${W}" height="${H}" fill="#fff"/><defs><pattern id="ea${id}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#b9a37a" stroke-width="1.5"/></pattern></defs>
+<rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="#111" stroke-width="3"/><rect x="20" y="20" width="${W-40}" height="${H-40}" fill="none" stroke="#111"/>`);
+    T(32,50,'รูปตัดขวาง (CROSS SECTION)',24,'font-weight="700" fill="#1f3a5f"');T(W-36,50,`แผ่นที่ ${pi+1} / ${np}`,16,'text-anchor="end"');
+    part.forEach((q,j)=>{const cx=30+(j%2)*712,cy=66+Math.floor(j/2)*436;o.push(`<rect x="${cx}" y="${cy}" width="712" height="430" fill="#fff" stroke="#333"/>`);o.push(secSvg({...M,idx:id},q,cx,cy,712,430))});
+    o.push(`<rect x="30" y="${H-118+8}" width="${W-60}" height="84" fill="none" stroke="#000"/><line x1="${W/2}" y1="${H-110}" x2="${W/2}" y2="${H-26}" stroke="#000"/>`);
+    kv(42,H-92,'โครงการ',P0.name);kv(42,H-54,'หน่วยงาน / สายทาง',[P0.agency,P0.route].filter(Boolean).join(' · '));
+    kv(W/2+12,H-92,'ผู้ออกแบบ / ผู้ตรวจ',[tb.designer,tb.checker].filter(Boolean).join(' / '));kv(W/2+12,H-54,'รหัส · วันที่',(S.code||'')+' · '+(P0.date||new Date().toISOString().slice(0,10)));
+    o.push('</svg>');out.push(o.join(''))}
+  return out}
 function renderSheets(){
   const box=$('planbox');const g=G();
   const{bars}=geoBars();
   if(!bars.length&&!g.segs.length&&!g.ws.length&&!(g.secs||[]).length){box.innerHTML='<div class="mute" style="padding:30px">ยังไม่มีข้อมูลสำหรับสร้างแปลน — กรอก STA/ตำแหน่ง (L/C/R) ในตารางสำรวจ หรือกำหนดแนวทางด้านบน</div>';$('legend').innerHTML='';$('geoInfo')&&($('geoInfo').textContent='');window.PLANM=null;return}
   const M=planModel();window.PLANM=M;let h='';
   M.chunks.forEach((c,i)=>{M.idx=i;h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นที่ ${i+1} / ${M.chunks.length} · STA ${fmtSta(c[0]+M.sta0)} – ${fmtSta(c[1]+M.sta0)} · มาตราส่วน 1:${M.N}</div>${sheetSvg(M,i)}</div>`});
+  {const ss=secSheets(M);if(ss.length){h+=`<div id="secSheets" class="mute" style="margin:14px 0 2px;font-weight:700;color:var(--brand)">▼ แผ่นรูปตัด SECTION (ต่อท้ายแผ่น PLAN / PROFILE) · ${ss.length} แผ่น</div>`+ss.map((x,i)=>`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นรูปตัดที่ ${i+1} / ${ss.length}</div>${x}</div>`).join('')}}
   box.innerHTML=h;
   $('legend').innerHTML=M.un?`<span class="warn">ไม่แสดงใน PLAN ${M.un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
   const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>${M.chunks.length} แผ่น</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`}
@@ -1412,9 +1477,11 @@ const OB={
  wall:{c:'B',n:'กำแพง/กันดิน',s:'กำแพง',g:'ln',col:'#2b2f36',w:0,thick:3,sz:''},
  drive:{c:'B',n:'ทางเข้า-ออก (ปากทาง)',s:'ทางเข้า',g:'drive',col:'#2b2f36',fill:'#a9b1ba',w:4,len:6,sz:''},
  bridge:{c:'B',n:'สะพาน/คอสะพาน',s:'สะพาน',g:'span',col:'#444',fill:'#d0d3d6',sz:'',szh:'เช่น กว้าง 6.00 ม.'},
+ brw:{c:'B',n:'สะพาน + ทางน้ำ (ลำน้ำ/คลองใต้สะพาน)',s:'สะพาน',g:'brw',col:'#444',fill:'#d0d3d6',sz:'',szh:'เช่น กว้าง 6.00 ม. / ชื่อลำน้ำ'},
+ rail:{c:'B',n:'จุดตัดทางรถไฟ',s:'ทางรถไฟ',g:'rail',col:'#222',fill:'#e9e4d8',w:6,sz:'',szh:'เช่น ทางเดี่ยว / มีคันกั้น'},
  walk:{c:'B',n:'ทางเท้า/ขอบทาง',s:'ทางเท้า',g:'ln',col:'#8c8672',fill:'#e4dfd2',band:1,w:1.5,sz:''}
 };
-const OB_F={pt:['sta','side','off','sz','cond','note'],ln:['sta','sta2','side','off','w','sz','cond','note'],cross:['sta','sz','cond','note'],rect:['sta','sta2','side','off','w','cond','note'],span:['sta','sta2','sz','cond','note'],drive:['sta','side','w','len','cond','note']};
+const OB_F={pt:['sta','side','off','sz','cond','note'],ln:['sta','sta2','side','off','w','sz','cond','note'],cross:['sta','sz','cond','note'],rect:['sta','sta2','side','off','w','cond','note'],span:['sta','sta2','sz','cond','note'],brw:['sta','sta2','side','sz','cond','note'],rail:['sta','w','sz','cond','note'],drive:['sta','side','w','len','cond','note']};
 const OB_L={sta:'STA',sta2:'STA ถึง',off:'ระยะจากกึ่งกลางทาง (ม.)',w:'กว้าง (ม.)',len:'ยาว (ม.)',sz:'ขนาด/ข้อมูล',cond:'สภาพ',note:'หมายเหตุ / ชื่อ / เลขที่'};
 const COND=['','ดี','พอใช้','ชำรุด'];
 const PC_COND={'ดี':'#2ecc71','พอใช้':'#f1c40f','ชำรุดมาก':'#e74c3c'};
@@ -1431,12 +1498,14 @@ function objIcon(key){const d=OB[key];let s=`<svg viewBox="0 0 44 44" width="46"
  else if(d.g==='cross')s+=`<line x1="5" y1="22" x2="39" y2="22" stroke="${d.col}" stroke-width="5"/><circle cx="5" cy="22" r="3.5" fill="#fff" stroke="${d.col}" stroke-width="2"/><circle cx="39" cy="22" r="3.5" fill="#fff" stroke="${d.col}" stroke-width="2"/>`;
  else if(d.g==='rect')s+=`<rect x="8" y="12" width="28" height="20" fill="${d.fill}" stroke="${d.col}" stroke-width="1.6"/><line x1="8" y1="12" x2="36" y2="32" stroke="${d.col}" stroke-width=".8"/>`;
  else if(d.g==='span')s+=`<rect x="6" y="9" width="32" height="26" fill="${d.fill}" stroke="${d.col}" stroke-width="1.5"/><line x1="6" y1="16" x2="38" y2="16" stroke="${d.col}"/><line x1="6" y1="28" x2="38" y2="28" stroke="${d.col}"/>`;
+ else if(d.g==='brw')s+=`<rect x="4" y="4" width="36" height="36" fill="#fff"/><rect x="4" y="15" width="36" height="14" fill="#cfe8f7" stroke="#3b82b8"/><rect x="14" y="4" width="16" height="36" fill="#d0d3d6" stroke="#444" stroke-width="1.5"/>`;
+ else if(d.g==='rail')s+=`<rect x="14" y="4" width="16" height="36" fill="#cfd3d6"/><line x1="4" y1="18" x2="40" y2="18" stroke="#111" stroke-width="2"/><line x1="4" y1="26" x2="40" y2="26" stroke="#111" stroke-width="2"/>${[8,13,18,23,28,33].map(x=>`<line x1="${x}" y1="15" x2="${x}" y2="29" stroke="#555"/>`).join('')}`;
  else if(d.g==='drive')s+=`<rect x="4" y="25" width="36" height="6" fill="#a9b1ba"/><rect x="16" y="8" width="12" height="18" fill="${d.fill}" stroke="${d.col}" stroke-width="1.4"/>`;
  return s+'</svg>'}
 function obDefOff(g,key,sta,side){const ts=parseSta(sta);const pl=g.pl||[];const seg=pl.find(p=>ts!=null&&ts>=p._a-1e-6&&ts<=p._b+1e-6)||pl[pl.length-1];const hw=seg?(side==='R'?seg._wr:seg._wl)||3:3;const d=OB[key];
  return Math.round((hw+(d.g==='rect'?5:d.g==='ln'?.5:2))*10)/10}
 function newOb(g,key){const d=OB[key];const last=(g.ob||[]).filter(o=>OB[o.k]&&OB[o.k].c===d.c).slice(-1)[0];const sta=last?last.sta:(g.sta0||'0+000');
- return{id:uid(),k:key,sta,sta2:d.g==='ln'||d.g==='rect'||d.g==='span'?(last&&last.sta2)||sta:'',side:'L',off:obDefOff(g,key,sta,'L'),w:d.w==null?'':d.w,len:d.len||'',sz:d.sz||'',cond:'',note:''}}
+ return{id:uid(),k:key,sta,sta2:d.g==='ln'||d.g==='rect'||d.g==='span'||d.g==='brw'?(last&&last.sta2)||sta:'',side:'L',off:obDefOff(g,key,sta,'L'),w:d.w==null?'':d.w,len:d.len||'',sz:d.sz||'',cond:'',note:''}}
 function obCsv(g){const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';const r=[['หมวด','ชนิด','STA','STA ถึง','ด้าน','ระยะจากกึ่งกลาง(ม.)','กว้าง(ม.)','ยาว(ม.)','ขนาด/ข้อมูล','สภาพ','หมายเหตุ'].map(q).join(',')];
  const ds={L:'ซ้าย',R:'ขวา',C:'กลาง'};[...(g.ob||[])].sort((a,b)=>(parseSta(a.sta)||0)-(parseSta(b.sta)||0)).forEach(o=>{const d=OB[o.k];if(!d)return;r.push([OB_CAT[d.c].replace(/^\S+\s/,''),d.n,o.sta,o.sta2,ds[o.side]||'',o.off,o.w,o.len,o.sz,o.cond,o.note].map(q).join(','))});
  (g.pc||[]).forEach(p=>r.push(['สภาพผิวทางเดิม',p.type||'',p.a,p.b,'','','','',p.dmg||'',p.cond||'',p.note||''].map(q).join(',')));return '﻿'+r.join('\r\n')}
@@ -1453,6 +1522,17 @@ function obSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1}=c;const o=[],PV=
    else o.push(`<polyline points="${pstr(T.map(x=>P(x,sg*(off+w/2))))}" fill="none" stroke="${bad?'#c0392b':d.col}" stroke-width="${Math.max(d.thick||0,d.w?Math.max(2,w*k):1.6).toFixed(1)}" ${d.dash?`stroke-dasharray="${d.dash}"`:''} stroke-linejoin="round"><title>${esc(d.n)}</title></polyline>`);
    if((B-A)*k>=50){const m=(A+B)/2,p=P(m,sg*(off+w)),n=nrm(m);o.push(`<text transform="translate(${(p[0]+n[0]*sg*0).toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)}) translate(0,${sg>=0?-4:11})" font-size="9.5" font-weight="600" fill="${d.col}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6">${esc(lab)}</text>`)}}
   else if(d.g==='span'){const A=Math.max(t,s0-2),B=Math.min(t2,s1+2),w0=wf(ts),e=Math.max(w0[0],w0[1])+1.2;o.push(`<polygon points="${pstr([P(t,e),P(t2,e),P(t2,-e),P(t,-e)])}" fill="${d.fill}" fill-opacity=".75" stroke="${d.col}" stroke-width="1.8"/>`,txt(P((t+t2)/2,0),'สะพาน/คอสะพาน'+(ob.sz?' '+ob.sz:''),10,'#222'))}
+  else if(d.g==='brw'){let a=t,b=t2;if(b-a<1){a=ts-sta0-3;b=ts-sta0+3}const w0=wf(ts),e=Math.max(w0[0],w0[1])+1.2,ext=e+24,tm=(a+b)/2,fl=ob.side==='R'||ob.side==='C'?-1:1;
+   o.push(`<polygon points="${pstr([P(a,ext),P(b,ext),P(b,-ext),P(a,-ext)])}" fill="#cfe8f7" stroke="none"/><polyline points="${pstr([P(a,ext),P(a,-ext)])}" stroke="#3b82b8" stroke-width="1.6"/><polyline points="${pstr([P(b,ext),P(b,-ext)])}" stroke="#3b82b8" stroke-width="1.6"/>`);
+   const q0=P(tm,-fl*(ext-5)),q1=P(tm,fl*(ext-5)),tg=(()=>{const u=P(tm,0),v=P(tm+1,0);let x=v[0]-u[0],y=v[1]-u[1];const l=Math.hypot(x,y)||1;return[x/l,y/l]})(),dv=[q1[0]-q0[0],q1[1]-q0[1]],dl=Math.hypot(dv[0],dv[1])||1,du=[dv[0]/dl,dv[1]/dl];
+   o.push(`<polyline points="${pstr([q0,q1])}" stroke="#3b82b8" stroke-width="1.4" stroke-dasharray="7 4" fill="none"/><polygon points="${q1[0].toFixed(1)},${q1[1].toFixed(1)} ${(q1[0]-du[0]*10+tg[0]*4.5).toFixed(1)},${(q1[1]-du[1]*10+tg[1]*4.5).toFixed(1)} ${(q1[0]-du[0]*10-tg[0]*4.5).toFixed(1)},${(q1[1]-du[1]*10-tg[1]*4.5).toFixed(1)}" fill="#3b82b8"/>`);
+   o.push(`<polygon points="${pstr([P(a,e),P(b,e),P(b,-e),P(a,-e)])}" fill="${d.fill}" fill-opacity=".9" stroke="${bad?'#c0392b':d.col}" stroke-width="1.8"/><polyline points="${pstr([P(a,e),P(b,e)])}" stroke="#222" stroke-width="3"/><polyline points="${pstr([P(a,-e),P(b,-e)])}" stroke="#222" stroke-width="3"/>`,txt(P(tm,0),'สะพาน'+(ob.sz?' '+ob.sz:''),10,'#222'),txt(P(tm,-fl*(ext+3)),'ทางน้ำ'+(ob.note?' '+ob.note:'')+' (→ทิศน้ำไหล)',9,'#1d5f91'))}
+  else if(d.g==='rail'){const w0=wf(ts),e=Math.max(w0[0],w0[1])+1.2,ww=Math.max(3,gnum(ob.w,6)),ext=e+16,step=Math.max(.8,3.2/k);
+   o.push(`<polygon points="${pstr([P(t-ww/2,e),P(t+ww/2,e),P(t+ww/2,-e),P(t-ww/2,-e)])}" fill="#555" fill-opacity=".28" stroke="#222" stroke-width="1" stroke-dasharray="4 3"/>`);
+   for(let x=-ext;x<=ext;x+=step)o.push(`<polyline points="${pstr([P(t-1.2,x),P(t+1.2,x)])}" stroke="#6b5a3a" stroke-width="1.6"/>`);
+   [-.72,.72].forEach(dx=>o.push(`<polyline points="${pstr([P(t+dx,ext),P(t+dx,-ext)])}" stroke="${bad?'#c0392b':'#111'}" stroke-width="2.4"/>`));
+   [1,-1].forEach(sd=>{const c0=P(t-ww/2-1.5,sd*(e+2.5));o.push(`<g stroke="#c0392b" stroke-width="2.4"><line x1="${c0[0]-6}" y1="${c0[1]-6}" x2="${c0[0]+6}" y2="${c0[1]+6}"/><line x1="${c0[0]-6}" y1="${c0[1]+6}" x2="${c0[0]+6}" y2="${c0[1]-6}"/></g>`)});
+   o.push(txt(P(t+ww/2+1,sg>=0?ext+1:-(ext+1)),'จุดตัดทางรถไฟ'+(ob.sz?' '+ob.sz:'')+(ob.note?' '+ob.note:''),9.5,'#222'))}
   else if(d.g==='drive'&&sg!==0){const w0=wf(ts),hw=sg>0?w0[0]:w0[1],ww=Math.max(1,gnum(ob.w,4)),L=Math.max(1,gnum(ob.len,6));const a=P(t-ww/2,sg*hw),b=P(t+ww/2,sg*hw),c2=P(t+ww/2,sg*(hw+L)),d2=P(t-ww/2,sg*(hw+L));
    o.push(`<polygon points="${pstr([a,b,c2,d2])}" fill="${d.fill}" stroke="none"/><polyline points="${pstr([a,b])}" stroke="${PV}" stroke-width="3.6"/><polyline points="${pstr([a,d2,c2,b])}" fill="none" stroke="${d.col}" stroke-width="1.4"/>`,txt(P(t,sg*(hw+L+1.2)),'ทางเข้า'+(ob.note?' '+ob.note:'')+' '+f1(ww)+' ม.',9,'#333'))}
  });return o.join('')}
@@ -1462,7 +1542,7 @@ function pcSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang}=c;const o=[];(g.pc|
   if((B-A)*k>=70){const m=(A+B)/2,q=P(m,0);o.push(`<text transform="translate(${q[0].toFixed(1)},${q[1].toFixed(1)}) rotate(${ang(m).toFixed(1)}) translate(0,3)" font-size="9.5" font-weight="700" fill="#222" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6">${esc([p.type,p.cond,p.dmg].filter(Boolean).join(' · '))}</text>`)}});return o.join('')}
 function obLegend(g,o,px,y){const kinds=[...new Set((g.ob||[]).map(x=>x.k).filter(k=>OB[k]))];const pcs=[...new Set((g.pc||[]).map(p=>p.cond).filter(Boolean))];if(!kinds.length&&!pcs.length)return y;
  o.push(`<text x="${px+12}" y="${y+2}" font-size="12.5" font-weight="700" fill="#1f3a5f">สำรวจสภาพเดิม</text>`);y+=20;
- kinds.slice(0,10).forEach(k=>{const d=OB[k];let ic;if(d.g==='pt')ic=symG(k,px+23,y-5,5);else if(d.g==='ln')ic=`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="${d.col}" stroke-width="${d.band?5:2}" ${d.dash?`stroke-dasharray="${d.dash}"`:''}/>`;else ic=`<rect x="${px+12}" y="${y-11}" width="22" height="12" fill="${d.fill||d.col}" stroke="${d.col}"/>`;o.push(ic+`<text x="${px+44}" y="${y}" font-size="12">${esc(cut(d.n,28))}</text>`);y+=19});
+ kinds.slice(0,10).forEach(k=>{const d=OB[k];let ic;if(d.g==='pt')ic=symG(k,px+23,y-5,5);else if(d.g==='rail')ic=`<line x1="${px+12}" y1="${y-8}" x2="${px+34}" y2="${y-8}" stroke="#111" stroke-width="2"/><line x1="${px+12}" y1="${y-2}" x2="${px+34}" y2="${y-2}" stroke="#111" stroke-width="2"/>`;else if(d.g==='brw')ic=`<rect x="${px+12}" y="${y-11}" width="22" height="12" fill="#cfe8f7" stroke="#3b82b8"/><rect x="${px+19}" y="${y-11}" width="8" height="12" fill="#d0d3d6" stroke="#444"/>`;else if(d.g==='ln')ic=`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="${d.col}" stroke-width="${d.band?5:2}" ${d.dash?`stroke-dasharray="${d.dash}"`:''}/>`;else ic=`<rect x="${px+12}" y="${y-11}" width="22" height="12" fill="${d.fill||d.col}" stroke="${d.col}"/>`;o.push(ic+`<text x="${px+44}" y="${y}" font-size="12">${esc(cut(d.n,28))}</text>`);y+=19});
  pcs.forEach(cn=>{o.push(`<rect x="${px+12}" y="${y-11}" width="22" height="12" fill="${PC_COND[cn]}" fill-opacity=".55" stroke="${PC_COND[cn]}"/><text x="${px+44}" y="${y}" font-size="12">ผิวทางเดิม: ${esc(cn)}</text>`);y+=19});return y+4}
 // ---------- UI ----------
 function surveyUI(g){const tab=g.obtab||'D',h=[];const sta0=parseSta(g.sta0)||0,end=g._end!=null?g._end:1e9;
@@ -1531,7 +1611,7 @@ function compilePL(g){
     if(typeof S!=='undefined'&&S.rows)S.rows.forEach(r=>{if(r.sg===p.id&&!r.fx){r.sta1=fmtSta(p._a);r.sta2=fmtSta(p._b)}});
     acc+=L});
   g.env=cutEnv(g.env,jxCuts(g));g._end=acc}
-const WZ_STEPS=[['1','① ผังช่วง (STA)'],['s','② สำรวจสภาพเดิม'],['p','③ ระดับ PROFILE'],['2','④ รายการงาน'],['3','⑤ รูปตัด SECTION']];
+const WZ_STEPS=[['1','① ผังช่วง (STA)'],['s','② สำรวจสภาพเดิม'],['p','③ ระดับ PROFILE'],['2','④ รายการงาน'],['3','⑤ รูปตัด SECTION (สร้างแผ่น)']];
 function plMarks(g,p){const a=p._a,b=p._b;if(a==null||b==null)return'';const last=g.pl[g.pl.length-1]===p;const inR=s=>s!=null&&s>=a-1e-6&&(last?s<=b+1e-6:s<b-1e-9);
   const sm=(svg,w)=>svg.replace(/width="\d+" height="\d+"/,`width="${w}" height="${w}"`);
   let o=`<span class="plic" title="${p.t==='L'?'ทางตรง':p.t==='CL'?'ทางโค้งซ้าย':'ทางโค้งขวา'}">${sm(segIcon(p.t),42)}</span>`;
@@ -1612,7 +1692,7 @@ function geoUI(){
     const un=S.rows.filter(r=>!r.sg&&!isBlank(r)).length;if(un)h.push(`<div class="mute">มี ${un} แถวในแท็บ ③ TABLE ที่ไม่ได้ผูกกับช่วง — ยังแสดงบนแปลนตาม STA ของแถวนั้นๆ</div>`);
     h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="p">← ③ ระดับ PROFILE</button><button class="b" data-act="step" data-v="3">ไปขั้นที่ ⑤ รูปตัด →</button></div>`);
   }else if(step==='3'){
-    h.push(`<div class="mute" style="margin:6px 0">เลือก STA ตำแหน่งตัด กำหนดชั้นวัสดุ แล้วกด "สร้าง SECTION" — รูปตัดแสดงใต้แปลนของแผ่นนั้น</div>`);
+    h.push(`<div class="mute" style="margin:6px 0">เลือก STA ตำแหน่งตัด กำหนดชั้นวัสดุ แล้วกด "สร้าง SECTION" — กดแล้วระบบสร้างแผ่นรูปตัดใหม่ ต่อท้ายแผ่น PLAN/PROFILE (แท็บ ① STA ด้านล่างสุด)</div>`);
     if(pl.length){h.push(`<div class="gsec"><b>เลือกตำแหน่งตัดอย่างเร็ว</b><div class="bar"><select id="secQ">${pl.map((p,i)=>[['ต้นช่วง',p._a],['กลางช่วง',(p._a+p._b)/2],['ปลายช่วง',p._b]].map(([n,v])=>`<option value="${v}">ช่วงที่ ${i+1} · ${n} (STA ${fmtSta(v)})</option>`).join('')).join('')}</select><button class="b ghost sm" data-act="addSecQ">＋ เพิ่มรูปตัดตรงนี้</button></div></div>`)}
     h.push(secEditor(g));
     h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="2">← ④ รายการงาน</button><button class="b" data-act="mkSec">🧩 สร้าง SECTION</button></div>`);
@@ -1678,7 +1758,7 @@ function geoUI(){
     else if(act==='csvOb'){dl(new Blob([obCsv(g)],{type:'text/csv;charset=utf-8'}),(S.code||'SV')+'_ExistingSurvey.csv');return}
     else if(act==='mkSec'){if(!g.secs.length){problem('SEC_NONE');return}const bad=g.secs.filter(s=>parseSta(s.sta)==null);if(bad.length){problem('SEC_STA');return}
       const lo=parseSta(g.sta0)||0,hi=g._end!=null?g._end:1e9;const out=g.secs.filter(s=>parseSta(s.sta)<lo-1e-6||parseSta(s.sta)>hi+1e-6);if(g.pl.length&&out.length){problem('SEC_RANGE',out.map(s=>s.sta).join(', '));return}
-      save();renderPlan();toast('✔ สร้างรูปตัด '+g.secs.length+' รูปแล้ว');$('planbox').scrollIntoView({behavior:'smooth',block:'start'});return}
+      save();renderPlan();toast('✔ สร้างรูปตัด '+g.secs.length+' รูปแล้ว — ดูแผ่นรูปตัดท้ายแผ่น PLAN');showTab('t3');setTimeout(()=>{const a=$('secSheets')||$('planbox');a.scrollIntoView({behavior:'smooth',block:'start'})},150);return}
     else return;
     save();geoUI();renderPlan()})})();
 
@@ -1751,7 +1831,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v28';
+const APPVER='v32';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -1764,7 +1844,7 @@ const HELP={
  PLAN_EMPTY:d=>{const s=[];const g=(typeof S!=='undefined'&&S.geo)||{};
   let nb=0,nsv=0;try{nb=geoBars().bars.length}catch(e){}try{nsv=planSvgs().length}catch(e){}
   if(nsv>0)return{t:'สร้างภาพ PLAN เป็นไฟล์ภาพไม่สำเร็จ',w:'แปลนแสดงบนหน้าจอได้ แต่เบราว์เซอร์แปลงเป็นไฟล์ PNG ไม่ได้ (พบบ่อยในเบราว์เซอร์ที่จำกัดหน่วยความจำ หรือแผ่นใหญ่มาก)',s:['ลองกดอีกครั้ง 1 ครั้ง','ปิดแท็บอื่นๆ เพื่อคืนหน่วยความจำ แล้วลองใหม่','ใช้ปุ่ม PDF แทน (ได้ภาพแปลนเหมือนกัน)','ลองเปิดแอปด้วย Chrome / Safari เวอร์ชันล่าสุด']};
-  s.push('เปิดแท็บ ① PLAN / SECTION แล้วดูว่ากรอบภาพแปลนแสดงภาพจริงหรือขึ้นข้อความ "ยังไม่มีข้อมูลสำหรับสร้างแปลน"');
+  s.push('เปิดแท็บ ① STA แล้วดูว่ากรอบภาพแปลนแสดงภาพจริงหรือขึ้นข้อความ "ยังไม่มีข้อมูลสำหรับสร้างแปลน"');
   s.push('มี 2 วิธีให้ภาพแปลนขึ้น — เลือกวิธีใดวิธีหนึ่ง:');
   s.push('  วิธี ก) ไปแท็บ ③ TABLE กรอกอย่างน้อย 1 แถวที่มี "STA เริ่ม/สิ้นสุด" และเลือกตำแหน่ง L / C / R แล้ว (แถวที่ว่างจะไม่ถูกนำมาวาด)');
   s.push('  วิธี ข) (แนะนำ) ในแท็บ ① ขั้น ① กด "＋ ช่วงตรง" เพื่อบันทึกผังช่วงแรก แล้วภาพแปลนจะขึ้นทันที');
@@ -2147,6 +2227,8 @@ function dxfBuild(op){
       const m=(a+b)/2;if(b-a>H*5){let r=ang(m);tx(L,O(m,sg*(off+w)+(sg>=0?H*.5:-H*1.3)),lab,H*.8,r>90&&r<=270?r-180:r,'c')}}
     else if(d.g==='rect'){const y1=sg*off,y2=sg*(off+w);pl(L,[O(t,y1),O(t2,y1),O(t2,y2),O(t,y2)],true);tx(L,O((t+t2)/2,(y1+y2)/2),lab||'อาคาร',H*.8,0,'c')}
     else if(d.g==='span'){const w0=wf(ts+s0),e=Math.max(w0[0],w0[1])+1.2;pl(L,[O(t,e),O(t2,e),O(t2,-e),O(t,-e)],true);tx(L,O((t+t2)/2,0),'สะพาน/คอสะพาน'+(ob.sz?' '+ob.sz:''),H*.8,0,'c')}
+    else if(d.g==='brw'){let a=t,b=t2;if(b-a<1){a=ts-3;b=ts+3}const w0=wf(ts+s0),e=Math.max(w0[0],w0[1])+1.2,ext=e+24;pl(L,[O(a,ext),O(b,ext),O(b,-ext),O(a,-ext)],true);pl(L,[O(a,e),O(b,e),O(b,-e),O(a,-e)],true);tx(L,O((a+b)/2,0),'สะพาน'+(ob.sz?' '+ob.sz:''),H*.8,0,'c');tx(L,O((a+b)/2,-(ext+2)),'ทางน้ำ'+(ob.note?' '+ob.note:''),H*.8,0,'c')}
+    else if(d.g==='rail'){const w0=wf(ts+s0),e=Math.max(w0[0],w0[1])+1.2,ww=Math.max(3,w||6),ext=e+16;[-.72,.72].forEach(dx=>ln(L,O(t+dx,ext),O(t+dx,-ext)));pl(L,[O(t-ww/2,e),O(t+ww/2,e),O(t+ww/2,-e),O(t-ww/2,-e)],true);tx(L,O(t+ww/2+1,ext+1),'จุดตัดทางรถไฟ'+(ob.sz?' '+ob.sz:''),H*.8)}
     else if(d.g==='drive'&&sg!==0){const w0=wf(ts+s0),hw=sg>0?w0[0]:w0[1],ww=Math.max(1,w||4),Ld=Math.max(1,gnum(ob.len,6));pl(L,[O(t-ww/2,sg*hw),O(t+ww/2,sg*hw),O(t+ww/2,sg*(hw+Ld)),O(t-ww/2,sg*(hw+Ld))],true);tx(L,O(t,sg*(hw+Ld+1)),'ทางเข้า'+(ob.note?' '+ob.note:''),H*.8,0,'c')}});
   // ---- ทางแยก/วงเวียน
   (g.jx||[]).forEach((j,i)=>{const t=rel(j.sta);if(t==null||t<0||t>len)return;const p=A(t),L=lay('JX',6);
@@ -2234,7 +2316,7 @@ function dxfBuild(op){
 
 // ===== v27: ระดับผิวทางเดิม + PROFILE ตามสายทาง =====
 const EL_HS=[500,1000,2000,2500,5000],EL_VS=[0,50,100,200,500],EL_IV=[5,10,20,25,50,100];
-function elN(g){if(!g.el)g.el={};const e=g.el;if(!e.v)e.v={};if(!e.x)e.x=[];if(e.e0==null)e.e0='';if(e.dat==null)e.dat='';if(!e.iv)e.iv='20';if(!e.mode)e.mode='d';if(!e.hs)e.hs='1000';if(e.vs==null)e.vs='0';return e}
+function elN(g){if(!g.el)g.el={};const e=g.el;if(!e.v)e.v={};if(!e.x)e.x=[];if(e.e0==null)e.e0='';if(e.dat==null)e.dat='';if(!e.iv)e.iv='20';if(!e.mode)e.mode='d';if(!e.hs)e.hs='1000';if(e.vs==null)e.vs='0';if(!e.pv)e.pv=[];if(e.dlo==null)e.dlo='';return e}
 function elRange(g){compilePL(g);const sv=parseSta(g.sv),ss=sv!=null?sv:(parseSta(g.sta0)||0),se=g._end!=null?g._end:ss;return[ss,Math.max(ss,se)]}
 function elStations(g){const e=elN(g),[ss,se]=elRange(g),iv=Math.max(1,gnum(e.iv,20)),L=[];for(let s=ss;s<se-1e-6;s+=iv)L.push(s);L.push(se);
   e.x.forEach(x=>{if(x>=ss-1e-6&&x<=se+1e-6)L.push(x)});L.sort((a,b)=>a-b);const o=[];L.forEach(s=>{if(!o.length||s-o[o.length-1]>1e-3)o.push(s)});return o}
@@ -2248,51 +2330,110 @@ function elVals(g){const e=elN(g),st=elStations(g),e0=parseFloat(e.e0),has0=isFi
     else if(has0){z=e0;src='def'}
     out.push({s,z,src})});return out}
 const elF=z=>z==null||!isFinite(z)?'':(Math.round(z*1000)/1000).toFixed(3);
-// ---- วาด PROFILE (หลายแผ่น) ----
-function profSvgs(g){const e=elN(g),vals=elVals(g);if(!vals.length||vals.every(v=>v.z==null))return[];
-  const W=1485,H=1050,X0=210,X1=1445,Y0=110,Nh=gnum(e.hs,1000),ph=5000/Nh;let zs=vals.map(v=>v.z).filter(z=>z!=null),zmin=Math.min(...zs),zmax=Math.max(...zs);
-  let datum=parseFloat(e.dat);if(!isFinite(datum))datum=Math.floor(zmin-1.5);if(datum>zmin-.2)datum=Math.floor(zmin-.5);
-  let top=Math.ceil(zmax+1.5);if(top-datum<5)top=datum+5;const rng=top-datum,CH=640;
-  let Nv=gnum(e.vs,0);if(!(Nv>0)){Nv=[20,50,100,200,500,1000,2000].find(n=>rng*5000/n<=CH)||2000}let pv=5000/Nv;let ch=rng*pv;if(ch>CH+1){ch=CH;pv=CH/rng}
-  const Ls=Math.max(1,Math.floor((X1-X0)/ph/Math.max(1,gnum(e.iv,20))))*Math.max(1,gnum(e.iv,20));
-  const [ss,se]=elRange(g),sheets=[];let a=ss;while(a<se-1e-6||!sheets.length){sheets.push([a,Math.min(se,a+Ls)]);a+=Ls;if(sheets.length>200)break}
-  const YB=Y0+ch,gs=pv>=22?1:pv*2>=22?2:pv*5>=22?5:10;
-  return sheets.map(([sa,sb],idx)=>{const o=[],T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
-    const X=s=>X0+(s-sa)*ph,Y=z=>YB-(z-datum)*pv,xe=X(sb);
+// ---- ระดับออกแบบ (PVI + vertical curve) ----
+function pvList(g){const e=elN(g);return(e.pv||[]).map(p=>({s:parseSta(p.s),z:parseFloat(p.z),L:Math.max(0,parseFloat(p.L)||0)})).filter(p=>p.s!=null&&isFinite(p.z)).sort((a,b)=>a.s-b.s)}
+function elAt(vals,s){const v=vals.filter(x=>x.z!=null);if(!v.length)return null;if(s<=v[0].s)return v[0].z;if(s>=v[v.length-1].s)return v[v.length-1].z;
+  for(let i=0;i<v.length-1;i++)if(s>=v[i].s&&s<=v[i+1].s){const d=v[i+1].s-v[i].s;return d<=0?v[i].z:v[i].z+(v[i+1].z-v[i].z)*(s-v[i].s)/d}return null}
+function dsgModel(g){const e=elN(g),P=pvList(g),dlo=parseFloat(e.dlo);
+  if(P.length>=2){const gr=[];for(let i=0;i<P.length-1;i++)gr.push((P[i+1].z-P[i].z)/Math.max(1e-6,P[i+1].s-P[i].s));
+    const vc=[];for(let i=1;i<P.length-1;i++)if(P[i].L>0){const g1=gr[i-1],g2=gr[i],L=Math.min(P[i].L,2*Math.min(P[i].s-P[i-1].s,P[i+1].s-P[i].s)),A=(g2-g1)*100;
+      vc.push({i,L,b:P[i].s-L/2,e:P[i].s+L/2,g1,g2,A,K:Math.abs(A)>1e-9?L/Math.abs(A):0,zb:P[i].z-g1*L/2,s:P[i].s,z:P[i].z})}
+    const f=s=>{if(s<P[0].s-1e-6||s>P[P.length-1].s+1e-6)return null;for(const c of vc)if(s>=c.b&&s<=c.e){const d=s-c.b;return c.zb+c.g1*d+(c.g2-c.g1)/(2*c.L)*d*d}
+      let i=0;while(i<P.length-2&&s>P[i+1].s)i++;return P[i].z+gr[i]*(s-P[i].s)};
+    return{f,vc,pv:P,a:P[0].s,b:P[P.length-1].s}}
+  if(String(e.dlo).trim()!==''&&isFinite(dlo)){const vs=elVals(g);const[ss,se]=elRange(g);return{f:s=>{const z=elAt(vs,s);return z==null?null:z+dlo},vc:[],pv:[],a:ss,b:se}}
+  return null}
+const effPos=g=>{const e=elN(g);if(e.pos==null||e.pos==='')return isFinite(parseFloat(e.e0))?'p':'off';return e.pos};
+function profScale(g){const e=elN(g),vals=elVals(g);if(!vals.length||vals.every(v=>v.z==null))return null;const D=dsgModel(g),zs=vals.map(v=>v.z).filter(z=>z!=null),[ss,se]=elRange(g);
+  if(D){D.pv.forEach(p=>zs.push(p.z));const n=200;for(let i=0;i<=n;i++){const z=D.f(ss+(se-ss)*i/n);if(z!=null)zs.push(z)}}
+  const zmin=Math.min(...zs),zmax=Math.max(...zs);let datum=parseFloat(e.dat);if(!isFinite(datum))datum=Math.round((zmin-1)*1000)/1000;if(datum>zmin-.2)datum=zmin-1;
+  let top=Math.ceil(zmax+1.5);if(top-datum<5)top=datum+5;return{vals,D,datum,top,rng:top-datum}}
+const EXC='#1e5fa8',FNC='#d32f2f',EARTH='#e4d0ac',EARTH2='#8a6a3b';
+function profDefs(id){return`<defs><pattern id="pg${id}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="${EARTH2}"/><line x1="0" y1="0" x2="0" y2="8" stroke="#5c4424" stroke-width="1.6"/></pattern><pattern id="pe${id}" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="${EARTH}"/><circle cx="2" cy="2" r=".9" fill="#b99a66"/><circle cx="6.5" cy="6" r=".9" fill="#b99a66"/></pattern></defs>`}
+// แนวนอน: X(s)=พิกัด x ของ STA s
+function profH(g,B){const{x,y,w,h,sa,sb,X,LW,ps,id}=B,e=elN(g),D=ps.D,o=[],T=(px,py,t,sz,ex)=>o.push(`<text x="${px}" y="${py}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
+  const vs=ps.vals,inC=vs.filter(v=>v.s>=sa-1e-6&&v.s<=sb+1e-6);
+  let cw=1e9;for(let i=1;i<inC.length;i++)cw=Math.min(cw,Math.abs(X(inC[i].s)-X(inC[i-1].s)));if(cw>1e8)cw=100;const rot=cw<58;
+  const hh=26,rS=rot?48:24,rE=rot?58:28,rD=D?rE:0,band=16,ch=h-hh-rS-rE-rD-band,cx0=x+LW,cx1=x+w-6,cy0=y+hh,YB=cy0+ch;
+  let Nv=B.Nv>0?B.Nv:0;const cands=[20,50,100,200,500,1000,2000,5000];if(!Nv||ps.rng*5000/Nv>ch)Nv=cands.find(n=>ps.rng*5000/n<=ch)||5000;const pv=5000/Nv,datum=ps.datum,topz=datum+ch/pv;
+  const Y=z=>YB-(z-datum)*pv,gs=pv>=22?1:pv*2>=22?2:pv*5>=22?5:pv*10>=22?10:50;
+  o.push(profDefs(id)+`<clipPath id="pc${id}"><rect x="${cx0}" y="${cy0}" width="${cx1-cx0}" height="${ch}"/></clipPath>`);
+  // header/legend
+  o.push(`<rect x="${x}" y="${y}" width="${w}" height="${hh}" fill="#f1f3f5" stroke="#333"/>`);T(x+8,y+18,'PROFILE LEGEND',12,'font-weight="700"');
+  let lx=x+130;o.push(`<line x1="${lx}" y1="${y+13}" x2="${lx+34}" y2="${y+13}" stroke="${FNC}" stroke-width="2.6"/>`);T(lx+40,y+17,'FINAL (DESIGN)',11);lx+=140;
+  o.push(`<line x1="${lx}" y1="${y+13}" x2="${lx+34}" y2="${y+13}" stroke="${EXC}" stroke-width="2" stroke-dasharray="7 4"/>`);T(lx+40,y+17,'EXISTING GROUND LEVEL',11);lx+=215;
+  o.push(`<circle cx="${lx}" cy="${y+13}" r="4" fill="${EXC}"/><circle cx="${lx+60}" cy="${y+13}" r="4" fill="#fff" stroke="${EXC}" stroke-width="1.5"/>`);T(lx+8,y+17,'ระบุ',11);T(lx+68,y+17,'ค่าเริ่มต้น/ประมาณ',11);
+  T(x+w-8,y+17,`นอน 1:${B.hl||''}  ตั้ง 1:${Nv}`,11,'text-anchor="end" fill="#444"');
+  // chart
+  o.push(`<rect x="${cx0}" y="${cy0}" width="${cx1-cx0}" height="${ch}" fill="#fbfcfd" stroke="#000" stroke-width="1.3"/>`);
+  for(let z=Math.ceil(datum/gs)*gs;z<=topz+1e-6;z+=gs){const yy=Y(z);if(yy<cy0-1||yy>YB-9)continue;o.push(`<line x1="${cx0}" y1="${yy}" x2="${cx1}" y2="${yy}" stroke="#b9bfc6" stroke-width=".8" stroke-dasharray="4 3"/>`);T(cx0-5,yy+4,z.toFixed(gs<1?1:0===gs%1?1:1),10.5,'text-anchor="end"')}
+  const edge=(s)=>{const z=elAt(vs,s);return z==null?null:{s,z,src:'int'}};
+  let ln=inC.filter(v=>v.z!=null);if(ln.length&&ln[0].s>sa+1e-6){const q=edge(sa);if(q)ln=[q].concat(ln)}if(ln.length&&ln[ln.length-1].s<sb-1e-6){const q=edge(sb);if(q)ln=ln.concat([q])}
+  o.push(`<g clip-path="url(#pc${id})">`);
+  inC.forEach(v=>{const xx=X(v.s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#9aa0a6" stroke-width=".8" stroke-dasharray="2 3"/>`)});
+  if(ln.length>1)o.push(`<polygon points="${ln.map(v=>X(v.s).toFixed(1)+','+Y(v.z).toFixed(1)).join(' ')} ${X(ln[ln.length-1].s).toFixed(1)},${YB} ${X(ln[0].s).toFixed(1)},${YB}" fill="url(#pe${id})" fill-opacity=".85"/>`);
+  (g.jx||[]).forEach(j=>{const s=parseSta(j.sta);if(s==null||s<sa-1e-6||s>sb+1e-6)return;const xx=X(s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#8e44ad" stroke-width="1.5"/>`)});
+  if(ln.length>1)o.push(`<polyline points="${ln.map(v=>X(v.s).toFixed(1)+','+Y(v.z).toFixed(1)).join(' ')}" fill="none" stroke="${EXC}" stroke-width="2" stroke-dasharray="9 4" stroke-linejoin="round"/>`);
+  inC.filter(v=>v.z!=null).forEach(v=>o.push(`<circle cx="${X(v.s).toFixed(1)}" cy="${Y(v.z).toFixed(1)}" r="4" fill="${v.src==='set'?EXC:'#fff'}" stroke="${EXC}" stroke-width="1.4"/>`));
+  if(D){const a=Math.max(sa,D.a),b=Math.min(sb,D.b);if(b>a){const n=Math.max(8,Math.ceil((b-a)/2)),pts=[];for(let i=0;i<=n;i++){const s=a+(b-a)*i/n,z=D.f(s);if(z!=null)pts.push(X(s).toFixed(1)+','+Y(z).toFixed(1))}
+      o.push(`<polyline points="${pts.join(' ')}" fill="none" stroke="${FNC}" stroke-width="2.6" stroke-linejoin="round"/>`)}
+    D.pv.forEach(p=>{if(p.s<sa-1e-6||p.s>sb+1e-6)return;const xx=X(p.s),yy=Y(p.z);o.push(`<polygon points="${xx-5},${yy+9} ${xx+5},${yy+9} ${xx},${yy}" fill="${FNC}" fill-opacity=".25" stroke="${FNC}"/>`)});
+    let k=0;D.vc.forEach(c=>{if(c.e<sa||c.b>sb)return;const xb=X(c.b),xe=X(c.e),xp=X(c.s),yp=Y(c.z),crest=c.A<0,ty=crest?Math.max(cy0+16,yp-34-(k%2)*30):Math.min(YB-40,yp+22+(k%2)*30);k++;
+      o.push(`<line x1="${xb.toFixed(1)}" y1="${Y(c.zb)-6}" x2="${xb.toFixed(1)}" y2="${Y(c.zb)+6}" stroke="${FNC}"/><line x1="${xe.toFixed(1)}" y1="${Y(D.f(c.e))-6}" x2="${xe.toFixed(1)}" y2="${Y(D.f(c.e))+6}" stroke="${FNC}"/><line x1="${xp.toFixed(1)}" y1="${yp.toFixed(1)}" x2="${xp.toFixed(1)}" y2="${ty+(crest?4:-10)}" stroke="${FNC}" stroke-dasharray="2 2"/>`);
+      T(xp,ty-12,`PVI ${fmtSta(c.s)}  EL ${c.z.toFixed(3)}`,10.5,`text-anchor="middle" fill="${FNC}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3"`);
+      T(xp,ty,`VC ${c.L.toFixed(3)}, K ${c.K.toFixed(3)}, A.D. ${Math.abs(c.A).toFixed(2)}%`,10.5,`text-anchor="middle" fill="${FNC}" paint-order="stroke" stroke="#fff" stroke-width="3"`)})}
+  o.push('</g>');
+  // DATUM band (ดิน)
+  o.push(`<rect x="${cx0}" y="${YB}" width="${cx1-cx0}" height="${band}" fill="url(#pg${id})" stroke="#4a3818"/><rect x="${x}" y="${YB}" width="${LW}" height="${band}" fill="${EARTH2}" stroke="#4a3818"/>`);
+  T(x+8,YB+12,'DATUM '+datum.toFixed(3),11,'font-weight="700" fill="#fff"');
+  // table
+  const r1=YB+band,r2=r1+rS,r3=r2+rE,r4=r3+rD;o.push(`<rect x="${x}" y="${r1}" width="${w}" height="${r4-r1}" fill="#fff" stroke="#000"/><line x1="${x}" y1="${r2}" x2="${x+w}" y2="${r2}" stroke="#000"/><line x1="${x}" y1="${r3}" x2="${x+w}" y2="${r3}" stroke="#000"/>${D?`<line x1="${x}" y1="${r3}" x2="${x+w}" y2="${r3}" stroke="#000"/>`:''}<line x1="${cx0}" y1="${r1}" x2="${cx0}" y2="${r4}" stroke="#000"/>`);
+  T(x+8,r1+(rot?20:17),'STA',12,'font-weight="700"');T(x+8,r2+(rot?24:18),'EXISTING LEVEL',11,'font-weight="700"');if(D)T(x+8,r3+(rot?24:18),'DESIGN LEVEL',11,`font-weight="700" fill="${FNC}"`);
+  const num=(xx,yy,t,b,col)=>rot?T(xx+4,yy,t,10.5,`transform="rotate(-90 ${xx+4} ${yy})" ${b?'font-weight="700"':''} fill="${col}"`):T(xx,yy,t,12,`text-anchor="middle" ${b?'font-weight="700"':''} fill="${col}"`);
+  inC.forEach(v=>{const xx=X(v.s);if(xx<cx0-1||xx>cx1+1)return;
+    if(rot)T(xx+4,r1+44,fmtSta(v.s),10.5,`transform="rotate(-90 ${xx+4} ${r1+44})" font-weight="700"`);else T(xx,r1+17,fmtSta(v.s),12,'text-anchor="middle" font-weight="700"');
+    if(v.z!=null)num(xx,rot?r2+54:r2+19,elF(v.z),v.src==='set','#222');
+    if(D){const z=D.f(v.s);if(z!=null)num(xx,rot?r3+54:r3+19,elF(z),true,FNC)}});
+  return o.join('')}
+// แนวตั้ง: STA เรียงลงมา
+function profV(g,B){const{x,y,w,h,sa,sb,ps,id}=B,D=ps.D,o=[],T=(px,py,t,sz,ex)=>o.push(`<text x="${px}" y="${py}" font-size="${sz||11}" ${ex||''}>${esc(t)}</text>`);
+  const vs=ps.vals,inC=vs.filter(v=>v.s>=sa-1e-6&&v.s<=sb+1e-6),hh=26,bandW=14,colW=D?54:60,ncol=D?3:2,tw=colW*ncol,cx0=x+bandW,cx1=x+w-tw-4,cy0=y+hh+24,cy1=y+h-12;
+  const Xz=z=>cx0+(z-ps.datum)/ps.rng*(cx1-cx0),Ys=s=>cy1-8-(s-sa)/Math.max(1,sb-sa)*(cy1-cy0-16);
+  o.push(profDefs(id)+`<clipPath id="pc${id}"><rect x="${cx0}" y="${cy0}" width="${cx1-cx0}" height="${cy1-cy0}"/></clipPath>`);
+  o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#333"/><rect x="${x}" y="${y}" width="${w}" height="${hh}" fill="#f1f3f5" stroke="#333"/>`);
+  T(x+8,y+18,'PROFILE (แนวตั้ง)',12,'font-weight="700"');T(x+w-8,y+18,`STA ${fmtSta(sa)}–${fmtSta(sb)}`,10.5,'text-anchor="end" fill="#444"');
+  const gs=ps.rng>40?10:ps.rng>15?5:ps.rng>6?2:1;
+  o.push(`<rect x="${cx0}" y="${cy0}" width="${cx1-cx0}" height="${cy1-cy0}" fill="#fbfcfd" stroke="#000"/><rect x="${x}" y="${cy0}" width="${bandW}" height="${cy1-cy0}" fill="url(#pg${id})" stroke="#4a3818"/>`);
+  for(let z=Math.ceil(ps.datum/gs)*gs;z<=ps.top+1e-6;z+=gs){const xx=Xz(z);o.push(`<line x1="${xx}" y1="${cy0}" x2="${xx}" y2="${cy1}" stroke="#b9bfc6" stroke-dasharray="4 3" stroke-width=".8"/>`);T(xx,cy0-4,z.toFixed(0),10,'text-anchor="middle"')}
+  T(cx0+4,cy1-3,'DATUM '+ps.datum.toFixed(3),10,'font-weight="700" fill="'+EARTH2+'"');
+  let ln=inC.filter(v=>v.z!=null);if(ln.length&&ln[0].s>sa+1e-6){const z=elAt(vs,sa);if(z!=null)ln=[{s:sa,z}].concat(ln)}if(ln.length&&ln[ln.length-1].s<sb-1e-6){const z=elAt(vs,sb);if(z!=null)ln=ln.concat([{s:sb,z}])}
+  o.push(`<g clip-path="url(#pc${id})">`);
+  if(ln.length>1)o.push(`<polygon points="${cx0},${Ys(ln[0].s)} ${ln.map(v=>Xz(v.z).toFixed(1)+','+Ys(v.s).toFixed(1)).join(' ')} ${cx0},${Ys(ln[ln.length-1].s)}" fill="url(#pe${id})" fill-opacity=".85"/><polyline points="${ln.map(v=>Xz(v.z).toFixed(1)+','+Ys(v.s).toFixed(1)).join(' ')}" fill="none" stroke="${EXC}" stroke-width="2" stroke-dasharray="8 4"/>`);
+  if(D){const a=Math.max(sa,D.a),b=Math.min(sb,D.b);if(b>a){const n=Math.max(8,Math.ceil((b-a)/2)),pts=[];for(let i=0;i<=n;i++){const s=a+(b-a)*i/n,z=D.f(s);if(z!=null)pts.push(Xz(z).toFixed(1)+','+Ys(s).toFixed(1))}o.push(`<polyline points="${pts.join(' ')}" fill="none" stroke="${FNC}" stroke-width="2.6"/>`)}
+    D.vc.forEach(c=>{if(c.e<sa||c.b>sb)return;const yy=Ys(c.s);T(cx0+6,yy-4,`VC ${c.L.toFixed(0)}, K ${c.K.toFixed(2)}, A.D. ${Math.abs(c.A).toFixed(2)}%`,9.5,`fill="${FNC}" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3"`)})}
+  o.push('</g>');
+  const tx=x+w-tw;o.push(`<rect x="${tx}" y="${y+hh}" width="${tw}" height="${h-hh}" fill="#fff" stroke="#000"/>`);
+  for(let i=1;i<ncol;i++)o.push(`<line x1="${tx+i*colW}" y1="${y+hh}" x2="${tx+i*colW}" y2="${y+h}" stroke="#000"/>`);
+  T(tx+colW/2,y+hh+16,'STA',10.5,'text-anchor="middle" font-weight="700"');T(tx+colW*1.5,y+hh+11,'EXISTING',9.5,'text-anchor="middle" font-weight="700"');if(D)T(tx+colW*2.5,y+hh+11,'DESIGN',9.5,`text-anchor="middle" font-weight="700" fill="${FNC}"`);
+  inC.forEach(v=>{const yy=Ys(v.s);o.push(`<line x1="${cx0}" y1="${yy.toFixed(1)}" x2="${cx1}" y2="${yy.toFixed(1)}" stroke="#9aa0a6" stroke-width=".6" stroke-dasharray="2 3"/><line x1="${tx}" y1="${yy.toFixed(1)}" x2="${tx+tw}" y2="${yy.toFixed(1)}" stroke="#ddd" stroke-width=".6"/>`);
+    T(tx+colW/2,yy+3.5,fmtSta(v.s),10,'text-anchor="middle" font-weight="700"');if(v.z!=null)T(tx+colW*1.5,yy+3.5,elF(v.z),10,`text-anchor="middle"${v.src==='set'?' font-weight="700"':' fill="#555"'}`);
+    if(D){const z=D.f(v.s);if(z!=null)T(tx+colW*2.5,yy+3.5,elF(z),10,`text-anchor="middle" fill="${FNC}" font-weight="700"`)}});
+  return o.join('')}
+// ---- แผ่น PROFILE แยก ----
+function profSvgs(g){const e=elN(g),ps=profScale(g);if(!ps)return[];
+  const W=1485,H=1050,Nh=gnum(e.hs,1000),ph=5000/Nh,iv=Math.max(1,gnum(e.iv,20)),LW=100,bx=30,bw=W-60,cx0=bx+LW;
+  const Ls=Math.max(1,Math.floor((bw-LW-30)/ph/iv))*iv,[ss,se]=elRange(g),sheets=[];let a=ss;while(a<se-1e-6||!sheets.length){sheets.push([a,Math.min(se,a+Ls)]);a+=Ls;if(sheets.length>200)break}
+  return sheets.map(([sa,sb],idx)=>{const o=[];const X=s=>cx0+14+(s-sa)*ph;
     o.push(`<rect width="${W}" height="${H}" fill="#fff"/><rect x="8" y="8" width="${W-16}" height="${H-16}" fill="none" stroke="#000" stroke-width="2"/>`);
-    T(W/2,48,'PROFILE ระดับผิวทางเดิมตามแนวสายทาง',28,'text-anchor="middle" font-weight="700"');
-    T(W/2,76,`STA ${fmtSta(sa)} – ${fmtSta(sb)}  ·  มาตราส่วน นอน 1:${Nh}  ตั้ง 1:${Math.round(5000/pv)}  ·  แผ่นที่ ${idx+1}/${sheets.length}`,16,'text-anchor="middle"');
-    // legend
-    o.push(`<rect x="30" y="${Y0}" width="160" height="150" fill="none" stroke="#000"/>`);T(110,Y0+22,'PROFILE LEGEND',13,'text-anchor="middle" font-weight="700"');
-    o.push(`<line x1="42" y1="${Y0+50}" x2="86" y2="${Y0+50}" stroke="#000" stroke-width="2" stroke-dasharray="7 4"/>`);T(92,Y0+54,'ระดับผิวทางเดิม',12);
-    o.push(`<circle cx="64" cy="${Y0+80}" r="4" fill="#000"/>`);T(92,Y0+84,'ค่าที่ระบุ',12);
-    o.push(`<circle cx="64" cy="${Y0+108}" r="4" fill="#fff" stroke="#000"/>`);T(92,Y0+112,'ค่าเริ่มต้น',12);
-    T(42,Y0+138,'* หน่วย: เมตร (ม.รทก.)',11,'fill="#555"');
-    // chart frame + horizontal grid
-    o.push(`<rect x="${X0}" y="${Y0}" width="${X1-X0}" height="${ch}" fill="none" stroke="#000" stroke-width="1.5"/>`);
-    for(let z=Math.ceil(datum/gs)*gs;z<=top+1e-6;z+=gs){const y=Y(z);o.push(`<line x1="${X0}" y1="${y}" x2="${X1}" y2="${y}" stroke="#b8b8b8" stroke-width=".8" stroke-dasharray="4 3"/>`);T(X0-6,y+4,z.toFixed(1),11,'text-anchor="end"')}
-    // stations
-    const inC=vals.filter(v=>v.s>=sa-1e-6&&v.s<=sb+1e-6);
-    inC.forEach(v=>{const x=X(v.s);o.push(`<line x1="${x}" y1="${Y0}" x2="${x}" y2="${YB}" stroke="#9a9a9a" stroke-width=".8" stroke-dasharray="${v.s%100<1e-6||(v.s%100>99.999)?'':'2 3'}"/>`)});
-    (g.jx||[]).forEach(j=>{const s=parseSta(j.sta);if(s==null||s<sa-1e-6||s>sb+1e-6)return;const x=X(s);o.push(`<line x1="${x}" y1="${Y0}" x2="${x}" y2="${YB}" stroke="#8e44ad" stroke-width="1.6"/><polygon points="${x-7},${Y0-2} ${x+7},${Y0-2} ${x},${Y0+12}" fill="#8e44ad"/>`);T(x+9,Y0+12,(typeof JX_T!=='undefined'&&JX_T[j.type]||j.type)+' STA '+fmtSta(s),11,'fill="#6c2f86" font-weight="700"')});
-    // line
-    const pts=inC.filter(v=>v.z!=null);if(pts.length>1)o.push(`<polyline points="${pts.map(v=>X(v.s).toFixed(1)+','+Y(v.z).toFixed(1)).join(' ')}" fill="none" stroke="#000" stroke-width="2" stroke-dasharray="9 4" stroke-linejoin="round"/>`);
-    pts.forEach(v=>o.push(`<circle cx="${X(v.s).toFixed(1)}" cy="${Y(v.z).toFixed(1)}" r="4.2" fill="${v.src==='set'?'#000':'#fff'}" stroke="#000" stroke-width="1.3"/>`));
-    T(X0+8,YB-8,'DATUM '+datum.toFixed(3),13,'font-weight="700"');
-    // table
-    const r1=YB,r2=YB+34;o.push(`<rect x="30" y="${r1}" width="${X1-30}" height="104" fill="none" stroke="#000"/><line x1="30" y1="${r2}" x2="${X1}" y2="${r2}" stroke="#000"/><line x1="${X0}" y1="${r1}" x2="${X0}" y2="${r1+104}" stroke="#000"/>`);
-    T(42,r1+22,'STA',14,'font-weight="700"');T(42,r2+30,'EXISTING LEVEL',14,'font-weight="700"');T(42,r2+50,'ระดับผิวทางเดิม',12,'fill="#444"');
-    const cw=ph*Math.max(1,gnum(e.iv,20)),rot=cw<62;
-    inC.forEach(v=>{const x=X(v.s);T(x,r1+22,fmtSta(v.s),rot?10:12,`text-anchor="middle" font-weight="700"${rot?` transform="rotate(-90 ${x+4} ${r1+30})"`:''}`);
-      if(v.z!=null){const s=elF(v.z);if(rot)T(x+4,r2+98,s,11,`transform="rotate(-90 ${x+4} ${r2+98})"`+(v.src==='set'?' font-weight="700"':' fill="#555"'));else T(x,r2+50,s,13,'text-anchor="middle"'+(v.src==='set'?' font-weight="700"':' fill="#555"'))}});
-    // title strip
+    o.push(`<text x="${W/2}" y="48" font-size="28" font-weight="700" text-anchor="middle">PROFILE ตามแนวสายทาง</text><text x="${W/2}" y="76" font-size="16" text-anchor="middle">STA ${fmtSta(sa)} – ${fmtSta(sb)} · แผ่นที่ ${idx+1}/${sheets.length}</text>`);
+    o.push(profH(g,{id:'s'+idx,x:bx,y:96,w:bw,h:H-96-130,sa,sb,X,LW,ps,Nv:gnum(e.vs,0),hl:Nh}));
+    const tb=g.tb||{},T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz}" ${ex||''}>${esc(t)}</text>`),kv=(x,y,l,v)=>{T(x,y,l,10,'fill="#666"');T(x,y+18,v||'-',14,'font-weight="700"')};
     o.push(`<rect x="30" y="${H-118}" width="${W-60}" height="92" fill="none" stroke="#000"/><line x1="${W/2}" y1="${H-118}" x2="${W/2}" y2="${H-26}" stroke="#000"/>`);
-    const tb=g.tb||{},kv=(x,y,l,v)=>{T(x,y,l,10,'fill="#666"');T(x,y+18,v||'-',14,'font-weight="700"')};
     kv(42,H-100,'โครงการ',S.proj.name);kv(42,H-60,'หน่วยงาน / สายทาง',[S.proj.agency,S.proj.route].filter(Boolean).join(' · '));
     kv(W/2+12,H-100,'ผู้ออกแบบ / ผู้ตรวจ',[tb.designer,tb.checker].filter(Boolean).join(' / '));kv(W/2+12,H-60,'รหัส · วันที่',(S.code||'')+' · '+(S.proj.date||new Date().toISOString().slice(0,10)));
     T(W-40,H-34,'ค่าที่ไม่ระบุใช้ระดับ Elev '+fmtSta(ss)+' = '+(isFinite(parseFloat(e.e0))?parseFloat(e.e0).toFixed(3):'-')+(e.mode==='i'?' (ประมาณค่าระหว่างจุดที่ระบุ)':''),10,'text-anchor="end" fill="#555"');
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Sarabun,Tahoma,sans-serif">${o.join('')}</svg>`})}
-function profCsv(g){const v=elVals(g);return '﻿STA,ระดับผิวทางเดิม (ม.),แหล่งที่มา\n'+v.map(x=>[fmtSta(x.s),elF(x.z),x.src==='set'?'ระบุ':x.src==='int'?'ประมาณค่า':'ค่าเริ่มต้น'].join(',')).join('\n')+'\n'}
+function profCsv(g){const ps=profScale(g),v=elVals(g),D=ps&&ps.D;return '﻿STA,ระดับผิวทางเดิม (ม.),ระดับออกแบบ (ม.),แหล่งที่มา\n'+v.map(x=>{const d=D?D.f(x.s):null;return[fmtSta(x.s),elF(x.z),d==null?'':elF(d),x.src==='set'?'ระบุ':x.src==='int'?'ประมาณค่า':'ค่าเริ่มต้น'].join(',')}).join('\n')+'\n'}
 // ---- UI ----
 function profileUI(g){const e=elN(g),vals=elVals(g),[ss,se]=elRange(g),h=[];
   h.push(`<div class="mute" style="margin:6px 0">บันทึกระดับผิวทางเดิมตาม STA เพื่อทำภาพ PROFILE — <b>ระดับที่ STA เริ่มสำรวจ (Elev ${fmtSta(ss)})</b> เป็นค่าเริ่มต้นของทุก STA จนกว่าคุณจะระบุค่าอื่น กรอกเฉพาะ STA ที่วัดระดับได้จริง</div>`);
@@ -2303,24 +2444,35 @@ function profileUI(g){const e=elN(g),vals=elVals(g),[ss,se]=elRange(g),h=[];
    <div><label>STA ที่ไม่ได้กรอก ให้ใช้</label><select data-el="mode"><option value="d"${e.mode==='d'?' selected':''}>ค่าเริ่มต้น (Elev ${fmtSta(ss)})</option><option value="i"${e.mode==='i'?' selected':''}>ประมาณค่าระหว่างจุดที่วัด</option></select></div>
    <div><label>มาตราส่วนนอน 1:</label><select data-el="hs">${EL_HS.map(x=>`<option value="${x}"${gnum(e.hs,1000)===x?' selected':''}>${x}</option>`).join('')}</select></div>
    <div><label>มาตราส่วนตั้ง 1:</label><select data-el="vs">${EL_VS.map(x=>`<option value="${x}"${gnum(e.vs,0)===x?' selected':''}>${x?x:'อัตโนมัติ'}</option>`).join('')}</select></div></div></div>`);
-  h.push(`<div class="gsec"><b>ระดับผิวทางเดิมตาม STA</b> <span class="mute">(${vals.length} สถานี · ช่องว่าง = ใช้ค่าตามที่เลือกด้านบน)</span>
+  h.push(`<div class="gsec"><div class="bar"><button class="b red" data-act="elClr">🗑 Clear ล้างค่าที่ระบุ</button><button class="b red" data-act="elClrAll">🗑 Clear ทั้งหมด (Elev เริ่มต้น + PVI)</button></div><b>ระดับผิวทางเดิมตาม STA</b> <span class="mute">(${vals.length} สถานี · ช่องว่าง = ใช้ค่าตามที่เลือกด้านบน)</span>
    <div class="eltab">${vals.map(v=>`<div class="elr" data-elr="${elKey(v.s)}"><b>${fmtSta(v.s)}</b><input data-el="v" data-k="${elKey(v.s)}" type="number" step="any" inputmode="decimal" value="${esc(e.v[elKey(v.s)]==null?'':e.v[elKey(v.s)])}" placeholder="${elF(v.z)}"><span class="elsrc ${v.src}">${v.src==='set'?'ระบุ':v.src==='int'?'ประมาณ':'เริ่มต้น'}</span>${e.x.some(x=>Math.abs(x-v.s)<1e-3)?`<button class="b red sm" data-act="elDel" data-s="${v.s}" title="ลบสถานีที่เพิ่มเอง">✕</button>`:''}</div>`).join('')}</div>
-   <div class="bar"><input id="elAddS" placeholder="เพิ่ม STA เช่น 0+135" style="max-width:180px"><button class="b ghost" data-act="elAdd">＋ เพิ่ม STA ที่จุดสำคัญ</button><button class="b ghost" data-act="elClr">ล้างค่าที่ระบุ</button></div></div>`);
+   <div class="bar"><input id="elAddS" placeholder="เพิ่ม STA เช่น 0+135" style="max-width:180px"><button class="b ghost" data-act="elAdd">＋ เพิ่ม STA ที่จุดสำคัญ</button></div></div>`);
+  const pos=effPos(g);
+  h.push(`<div class="gsec"><b>วาง PROFILE บนแผ่น PLAN (แบบก่อสร้างแผ่นเดียวกัน)</b>
+   <div class="grid"><div><label>รูปแบบการวาง</label><select data-el="pos"><option value="p"${pos==='p'?' selected':''}>ขนานตามสายทาง — ใต้ PLAN STA ตรงกันกับ PLAN (หมุนถนนให้พาดแนวนอน)</option><option value="h"${pos==='h'?' selected':''}>ตารางแนวนอน — ใต้ PLAN ปรับมาตราส่วนเต็มแผ่น</option><option value="v"${pos==='v'?' selected':''}>ตารางแนวตั้ง — ข้าง PLAN (STA เรียงลงมา)</option><option value="off"${pos==='off'?' selected':''}>ไม่วางบนแผ่น PLAN (แยกแผ่น PROFILE อย่างเดียว)</option></select></div></div>
+   <div class="mute">ดูผลที่แท็บ PLAN · ถ้าแผ่น PLAN มีรูปตัด SECTION อยู่ด้านล่าง แบบ “ใต้ PLAN” จะแทนที่รูปตัดบนแผ่นนั้น (รูปตัดยังอยู่ในขั้น ⑤)</div></div>`);
+  h.push(`<div class="gsec"><b>ระดับออกแบบ DESIGN LEVEL (เส้น FINAL)</b> <span class="mute">กรอกจุดหักเหแนวระดับ PVI (STA, ระดับ) และความยาวเส้นโค้งตั้ง VC (0 = ไม่มีโค้ง) อย่างน้อย 2 จุด</span>
+   <div class="eltab">${e.pv.map((p,i)=>`<div class="elr"><input data-el="pvf" data-i="${i}" data-f="s" value="${esc(p.s)}" placeholder="STA 0+100" style="max-width:110px"><input data-el="pvf" data-i="${i}" data-f="z" type="number" step="any" inputmode="decimal" value="${esc(p.z)}" placeholder="ระดับ ม." style="max-width:110px"><input data-el="pvf" data-i="${i}" data-f="L" type="number" step="any" inputmode="decimal" value="${esc(p.L)}" placeholder="VC ม." style="max-width:90px"><button class="b red sm" data-act="elPvDel" data-i="${i}">✕</button></div>`).join('')}</div>
+   <div class="bar"><button class="b ghost" data-act="elPvAdd">＋ เพิ่มจุด PVI</button></div>
+   <div class="grid"><div><label>หรือ: ระดับออกแบบ = ระดับเดิม + (ม.) เช่น ยกระดับ 0.15</label><input data-el="dlo" type="number" step="any" inputmode="decimal" value="${esc(e.dlo)}" placeholder="ว่าง = ไม่ใช้ (ใช้เมื่อไม่มี PVI)"></div></div></div>`);
   h.push(`<div class="bar"><button class="b" data-act="elPng">⬇ PNG (ทุกแผ่น)</button><button class="b ghost" data-act="elSvg">⬇ SVG</button><button class="b ghost" data-act="elCsv">⬇ CSV</button></div><div id="profPrev"></div>`);
   h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="s">← ② สำรวจสภาพเดิม</button><button class="b" data-act="step" data-v="2">ไปขั้นที่ ④ รายการงาน →</button></div>`);
   return h.join('')}
 function profPrev(){const box=$('profPrev');if(!box)return;const g=G(),s=profSvgs(g);
   if(!s.length){box.innerHTML='<div class="mute" style="padding:10px">กรอก Elev ที่ STA เริ่มสำรวจ เพื่อดูภาพ PROFILE</div>';return}
   box.innerHTML=s.map((x,i)=>`<div class="profsh">${x}</div>`).join('');box.querySelectorAll('svg').forEach(v=>{v.removeAttribute('width');v.removeAttribute('height');v.style.cssText='width:100%;height:auto;border:1px solid var(--line);background:#fff;margin:6px 0'})}
-function elRefresh(){const g=G(),vals=elVals(g);vals.forEach(v=>{const r=document.querySelector(`#geoCard .elr[data-elr="${elKey(v.s)}"]`);if(!r)return;const i=r.querySelector('input');if(i)i.placeholder=elF(v.z);const c=r.querySelector('.elsrc');if(c){c.className='elsrc '+v.src;c.textContent=v.src==='set'?'ระบุ':v.src==='int'?'ประมาณ':'เริ่มต้น'}});clearTimeout(window._pvT);window._pvT=setTimeout(profPrev,250)}
+function elRefresh(){const g=G(),vals=elVals(g);vals.forEach(v=>{const r=document.querySelector(`#geoCard .elr[data-elr="${elKey(v.s)}"]`);if(!r)return;const i=r.querySelector('input');if(i)i.placeholder=elF(v.z);const c=r.querySelector('.elsrc');if(c){c.className='elsrc '+v.src;c.textContent=v.src==='set'?'ระบุ':v.src==='int'?'ประมาณ':'เริ่มต้น'}});clearTimeout(window._pvT);window._pvT=setTimeout(profPrev,250);clearTimeout(window._plT);window._plT=setTimeout(()=>{try{if(effPos(G())!=='off')renderPlan()}catch(x){}},800)}
 (function(){const gc=$('geoCard');
  gc.addEventListener('input',e=>{if(window._ui)return;const t=e.target;if(t.dataset.el===undefined)return;const g=G(),el=elN(g);
-   if(t.dataset.el==='v'){if(t.value.trim()==='')delete el.v[t.dataset.k];else el.v[t.dataset.k]=t.value}else if(t.tagName!=='SELECT')el[t.dataset.el]=t.value;
+   if(t.dataset.el==='pvf'){el.pv[+t.dataset.i][t.dataset.f]=t.value}else if(t.dataset.el==='v'){if(t.value.trim()==='')delete el.v[t.dataset.k];else el.v[t.dataset.k]=t.value}else if(t.tagName!=='SELECT')el[t.dataset.el]=t.value;
    save();elRefresh()},true);
- gc.addEventListener('change',e=>{if(window._ui)return;const t=e.target;if(t.dataset.el===undefined||t.tagName!=='SELECT')return;G().el[t.dataset.el]=t.value;save();geoUI();profPrev();e.stopImmediatePropagation()},true);
+ gc.addEventListener('change',e=>{if(window._ui)return;const t=e.target;if(t.dataset.el===undefined||t.tagName!=='SELECT')return;G().el[t.dataset.el]=t.value;save();geoUI();profPrev();try{renderPlan()}catch(x){}e.stopImmediatePropagation()},true);
  gc.addEventListener('click',async e=>{const a=e.target.closest('[data-act^="el"]');if(!a)return;e.preventDefault();e.stopImmediatePropagation();const g=G(),el=elN(g),act=a.dataset.act;
    if(act==='elAdd'){const s=parseSta($('elAddS').value);const [ss,se]=elRange(g);if(s==null||s<ss||s>se){toast('STA ต้องอยู่ในช่วง '+fmtSta(ss)+' – '+fmtSta(se),true);return}el.x.push(s);save();geoUI();profPrev()}
+   else if(act==='elPvAdd'){el.pv.push({s:'',z:'',L:''});save();geoUI()}
+   else if(act==='elPvDel'){el.pv.splice(+a.dataset.i,1);save();geoUI();profPrev();elRefresh()}
    else if(act==='elDel'){const s=+a.dataset.s;el.x=el.x.filter(x=>Math.abs(x-s)>1e-3);delete el.v[elKey(s)];save();geoUI();profPrev()}
+   else if(act==='elClrAll'){if(confirm('ล้างข้อมูลระดับ PROFILE ทั้งหมด (Elev เริ่มต้น, ค่าที่ระบุ, STA ที่เพิ่ม, PVI)?')){const k=el.pos;g.el={pos:k};elN(g);save();geoUI();profPrev();try{renderPlan()}catch(x){}}}
    else if(act==='elClr'){if(confirm('ล้างค่าระดับที่ระบุไว้ทั้งหมด (เก็บ Elev เริ่มต้นไว้)?')){el.v={};save();geoUI();profPrev()}}
    else if(act==='elPng'){const s=profSvgs(g);if(!s.length){toast('ยังไม่มีข้อมูลระดับ — กรอก Elev เริ่มต้นก่อน',true);return}let n=0;for(const x of s){const d=new DOMParser().parseFromString(x,'image/svg+xml').documentElement,b=await svgToPng(d);if(b)dl(b,fname()+'_PROFILE_'+(++n)+'.png')}}
    else if(act==='elSvg'){const s=profSvgs(g);if(!s.length){toast('ยังไม่มีข้อมูลระดับ',true);return}s.forEach((x,i)=>dl(new Blob([x],{type:'image/svg+xml'}),fname()+'_PROFILE_'+(i+1)+'.svg'))}
