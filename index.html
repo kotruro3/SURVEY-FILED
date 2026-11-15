@@ -894,6 +894,10 @@ async function saveFile(blob,name){const m=saveMode();if(m==='download'){dlPlain
   SVPEND={blob,name,m};$('svName').textContent=name+' ('+(blob.size/1024<1024?Math.round(blob.size/1024)+' KB':(blob.size/1048576).toFixed(1)+' MB')+')';
   $('svDo').textContent=m==='share'?'📤 แชร์ / เลือกปลายทาง':'💾 เลือกตำแหน่งบันทึก';$('svDlg').classList.add('on')}
 const dl=(blob,name)=>{saveFile(blob,name)};
+// ไฟล์ที่สร้างหลังรอประมวลผล (เช่น รูปภาพ) — ปุ่มแตะเดิมหมดอายุแล้ว จึงแสดงหน้าต่าง "ไฟล์พร้อมแล้ว" ให้กดแชร์/ดาวน์โหลดอีกครั้ง (เหมือนไฟล์ DXF)
+function dlReady(blob,name){const m=saveMode();if(m==='download'){dlPlain(blob,name);return}
+  SVPEND={blob,name,m};$('svName').textContent=name+' ('+(blob.size/1024<1024?Math.round(blob.size/1024)+' KB':(blob.size/1048576).toFixed(1)+' MB')+')';
+  $('svDo').textContent=m==='share'?'📤 แชร์ / เลือกปลายทาง':'💾 เลือกตำแหน่งบันทึก';$('svDlg').classList.add('on')}
 const fname=()=>folderName()+'_'+new Date().toISOString().slice(0,10);
 function buildXlsx(){
   const wb=XLSX.utils.book_new();
@@ -1866,7 +1870,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v40';
+const APPVER='v41';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -2955,7 +2959,7 @@ function mmXpInit(){const P=$('xpPaper');if(P.dataset.ok)return;P.dataset.ok=1;
   P.innerHTML=MM_PAPER.map(p=>`<option value="${p[0]}">${p[1]}</option>`).join('');$('xpRes').innerHTML=MM_DPI.map((d,i)=>`<option value="${i}">${d[1]}</option>`).join('');$('xpRes').value='1';
   ['xpPaper','xpRes','xpFmt','xpFrame'].forEach(i=>$(i).onchange=()=>{if(i==='xpPaper'){const s=$('xpPaper').value;$('xpFrame').value=(s[0]==='s')?'frame':'full'}mmXpInfo()});mmXpInfo()}
 $('xpImg').onclick=async()=>{if(!maGet()){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}const bt=$('xpImg'),old=bt.textContent;bt.disabled=true;bt.textContent='กำลังสร้างรูป…';
-  try{await renderMapSheet();const b=await mmRaster();if(!b)throw new Error('สร้างรูปไม่สำเร็จ');const s=mmImgSize();dl(b,fname()+'_MAP_'+$('xpPaper').value.toUpperCase()+'_'+s.w+'x'+s.h+($('xpFmt').value==='jpg'?'.jpg':'.png'));toast('✔ บันทึกรูป '+s.w+'×'+s.h)}catch(e){problem('MAPIMG_FAIL',e&&e.message)}
+  try{await renderMapSheet();const b=await mmRaster();if(!b)throw new Error('สร้างรูปไม่สำเร็จ');const s=mmImgSize();dlReady(b,fname()+'_MAP_'+$('xpPaper').value.toUpperCase()+'_'+s.w+'x'+s.h+($('xpFmt').value==='jpg'?'.jpg':'.png'));toast('✔ สร้างรูป '+s.w+'×'+s.h+' แล้ว')}catch(e){problem('MAPIMG_FAIL',e&&e.message)}
   bt.disabled=false;bt.textContent=old};
 $('xpDxf').onclick=()=>{if(!maGet()){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}
   try{const r=mmDxfBuild({utm:$('xpCoord').value==='utm',osm:$('xpOsm').checked,ann:$('xpAnn').checked,n:gnum($('xpN').value,0)||0});dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_MAP.dxf');toast('✔ ได้ไฟล์ DXF '+r.layers.length+' เลเยอร์ ('+($('xpCoord').value==='utm'?'UTM '+r.zone:'พิกัดท้องถิ่น')+')')}catch(e){problem('MAPDXF_FAIL',e&&e.message)}};
