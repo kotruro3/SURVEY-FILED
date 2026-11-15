@@ -265,6 +265,20 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
      <div class="mute">ชื่อหน่วยงาน/โครงการ/สายทางดึงจากข้อมูลโครงการให้อัตโนมัติ</div></details></div>
    <div id="mmSheet"></div></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 8px">จุดสำคัญ / ภาพรวมโครงการ</h3><div id="pts"></div><div class="mute" id="ptsEmpty"></div></div>
+  <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">📤 ส่งออกแผนที่สังเขป</h3>
+   <div class="mute">ส่งออกจากแผ่นแผนที่สังเขปด้านบน (รวมสิ่งที่คุณวาด หมุด จุดที่ตั้ง และสีที่ปรับไว้)</div>
+   <div style="font-weight:700;margin-top:8px">🖼 1) ไฟล์รูปภาพ (นำไปทำ Presentation / เอกสาร)</div>
+   <div class="grid g2" style="margin-top:4px"><div><label>ขนาดกระดาษ / สไลด์</label><select id="xpPaper"></select></div><div><label>ความละเอียด</label><select id="xpRes"></select></div>
+    <div><label>ส่วนที่ใช้</label><select id="xpFrame"><option value="full">ทั้งแผ่น (รวมแผงข้อมูล/Title block)</option><option value="frame">เฉพาะกรอบแผนที่ (เหมาะกับสไลด์)</option></select></div><div><label>ชนิดไฟล์</label><select id="xpFmt"><option value="png">PNG (คมชัด)</option><option value="jpg">JPG (ไฟล์เล็ก)</option></select></div></div>
+   <div class="mute" id="xpInfo" style="margin:4px 0"></div>
+   <div class="bar"><button class="b" id="xpImg">⬇ ดาวน์โหลดรูปภาพ</button></div>
+   <div style="font-weight:700;margin-top:10px">📐 2) ไฟล์ DXF (เปิดใน AutoCAD / BricsCAD / DraftSight / QGIS / SketchUp Pro)</div>
+   <div class="grid g2" style="margin-top:4px"><div><label>ระบบพิกัด</label><select id="xpCoord"><option value="utm">UTM จริง (WGS84 หน่วยเมตร)</option><option value="loc">พิกัดท้องถิ่น (ศูนย์กลางบริเวณ = 0,0)</option></select></div><div><label>ขนาดตัวอักษรตามมาตราส่วนพิมพ์ 1: (เว้นว่าง = ตามแผ่น)</label><input id="xpN" type="number" min="100" step="100" placeholder="เช่น 5000"></div></div>
+   <label class="clrc"><input type="checkbox" id="xpOsm" checked> รวมข้อมูลสภาพแวดล้อมจาก OSM (ถนน แม่น้ำ พื้นที่ สถานที่)</label>
+   <label class="clrc"><input type="checkbox" id="xpAnn" checked> รวมสิ่งที่วาดเอง (เส้น รูปทรง ข้อความ หมุด)</label>
+   <div class="bar"><button class="b" id="xpDxf">⬇ ดาวน์โหลด .dxf</button></div>
+   <div class="mute">ไฟล์เป็น 2 มิติ แยกเลเยอร์ (บริเวณ, จุดที่ตั้ง, OSM_*, ANN_*) · SketchUp ฟรีรุ่นเว็บนำเข้า DXF ไม่ได้ ต้องเป็น SketchUp Pro หรือเปิดใน AutoCAD แล้วบันทึกเป็น DWG</div></div>
+  <div class="bar" style="margin:14px 0"><button class="b" id="xpNext">ขั้นตอนถัดไป → ② STA</button></div>
 </section>
 
 <section class="tab" id="t6">
@@ -1850,7 +1864,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v38';
+const APPVER='v39';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -1872,6 +1886,8 @@ const HELP={
   return{t:'ยังไม่มีภาพ PLAN',w:'แอปยังไม่มีข้อมูลพอสำหรับวาดแปลน ('+(nb?'พบ '+nb+' แถวในตาราง':'ยังไม่พบแถวที่ใช้วาดได้')+', แนวทาง '+((g.segs||[]).length)+' ช่วง, รูปตัด '+((g.secs||[]).length)+' จุด)',s}},
  ZIP_LIB:()=>({t:'โหลดตัวสร้าง/อ่านไฟล์ zip ไม่ได้',w:'ส่วนช่วยทำ zip ดาวน์โหลดไม่สำเร็จ — '+NET,s:LIBSTEPS}),
  XLSX_LIB:()=>({t:'โหลดตัวอ่าน/สร้างไฟล์ Excel ไม่ได้',w:'ส่วนช่วยทำ Excel ดาวน์โหลดไม่สำเร็จ — '+NET,s:LIBSTEPS.concat(['ระหว่างนี้ใช้ปุ่ม CSV แทนได้ (เปิดใน Excel ได้เหมือนกัน)'])}),
+ MAPIMG_FAIL:d=>({t:'สร้างไฟล์รูปแผนที่ไม่ได้',w:d||'อุปกรณ์สร้างภาพขนาดนี้ไม่ไหว',s:['ลองลดความละเอียด หรือเลือกขนาดกระดาษเล็กลง (เช่น A4 / 150 DPI)','ปิดแท็บอื่นเพื่อคืนหน่วยความจำ แล้วลองอีกครั้ง']}),
+ MAPDXF_FAIL:d=>({t:'สร้างไฟล์ DXF ของแผนที่ไม่ได้',w:d||'ไม่ทราบสาเหตุ',s:['ตรวจว่ากำหนดบริเวณก่อสร้างแล้ว','ลองปิดตัวเลือก OSM หรือสิ่งที่วาดเอง แล้วลองใหม่']}),
  OSM_FAIL:d=>({t:'ดึงข้อมูลสภาพแวดล้อมจาก OSM ไม่ได้',w:d||'เซิร์ฟเวอร์ OpenStreetMap (Overpass) ไม่ตอบสนอง',s:['ตรวจว่าต่ออินเทอร์เน็ตอยู่','ลองใหม่อีกครั้งในอีก 1–2 นาที (เซิร์ฟเวอร์ฟรีอาจแน่น)','ถ้าพื้นที่กว้างมาก ให้เลือกมาตราส่วนที่เล็กลง (เช่น 1:5000) แล้วดึงใหม่','แผ่นแผนที่ยังสร้างและส่งออกได้ตามปกติ แม้ไม่มีข้อมูล OSM']}),
  MAP_LIB:()=>({t:'โหลดแผนที่ไม่ได้',w:'ส่วนแสดงแผนที่ดาวน์โหลดไม่สำเร็จ — '+NET,s:LIBSTEPS.concat(['ระหว่างนี้กรอกแนวทางเองในตารางแนวทางได้ ไม่ต้องใช้แผนที่'])}),
  ZIP_BAD:()=>({t:'เปิดไฟล์ zip ไม่ได้',w:'ไฟล์ไม่ใช่ zip ที่สมบูรณ์ (อาจดาวน์โหลดไม่ครบ หรือถูกแก้ไข)',s:['ตรวจขนาดไฟล์ — ถ้าเป็น 0 KB หรือเล็กผิดปกติ แสดงว่าเสีย','ดาวน์โหลด/ส่งไฟล์ซ้ำอีกครั้ง (ถ้าส่งผ่านไลน์/อีเมล ให้ส่งเป็น "ไฟล์" ไม่ใช่รูป)','ลองแตก zip ในเครื่อง แล้วเลือกเปิดเฉพาะไฟล์ 05_Backup/…_backup.json แทน','ใช้ zip ที่ส่งออกจากปุ่ม "ชุดโครงการ" ของแอปนี้เท่านั้น']}),
@@ -2877,6 +2893,73 @@ function elRefresh(){const g=G(),vals=elVals(g);vals.forEach(v=>{const r=documen
 })();
 
 loadJobs();
+// ===== v39: ส่งออกแผนที่สังเขป — รูปภาพ (เลือกขนาด/ความละเอียด) + DXF =====
+const MM_PAPER=[['a4','A4 (297×210 มม.)',297,210],['a3','A3 (420×297 มม.)',420,297],['a2','A2 (594×420 มม.)',594,420],['a1','A1 (841×594 มม.)',841,594],['s169','สไลด์ 16:9 (PowerPoint/Google Slides)',16,9],['s43','สไลด์ 4:3',4,3],['sq','สี่เหลี่ยมจัตุรัส (โพสต์/เอกสาร)',1,1]];
+const MM_DPI=[[96,'ร่าง (96 DPI / 1280 px)',1280],[150,'ปกติ (150 DPI / 1920 px)',1920],[200,'ละเอียด (200 DPI / 2560 px)',2560],[300,'พิมพ์ (300 DPI / 3840 px)',3840]];
+function mmImgSize(){const P=MM_PAPER.find(p=>p[0]===$('xpPaper').value)||MM_PAPER[0],D=MM_DPI[+$('xpRes').value]||MM_DPI[1],slide=P[0][0]==='s'||P[0]==='sq';
+  let w,h;if(slide){w=D[2];h=Math.round(w*P[3]/P[2])}else{w=Math.round(P[2]/25.4*D[0]);h=Math.round(P[3]/25.4*D[0])}
+  const MAXP=30e6;let capped=false;if(w*h>MAXP){const k=Math.sqrt(MAXP/(w*h));w=Math.floor(w*k);h=Math.floor(h*k);capped=true}return{w,h,capped,P,D}}
+function mmXpInfo(){const s=mmImgSize();$('xpInfo').textContent='ขนาดไฟล์ภาพ: '+s.w+' × '+s.h+' พิกเซล'+(s.capped?' (ลดลงอัตโนมัติ เพราะใหญ่เกินกว่าที่อุปกรณ์จะทำได้)':'')+' · ประมาณ '+(s.w*s.h/1e6).toFixed(1)+' ล้านพิกเซล'}
+async function mmRaster(){const s=mmSvgStr();if(!s)return null;const z=mmImgSize(),frame=$('xpFrame').value==='frame',type=$('xpFmt').value==='jpg'?'image/jpeg':'image/png';
+  const d=new DOMParser().parseFromString(s,'image/svg+xml').documentElement;let vb=[0,0,A4.W,A4.H];if(frame){const p=d.querySelector('#mmPanel');if(p)p.remove();vb=[A4.FX,A4.FY,A4.FW,A4.FH]}
+  const k=Math.min(z.w/vb[2],z.h/vb[3]),dw=Math.round(vb[2]*k),dh=Math.round(vb[3]*k);d.setAttribute('viewBox',vb.join(' '));d.setAttribute('width',dw);d.setAttribute('height',dh);
+  const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(d)],{type:'image/svg+xml;charset=utf-8'}));
+  try{const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('วาดรูปไม่สำเร็จ'));i.src=url});
+    const c=document.createElement('canvas');c.width=z.w;c.height=z.h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,z.w,z.h);x.drawImage(img,Math.round((z.w-dw)/2),Math.round((z.h-dh)/2),dw,dh);
+    return await new Promise(res=>c.toBlob(res,type,.93))}finally{URL.revokeObjectURL(url)}}
+// ---- DXF ของแผนที่สังเขป (หน่วยเมตร) ----
+function mmDxfBuild(op){const ma=maGet();if(!ma)return null;const g=G(),V=MMV||mmView2(gnum(g.mpScale,0)||0),kx=111320*Math.cos(ma.lat*DEG),ky=110574;
+  const u0=utm(ma.lat,ma.lon),zone=u0.zone+'N',XY=op.utm?(la,lo)=>{const u=utm(la,lo);return[u.e,u.n]}:(la,lo)=>[(lo-ma.lon)*kx,(la-ma.lat)*ky];
+  const H=2.5*(op.n||V.N)/1000,layers={},ents=[],f=v=>(Math.round(v*1000)/1000).toString(),W=(c,v)=>ents.push(c+'\n'+v);
+  const lay=(n,c,lt)=>{if(!layers[n])layers[n]={c:c||7,lt:lt||'CONTINUOUS'};return n};
+  const col=(L,cl)=>{if(cl)W(62,dxfCol(cl))};
+  const pl=(L,arr,closed,cl)=>{if(arr.length<2)return;W(0,'POLYLINE');W(8,L);col(L,cl);W(66,1);W(10,0);W(20,0);W(30,0);W(70,closed?1:0);arr.forEach(q=>{W(0,'VERTEX');W(8,L);W(10,f(q[0]));W(20,f(q[1]));W(30,0)});W(0,'SEQEND');W(8,L)};
+  const ci=(L,q,r,cl)=>{W(0,'CIRCLE');W(8,L);col(L,cl);W(10,f(q[0]));W(20,f(q[1]));W(30,0);W(40,f(r))};
+  const tx=(L,q,str,h,rot,cl)=>{if(!str)return;W(0,'TEXT');W(8,L);col(L,cl);W(7,'THAI');W(10,f(q[0]));W(20,f(q[1]));W(30,0);W(40,f(h||H));W(1,dxfStr(str));if(rot)W(50,f(rot))};
+  const P=arr=>arr.map(q=>XY(q[0],q[1]));
+  // กรอบบริเวณ + จุดที่ตั้ง
+  ci(lay('MAP_AREA',1,'DASHED'),XY(ma.lat,ma.lon),ma.r);tx('MAP_AREA',[XY(ma.lat,ma.lon)[0],XY(ma.lat,ma.lon)[1]+ma.r+H],'บริเวณสถานที่ก่อสร้าง (โดยสังเขป) รัศมี '+Math.round(ma.r)+' ม.',H*1.1);
+  sitesGet().forEach((s,i)=>{const q=XY(s.lat,s.lon),L=lay('MAP_SITE',5);ci(L,q,H*.5);ci(L,q,H*.12);pl(L,[[q[0]-H,q[1]],[q[0]+H,q[1]]]);pl(L,[[q[0],q[1]-H],[q[0],q[1]+H]]);
+    tx(L,[q[0]+H*.8,q[1]+H*.5],(i+1)+'. '+(s.name||'จุดก่อสร้างที่ '+(i+1)),H*1.1);tx(L,[q[0]+H*.8,q[1]-H*.9],s.lat.toFixed(6)+', '+s.lon.toFixed(6),H*.8)});
+  // OSM
+  if(op.osm&&g.osm){const names={wat:['OSM_WATER',5],for:['OSM_FOREST',3],res:['OSM_RESIDENTIAL',41],frm:['OSM_FARM',2],bld:['OSM_BUILDING',8]};
+    (g.osm.polys||[]).forEach(q=>{const n=names[q.k];if(!n)return;const A=P(q.p);pl(lay(n[0],n[1]),A,true);if(q.n&&A.length)tx(n[0],A[0],q.n,H*.8)});
+    (g.osm.lines||[]).forEach(q=>{const A=P(q.p),n=q.k==='ww'?'OSM_WATERWAY':'OSM_ROAD';pl(lay(n,q.k==='ww'?5:30),A);if(q.n&&A.length)tx(n,A[A.length>>1],q.n,H*.8)});
+    (g.osm.pois||[]).forEach(q=>{const A=XY(q.la,q.lo),n=q.k==='pl'?'OSM_PLACE':'OSM_POI';lay(n,q.k==='pl'?8:6);if(q.k!=='pl')ci(n,A,H*.35);tx(n,[A[0]+H*.5,A[1]+H*.3],(q.n||q.s||''),q.k==='pl'?H*1.1:H*.8)});
+    (g.osm.trees||[]).forEach(q=>ci(lay('OSM_TREE',3),XY(q[0],q[1]),.8))}
+  // วัตถุที่วาดเอง
+  if(op.ann)mmA().forEach(a=>{const A=P(a.pts||[]),sk=a.stroke,mp=V.mpp,nm='ANN_'+({line:'LINE',poly:'POLY',rect:'RECT',circle:'CIRCLE',ell:'ELLIPSE',text:'TEXT',pin:'PIN'})[a.t];
+    if(a.t==='line'){pl(lay(nm,1),A,false,sk);if(a.arr&&A.length>1){const q=A[A.length-1],p=A[A.length-2],an=Math.atan2(q[1]-p[1],q[0]-p[0]),L=H*1.2;pl(nm,[[q[0]-L*Math.cos(an-.45),q[1]-L*Math.sin(an-.45)],q,[q[0]-L*Math.cos(an+.45),q[1]-L*Math.sin(an+.45)]],false,sk)}}
+    else if(a.t==='poly')pl(lay(nm,5),A,true,sk);
+    else if(a.t==='rect'&&A.length>1){const[p,q]=A;pl(lay(nm,5),[[p[0],p[1]],[q[0],p[1]],[q[0],q[1]],[p[0],q[1]]],true,sk)}
+    else if(a.t==='circle'&&A[0])ci(lay(nm,5),A[0],a.r||50,sk);
+    else if(a.t==='ell'&&A[0]){const rx=a.rx||80,ry=a.ry||50,o=[];for(let i=0;i<72;i++){const t=i/72*Math.PI*2;o.push([A[0][0]+rx*Math.cos(t),A[0][1]+ry*Math.sin(t)])}pl(lay(nm,5),o,true,sk)}
+    else if(a.t==='text'&&A[0]){String(a.txt||'').split('\n').forEach((t,i)=>tx(lay(nm,7),[A[0][0],A[0][1]-i*(a.sz||16)*1.25*mp],t,(a.sz||16)*mp,-(a.rot||0),a.col))}
+    else if(a.t==='pin'&&A[0]){const q=A[0],L=lay(nm,1),c=a.col||MM_SYMDEF[a.sym||'pin_site'];ci(L,q,H*.45,c);ci(L,q,H*.1,c);tx(L,[q[0]+H*.7,q[1]+H*.4],(a.txt||mmSymName(a.sym||'pin_site')),H,0,c);
+      const ll=a.pts[0];tx(L,[q[0]+H*.7,q[1]-H*.8],ll[0].toFixed(6)+', '+ll[1].toFixed(6),H*.75)}});
+  const tb=mmTB(),by=XY(ma.lat,ma.lon);const ty=by[1]-ma.r-H*4;
+  tx(lay('TITLE',7),[by[0]-ma.r,ty],'โครงการ: '+(S.proj.name||'-')+'   สายทาง: '+(S.proj.route||'-'),H*1.3);tx('TITLE',[by[0]-ma.r,ty-H*2],'หน่วยงาน: '+(S.proj.agency||'-')+'   รหัส: '+(S.code||'-')+'   '+(tb.sheetName||'แผนที่สังเขปที่ตั้งโครงการ'),H);
+  tx('TITLE',[by[0]-ma.r,ty-H*3.7],'พิกัด: '+(op.utm?('UTM โซน '+zone+' (WGS84) หน่วยเมตร'):'พิกัดท้องถิ่น (ศูนย์กลางบริเวณ = 0,0 ทิศเหนือ = +Y) หน่วยเมตร')+'   สร้างจาก Survey Field '+APPVER+'   '+new Date().toISOString().slice(0,10),H*.8);
+  const o=[],Pw=(c,v)=>o.push(c+'\n'+v);
+  Pw(0,'SECTION');Pw(2,'HEADER');Pw(9,'$ACADVER');Pw(1,'AC1009');Pw(9,'$INSBASE');o.push('10\n0\n20\n0\n30\n0');Pw(0,'ENDSEC');
+  Pw(0,'SECTION');Pw(2,'TABLES');Pw(0,'TABLE');Pw(2,'LTYPE');Pw(70,2);
+  o.push('0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0');
+  o.push('0\nLTYPE\n2\nDASHED\n70\n0\n3\nDashed\n72\n65\n73\n2\n40\n'+f(H*1.5)+'\n49\n'+f(H)+'\n49\n'+f(-H*.5));Pw(0,'ENDTAB');
+  const nm=Object.keys(layers);Pw(0,'TABLE');Pw(2,'LAYER');Pw(70,nm.length);nm.forEach(n=>o.push('0\nLAYER\n2\n'+n+'\n70\n0\n62\n'+layers[n].c+'\n6\n'+layers[n].lt));Pw(0,'ENDTAB');
+  Pw(0,'TABLE');Pw(2,'STYLE');Pw(70,1);o.push('0\nSTYLE\n2\nTHAI\n70\n0\n40\n0\n41\n1\n50\n0\n71\n0\n42\n2.5\n3\ntahoma.ttf\n4\n');Pw(0,'ENDTAB');
+  Pw(0,'ENDSEC');Pw(0,'SECTION');Pw(2,'ENTITIES');o.push(ents.join('\n'));Pw(0,'ENDSEC');Pw(0,'EOF');
+  return{text:o.join('\n')+'\n',layers:nm,zone}}
+function mmXpInit(){const P=$('xpPaper');if(P.dataset.ok)return;P.dataset.ok=1;
+  P.innerHTML=MM_PAPER.map(p=>`<option value="${p[0]}">${p[1]}</option>`).join('');$('xpRes').innerHTML=MM_DPI.map((d,i)=>`<option value="${i}">${d[1]}</option>`).join('');$('xpRes').value='1';
+  ['xpPaper','xpRes','xpFmt','xpFrame'].forEach(i=>$(i).onchange=()=>{if(i==='xpPaper'){const s=$('xpPaper').value;$('xpFrame').value=(s[0]==='s')?'frame':'full'}mmXpInfo()});mmXpInfo()}
+$('xpImg').onclick=async()=>{if(!maGet()){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}const bt=$('xpImg'),old=bt.textContent;bt.disabled=true;bt.textContent='กำลังสร้างรูป…';
+  try{await renderMapSheet();const b=await mmRaster();if(!b)throw new Error('สร้างรูปไม่สำเร็จ');const s=mmImgSize();dl(b,fname()+'_MAP_'+$('xpPaper').value.toUpperCase()+'_'+s.w+'x'+s.h+($('xpFmt').value==='jpg'?'.jpg':'.png'));toast('✔ บันทึกรูป '+s.w+'×'+s.h)}catch(e){problem('MAPIMG_FAIL',e&&e.message)}
+  bt.disabled=false;bt.textContent=old};
+$('xpDxf').onclick=()=>{if(!maGet()){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}
+  try{const r=mmDxfBuild({utm:$('xpCoord').value==='utm',osm:$('xpOsm').checked,ann:$('xpAnn').checked,n:gnum($('xpN').value,0)||0});dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_MAP.dxf');toast('✔ ได้ไฟล์ DXF '+r.layers.length+' เลเยอร์ ('+($('xpCoord').value==='utm'?'UTM '+r.zone:'พิกัดท้องถิ่น')+')')}catch(e){problem('MAPDXF_FAIL',e&&e.message)}};
+$('xpNext').onclick=()=>showTab('t3');
+mmXpInit();
+
 loadLib();fillProj();renderRows();refresh();geoUI();renderPlan();showTab('t5');
 </script>
 </body></html>
