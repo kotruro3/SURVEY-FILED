@@ -184,6 +184,9 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
 .undobar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;margin:6px 0;border:3px dashed var(--warn);border-radius:10px;font-weight:700;background:var(--soft)}.eltab{display:flex;flex-direction:column;gap:4px;margin:8px 0;max-height:420px;overflow:auto}.elr{display:flex;align-items:center;gap:8px}.elr b{min-width:92px}.elr input{flex:1;max-width:200px}.elsrc{font-size:12px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);color:var(--mute)}.elsrc.set{background:var(--brand);color:var(--onbtn);border-color:var(--brand);font-weight:700}.mch{display:inline-flex;align-items:center;font-size:14px;border:1px solid var(--line);border-radius:99px;padding:2px 10px;background:#fff;color:#222;margin:0}
 #mmTools button.on{background:var(--brand);color:#fff}
 #mmProp select,#mmProp input[type=number]{width:auto}
+.mck{display:inline-flex;flex-direction:row;align-items:center;gap:8px;margin:0;font-size:14px;font-weight:400;cursor:pointer}
+.mck input[type=checkbox],.mch input[type=checkbox]{width:17px;height:17px;min-width:17px;margin:0;padding:0;flex:none}
+.mck span{line-height:1.3}
 </style>
 </head>
 <body>
@@ -253,7 +256,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
    <div class="mute" id="mmNote"></div>
    <div id="mmCtl" style="display:none">
     <div class="bar"><label style="margin:0">มาตราส่วน</label><select id="mmScale" style="width:auto"></select></div>
-    <div class="bar"><label style="margin:0">ภาพพื้นหลังแผนที่</label><select id="mmBg" style="width:auto"><option value="">ไม่ใช้ (ใช้พื้นสีสังเขป)</option><option value="osm">OpenStreetMap มาตรฐาน</option><option value="esritopo">Esri World Topo (ภูมิประเทศ)</option><option value="esristreet">Esri World Street (ถนน)</option><option value="esrisat">Esri ภาพถ่ายดาวเทียม</option><option value="esrigray">Esri เทาอ่อน (พื้นหลังเรียบ)</option><option value="otm">OpenTopoMap (เส้นชั้นความสูง)</option><option value="carto">CARTO Voyager (ถนนสะอาด)</option><option value="cartolt">CARTO Positron (ขาว-เทาอ่อน)</option></select><label class="mch">ความเข้ม <input type="range" id="mmBgO" min="0.1" max="1" step="0.05" value="1" style="width:110px"> <b id="mmBgOv">100%</b></label><label class="mch"><input type="checkbox" id="mmIll" style="width:auto"> วาดสภาพแวดล้อมสังเขปจาก OSM ทับ (วัด โรงเรียน ถนน แม่น้ำ ฯลฯ)</label></div>
+    <div class="bar"><label style="margin:0">ภาพพื้นหลังแผนที่</label><select id="mmBg" style="width:auto"><option value="">ไม่ใช้ (ใช้พื้นสีสังเขป)</option><option value="osm">OpenStreetMap มาตรฐาน</option><option value="esritopo">Esri World Topo (ภูมิประเทศ)</option><option value="esristreet">Esri World Street (ถนน)</option><option value="esrisat">Esri ภาพถ่ายดาวเทียม</option><option value="esrigray">Esri เทาอ่อน (พื้นหลังเรียบ)</option><option value="otm">OpenTopoMap (เส้นชั้นความสูง)</option><option value="carto">CARTO Voyager (ถนนสะอาด)</option><option value="cartolt">CARTO Positron (ขาว-เทาอ่อน)</option></select><label class="mch">ความเข้ม <input type="range" id="mmBgO" min="0.1" max="1" step="0.05" value="1" style="width:110px"> <b id="mmBgOv">100%</b></label><label class="mck"><input type="checkbox" id="mmIll"><span>วาดสภาพแวดล้อมสังเขปจาก OSM ทับ (วัด โรงเรียน ถนน แม่น้ำ ฯลฯ)</span></label></div>
     <div class="mute">ฟรีทุกแหล่ง ไม่ต้องใช้ key (ต้องมีอินเทอร์เน็ต) · ใส่เครดิตแหล่งข้อมูลบนแผ่นให้อัตโนมัติ · เหมาะกับใช้ภายในหน่วยงาน/งานสำรวจ ไม่ควรโหลดซ้ำถี่ๆ</div>
     <div class="bar" id="mmLayers"></div>
     <details style="margin:6px 0"><summary style="cursor:pointer;font-weight:700">🎨 เปลี่ยนสีแผนที่ให้ชัดเจนขึ้น</summary><div id="mmColors" style="margin-top:6px"></div></details>
@@ -274,8 +277,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
    <div class="bar"><button class="b" id="xpImg">⬇ ดาวน์โหลดรูปภาพ</button></div>
    <div style="font-weight:700;margin-top:10px">📐 2) ไฟล์ DXF (เปิดใน AutoCAD / BricsCAD / DraftSight / QGIS / SketchUp Pro)</div>
    <div class="grid g2" style="margin-top:4px"><div><label>ระบบพิกัด</label><select id="xpCoord"><option value="utm">UTM จริง (WGS84 หน่วยเมตร)</option><option value="loc">พิกัดท้องถิ่น (ศูนย์กลางบริเวณ = 0,0)</option></select></div><div><label>ขนาดตัวอักษรตามมาตราส่วนพิมพ์ 1: (เว้นว่าง = ตามแผ่น)</label><input id="xpN" type="number" min="100" step="100" placeholder="เช่น 5000"></div></div>
-   <label class="clrc"><input type="checkbox" id="xpOsm" checked> รวมข้อมูลสภาพแวดล้อมจาก OSM (ถนน แม่น้ำ พื้นที่ สถานที่)</label>
-   <label class="clrc"><input type="checkbox" id="xpAnn" checked> รวมสิ่งที่วาดเอง (เส้น รูปทรง ข้อความ หมุด)</label>
+   <div class="bar" style="gap:6px 18px;margin:6px 0"><label class="mck"><input type="checkbox" id="xpOsm" checked><span>รวมข้อมูลสภาพแวดล้อมจาก OSM (ถนน แม่น้ำ พื้นที่ สถานที่)</span></label><label class="mck"><input type="checkbox" id="xpAnn" checked><span>รวมสิ่งที่วาดเอง (เส้น รูปทรง ข้อความ หมุด)</span></label></div>
    <div class="bar"><button class="b" id="xpDxf">⬇ ดาวน์โหลด .dxf</button></div>
    <div class="mute">ไฟล์เป็น 2 มิติ แยกเลเยอร์ (บริเวณ, จุดที่ตั้ง, OSM_*, ANN_*) · SketchUp ฟรีรุ่นเว็บนำเข้า DXF ไม่ได้ ต้องเป็น SketchUp Pro หรือเปิดใน AutoCAD แล้วบันทึกเป็น DWG</div></div>
   <div class="bar" style="margin:14px 0"><button class="b" id="xpNext">ขั้นตอนถัดไป → ② STA</button></div>
@@ -1864,7 +1866,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v39';
+const APPVER='v40';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
