@@ -198,8 +198,8 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <span id="saved" class="saved"></span>
 </header>
 <nav>
-  <button data-t="t3" class="on" title="ขั้นที่ 1 — วาดแปลนและรูปตัด แล้วดูว่า PLAN อยู่ส่วนไหนของพื้นที่">① STA</button>
-  <button data-t="t5" title="ขั้นที่ 2 — พิกัดและตำแหน่งสถานที่ดำเนินการ ว่าอยู่ตรงส่วนไหนของโลก">② LOCATION</button>
+  <button data-t="t5" class="on" title="ขั้นที่ 1 — กำหนดพิกัดและบริเวณสถานที่ก่อสร้าง ว่าอยู่ตรงส่วนไหนของโลก">① LOCATION</button>
+  <button data-t="t3" title="ขั้นที่ 2 — วาดแปลนและรูปตัด แล้วดูว่า PLAN อยู่ส่วนไหนของพื้นที่">② STA</button>
   <button data-t="t1" title="ขั้นที่ 3 — ตารางสำรวจ STA / ปริมาณงาน">③ TABLE</button>
   <button data-t="t6" title="ขั้นที่ 4 — รูปถ่ายสภาพปัจจุบันภาคสนามเพื่อวิเคราะห์">④ PHOTO</button>
   <button data-t="t2" title="ขั้นที่ 5 — สรุปปริมาณงาน (BOQ)">⑤ BOQ FIELD</button>
@@ -222,7 +222,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
 
 <section class="tab" id="t2"><div class="card"><div style="overflow:auto"><table id="sumT"></table></div></div></section>
 
-<section class="tab on" id="t3">
+<section class="tab" id="t3">
   <details class="card" id="projCard" open><summary style="font-weight:700;color:var(--brand);cursor:pointer">📁 ข้อมูลโครงการ (รหัส · ชื่อ · หน่วยงาน · สายทาง · ผู้สำรวจ · วันที่)</summary><div style="margin-top:8px"><div class="grid">
     <div><label>รหัสโครงการ (ออกให้อัตโนมัติ)</label><input id="p_code" style="font-weight:700"></div>
     <div><label>รหัสผู้ใช้ (นำหน้ารหัสโครงการ)</label><input id="u_pre" maxlength="3" placeholder="เช่น A" style="font-weight:700;text-transform:uppercase"><div class="mute" id="codeEx" style="margin-top:3px"></div></div>
@@ -238,7 +238,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <div class="card"><div id="planbox"></div><div class="legend" id="legend"></div></div></div></div>
 </section>
 
-<section class="tab" id="t5">
+<section class="tab on" id="t5">
   <div class="bar">
     <button class="b" id="mFit">🔍 ดูทั้งหมด</button>
     <button class="b amber" id="mkMapBtn" title="กำหนดบริเวณสถานที่ก่อสร้างโดยสังเขป (ศูนย์กลาง + รัศมี) แล้วสร้างแผนที่สังเขป">🗺 กำหนดบริเวณก่อสร้าง</button><button class="b ghost" id="mMe">📍 ตำแหน่งฉัน</button>
@@ -253,6 +253,8 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
    <div class="mute" id="mmNote"></div>
    <div id="mmCtl" style="display:none">
     <div class="bar"><label style="margin:0">มาตราส่วน</label><select id="mmScale" style="width:auto"></select></div>
+    <div class="bar"><label style="margin:0">ภาพพื้นหลังแผนที่</label><select id="mmBg" style="width:auto"><option value="">ไม่ใช้ (ใช้พื้นสีสังเขป)</option><option value="osm">OpenStreetMap มาตรฐาน</option><option value="esritopo">Esri World Topo (ภูมิประเทศ)</option><option value="esristreet">Esri World Street (ถนน)</option><option value="esrisat">Esri ภาพถ่ายดาวเทียม</option><option value="esrigray">Esri เทาอ่อน (พื้นหลังเรียบ)</option><option value="otm">OpenTopoMap (เส้นชั้นความสูง)</option><option value="carto">CARTO Voyager (ถนนสะอาด)</option><option value="cartolt">CARTO Positron (ขาว-เทาอ่อน)</option></select><label class="mch">ความเข้ม <input type="range" id="mmBgO" min="0.1" max="1" step="0.05" value="1" style="width:110px"> <b id="mmBgOv">100%</b></label><label class="mch"><input type="checkbox" id="mmIll" style="width:auto"> วาดสภาพแวดล้อมสังเขปจาก OSM ทับ (วัด โรงเรียน ถนน แม่น้ำ ฯลฯ)</label></div>
+    <div class="mute">ฟรีทุกแหล่ง ไม่ต้องใช้ key (ต้องมีอินเทอร์เน็ต) · ใส่เครดิตแหล่งข้อมูลบนแผ่นให้อัตโนมัติ · เหมาะกับใช้ภายในหน่วยงาน/งานสำรวจ ไม่ควรโหลดซ้ำถี่ๆ</div>
     <div class="bar" id="mmLayers"></div>
     <details style="margin:6px 0"><summary style="cursor:pointer;font-weight:700">🎨 เปลี่ยนสีแผนที่ให้ชัดเจนขึ้น</summary><div id="mmColors" style="margin-top:6px"></div></details>
     <div class="bar" id="mmTools" style="position:sticky;top:0;z-index:5;background:var(--bg,#fff);padding:6px 0"></div>
@@ -622,7 +624,7 @@ function initMap(){
   MAP=L.map('map',{zoomControl:true}).setView([13.75,100.5],6);
   const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
   const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri World Imagery'});
-  osm.addTo(MAP);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat}).addTo(MAP);
+  osm.addTo(MAP);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat,'Esri World Topo':mmLf('esritopo'),'Esri Street':mmLf('esristreet'),'OpenTopoMap':mmLf('otm')}).addTo(MAP);
   MLAYER=L.layerGroup().addTo(MAP);
   MAP.on('click',e=>{const ll=e.latlng;L.popup().setLatLng(ll).setContent(`<div style="font-size:13px">${fmtLL(ll.lat,ll.lng)}<br><button id="mkPt" style="margin-top:6px;padding:4px 8px">＋ เพิ่มจุดสำคัญที่นี่</button></div>`).openOn(MAP);
     setTimeout(()=>{const b=document.getElementById('mkPt');if(b)b.onclick=()=>{addPoint(fmtLL(ll.lat,ll.lng));MAP.closePopup()}},0)});
@@ -824,7 +826,7 @@ function openPicker({title,init,onConfirm}){
   pkCb=onConfirm;$('pkTitle').textContent=title;$('pk').classList.add('on');
   if(!pkMap){pkMap=L.map('pkMap');
     const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri World Imagery'});
-    osm.addTo(pkMap);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat}).addTo(pkMap);pkLay=L.layerGroup().addTo(pkMap);
+    osm.addTo(pkMap);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat,'Esri World Topo':mmLf('esritopo'),'Esri Street':mmLf('esristreet'),'OpenTopoMap':mmLf('otm')}).addTo(pkMap);pkLay=L.layerGroup().addTo(pkMap);
     pkMap.on('click',e=>pkSelect({lat:e.latlng.lat,lon:e.latlng.lng},false))}
   setTimeout(()=>pkMap.invalidateSize(),60);
   pkLay.clearLayers();if(pkMarker){pkMap.removeLayer(pkMarker);pkMarker=null}pkMe=null;pkSel=null;pkGpsPos=null;
@@ -981,7 +983,7 @@ $('openLib').onclick=()=>{$('libQ').value='';renderLib();$('lib').classList.add(
 $('libClose').onclick=()=>$('lib').classList.remove('on');
 $('lib').onclick=e=>{if(e.target===$('lib'))$('lib').classList.remove('on')};
 $('libQ').oninput=renderLib;
-const makeNew=()=>{save(true);const p=newProj();p.code=nextCode();LIB.list[p.id]=p;openProj(p.id);save(true);showTab('t3');$('projCard').open=true;toast('✔ สร้างโครงการใหม่ '+p.code+' แล้ว — กรอกชื่อโครงการได้เลย');setTimeout(()=>$('p_name').focus(),50)};
+const makeNew=()=>{save(true);const p=newProj();p.code=nextCode();LIB.list[p.id]=p;openProj(p.id);save(true);showTab('t5');$('projCard').open=true;toast('✔ สร้างโครงการใหม่ '+p.code+' แล้ว — กรอกชื่อโครงการได้เลย');setTimeout(()=>$('p_name').focus(),50)};
 $('newProj').onclick=makeNew;$('hNew').onclick=makeNew;$('hSave').onclick=saveProject;
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject()}else if((e.ctrlKey||e.metaKey)&&e.altKey&&e.key.toLowerCase()==='n'){e.preventDefault();makeNew()}});
 $('jobQ').oninput=renderJobs;$('jobCat').onchange=renderJobs;$('jobAdd').onclick=()=>openJobEd(null);
@@ -1848,7 +1850,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v35';
+const APPVER='v37';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -1861,10 +1863,10 @@ const HELP={
  PLAN_EMPTY:d=>{const s=[];const g=(typeof S!=='undefined'&&S.geo)||{};
   let nb=0,nsv=0;try{nb=geoBars().bars.length}catch(e){}try{nsv=planSvgs().length}catch(e){}
   if(nsv>0)return{t:'สร้างภาพ PLAN เป็นไฟล์ภาพไม่สำเร็จ',w:'แปลนแสดงบนหน้าจอได้ แต่เบราว์เซอร์แปลงเป็นไฟล์ PNG ไม่ได้ (พบบ่อยในเบราว์เซอร์ที่จำกัดหน่วยความจำ หรือแผ่นใหญ่มาก)',s:['ลองกดอีกครั้ง 1 ครั้ง','ปิดแท็บอื่นๆ เพื่อคืนหน่วยความจำ แล้วลองใหม่','ใช้ปุ่ม PDF แทน (ได้ภาพแปลนเหมือนกัน)','ลองเปิดแอปด้วย Chrome / Safari เวอร์ชันล่าสุด']};
-  s.push('เปิดแท็บ ① STA แล้วดูว่ากรอบภาพแปลนแสดงภาพจริงหรือขึ้นข้อความ "ยังไม่มีข้อมูลสำหรับสร้างแปลน"');
+  s.push('เปิดแท็บ ② STA แล้วดูว่ากรอบภาพแปลนแสดงภาพจริงหรือขึ้นข้อความ "ยังไม่มีข้อมูลสำหรับสร้างแปลน"');
   s.push('มี 2 วิธีให้ภาพแปลนขึ้น — เลือกวิธีใดวิธีหนึ่ง:');
   s.push('  วิธี ก) ไปแท็บ ③ TABLE กรอกอย่างน้อย 1 แถวที่มี "STA เริ่ม/สิ้นสุด" และเลือกตำแหน่ง L / C / R แล้ว (แถวที่ว่างจะไม่ถูกนำมาวาด)');
-  s.push('  วิธี ข) (แนะนำ) ในแท็บ ① ขั้น ① กด "＋ ช่วงตรง" เพื่อบันทึกผังช่วงแรก แล้วภาพแปลนจะขึ้นทันที');
+  s.push('  วิธี ข) (แนะนำ) ในแท็บ ② STA ขั้น ① กด "＋ ช่วงตรง" เพื่อบันทึกผังช่วงแรก แล้วภาพแปลนจะขึ้นทันที');
   s.push('ตรวจว่าแถวในตาราง ③ มีข้อมูลครบ: STA ใส่ในรูปแบบ 0+000 หรือ 0+120 และเลือก L/C/R อย่างน้อย 1 ช่อง');
   s.push('กลับมากดปุ่มเดิมอีกครั้ง');
   return{t:'ยังไม่มีภาพ PLAN',w:'แอปยังไม่มีข้อมูลพอสำหรับวาดแปลน ('+(nb?'พบ '+nb+' แถวในตาราง':'ยังไม่พบแถวที่ใช้วาดได้')+', แนวทาง '+((g.segs||[]).length)+' ช่วง, รูปตัด '+((g.secs||[]).length)+' จุด)',s}},
@@ -1957,7 +1959,7 @@ async function showDiag(){const o=$('hlp');if(!o.classList.contains('on')){o.que
       const keep={id:S.id,code:S.code,created:S.created,proj:$('clrInfo').checked?S.proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)}};
       const fresh=newProj();Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,fresh,keep,{rows:$('clrPh').checked?[newRow()]:[newRow()],pts:[]});
       S.updated=Date.now();delete S.geo;
-      save(true);fillProj();renderRows();refresh();G();geoUI();renderPlan();close();showTab('t3');toast('✔ ล้างข้อมูลแล้ว — เริ่มกรอกใหม่ได้เลย (รหัสเดิม '+S.code+')')
+      save(true);fillProj();renderRows();refresh();G();geoUI();renderPlan();close();showTab('t5');toast('✔ ล้างข้อมูลแล้ว — เริ่มกรอกใหม่ได้เลย (รหัสเดิม '+S.code+')')
     }catch(e){problem('EXPORT_FAIL',e.message)}bt.disabled=false};
   const hb=document.querySelector('.hbtns');if(hb){const b=document.createElement('button');b.id='hClear';b.textContent='🧹 Clear data';b.title='ล้างข้อมูลโครงการนี้ แต่คงรหัสเดิม';b.onclick=window.openClear;const hn=$('hNew');hb.insertBefore(b,hn?hn.nextSibling:null)}
   const np=$('newProj');if(np){const b=document.createElement('button');b.className='b ghost';b.id='clrProj';b.textContent='🧹 ล้างข้อมูล (คงรหัสเดิม)';b.onclick=window.openClear;np.parentNode.insertBefore(b,np.nextSibling)}
@@ -2001,7 +2003,7 @@ let mmMap=null,mmLay=null,mmMk=null,mmCir=null,mmCur=null,mmRad=400;
   if(!window.L){$('mmMapEl').style.display='none';$('mmNoMap').style.display='';draw();return}
   $('mmNoMap').style.display='none';$('mmMapEl').style.display='';
   if(!mmMap){mmMap=L.map('mmMapEl');const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
-   osm.addTo(mmMap);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat}).addTo(mmMap);mmMap.on('click',e=>setStart(e.latlng.lat,e.latlng.lng))}
+   osm.addTo(mmMap);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat,'Esri World Topo':mmLf('esritopo'),'Esri Street':mmLf('esristreet'),'OpenTopoMap':mmLf('otm')}).addTo(mmMap);mmMap.on('click',e=>setStart(e.latlng.lat,e.latlng.lng))}
   setTimeout(()=>{mmMap.invalidateSize();if(mmCur){mmMap.setView([mmCur.lat,mmCur.lon],16);draw(true)}else{mmMap.setView([13.75,100.5],6);draw();getPos().then(p=>{if(!mmCur)mmMap.setView([p.coords.latitude,p.coords.longitude],16)}).catch(()=>{})}},80)};
  $('mmGps').onclick=()=>getPos().then(p=>setStart(p.coords.latitude,p.coords.longitude,true)).catch(e=>problem('GPS_FAIL',e.message));
  const goTxt=quiet=>{const raw=$('mmTxt').value.trim();if(!raw)return;if(/goo\.gl|maps\.app/i.test(raw)){toast('ลิงก์สั้นของ Google อ่านพิกัดไม่ได้ — เปิดลิงก์แล้วคัดลอกตัวเลขพิกัด (เช่น 13.7563, 100.5018) มาวาง',true);return}
@@ -2070,14 +2072,25 @@ function mmView(R,scaleN){ // → {clat,clon,N,mpp,view{s,w,n,e}, fit}
   let N=scaleN;if(!N){N=MM_SCALES[MM_SCALES.length-1];for(const s of MM_SCALES){const mpp=s*MM_MM/1000;if(hx*2*1.2<=A4.FW*mpp&&hy*2*1.2<=A4.FH*mpp){N=s;break}}}
   const mpp=N*MM_MM/1000,vw=A4.FW*mpp,vh=A4.FH*mpp;
   return{clat,clon,kx,ky,N,mpp,fits:hx*2<=vw&&hy*2<=vh,view:{s:clat-vh/2/ky,n:clat+vh/2/ky,w:clon-vw/2/kx,e:clon+vw/2/kx}}}
-async function mmTiles(V,withTiles){if(!withTiles)return null;
+const MM_SRC={
+ osm:{n:'OpenStreetMap มาตรฐาน',u:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',z:19,a:'© OpenStreetMap contributors'},
+ esritopo:{n:'Esri World Topo (ภูมิประเทศ)',u:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',z:19,a:'Tiles © Esri — World Topo Map'},
+ esristreet:{n:'Esri World Street (ถนน)',u:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',z:19,a:'Tiles © Esri — World Street Map'},
+ esrisat:{n:'Esri ภาพถ่ายดาวเทียม',u:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',z:19,a:'Tiles © Esri — World Imagery'},
+ esrigray:{n:'Esri เทาอ่อน (พื้นหลังเรียบ)',u:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',z:16,a:'Tiles © Esri — Light Gray Canvas'},
+ otm:{n:'OpenTopoMap (เส้นชั้นความสูง)',u:'https://tile.opentopomap.org/{z}/{x}/{y}.png',z:17,a:'© OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors'},
+ carto:{n:'CARTO Voyager (ถนนสะอาด)',u:'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',z:19,a:'© CARTO, © OpenStreetMap contributors'},
+ cartolt:{n:'CARTO Positron (ขาว-เทาอ่อน)',u:'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',z:19,a:'© CARTO, © OpenStreetMap contributors'}};
+const mmLf=k=>L.tileLayer(MM_SRC[k].u,{maxZoom:MM_SRC[k].z,attribution:MM_SRC[k].a});
+let MMT={key:'',tiles:null};
+async function mmTiles(V,k){const S0=MM_SRC[k];if(!S0)return null;
   const wp=(la,lo,z)=>{const s=256*Math.pow(2,z),sn=Math.sin(la*DEG);return{x:(lo+180)/360*s,y:(.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*s}};
-  let z=Math.min(19,Math.max(2,Math.round(Math.log2(156543.03392*Math.cos(V.clat*DEG)/V.mpp))));let f;
+  let z=Math.min(S0.z,Math.max(2,Math.round(Math.log2(156543.03392*Math.cos(V.clat*DEG)/V.mpp))));let f;
   for(;;z--){f=156543.03392*Math.cos(V.clat*DEG)/Math.pow(2,z)/V.mpp;if((A4.FW/f/256+2)*(A4.FH/f/256+2)<=40||z<=2)break}
   const C=wp(V.clat,V.clon,z),hw=A4.FW/2/f,hh=A4.FH/2/f,n=Math.pow(2,z),jobs=[];
   for(let ty=Math.floor((C.y-hh)/256);ty<=Math.floor((C.y+hh)/256);ty++)for(let tx=Math.floor((C.x-hw)/256);tx<=Math.floor((C.x+hw)/256);tx++)if(ty>=0&&ty<n)jobs.push([tx,ty]);
-  const get=async([tx,ty])=>{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),7000);
-    try{const r=await fetch(`https://tile.openstreetmap.org/${z}/${((tx%n)+n)%n}/${ty}.png`,{signal:ctl.signal});if(!r.ok)throw 0;const b=await r.blob();const d=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b)});
+  const get=async([tx,ty])=>{const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),9000);
+    try{const r=await fetch(S0.u.replace('{z}',z).replace('{x}',((tx%n)+n)%n).replace('{y}',ty),{signal:ctl.signal});if(!r.ok)throw 0;const b=await r.blob();const d=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b)});
       return{x:A4.FX+A4.FW/2+(tx*256-C.x)*f,y:A4.FY+A4.FH/2+(ty*256-C.y)*f,s:256*f,d}}catch(e){return null}finally{clearTimeout(tm)}};
   const rs=(await Promise.all(jobs.map(get))).filter(Boolean);return rs.length>=jobs.length*.6?rs:null}
 const mmFit=(t,max,fs,minfs)=>{let f=fs;while(f>(minfs||9)&&t.length*f*.52>max)f-=.5;if(t.length*f*.52>max){t=t.slice(0,Math.max(1,Math.floor(max/(f*.52))-1))+'…'}return{t,f}};
@@ -2267,12 +2280,15 @@ const mc=k=>((G().mpC||{})[k])||MM_COLD[k];
 function shade(h,d){h=String(h||'#888888').replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=[0,2,4].map(i=>Math.max(0,Math.min(255,(parseInt(h.substr(i,2),16)||0)+d)));return'#'+n.map(v=>v.toString(16).padStart(2,'0')).join('')}
 function illBase(C){const{V,osm,X,Y,FX,FY,FW,FH,g,used,labs,lab,ma}=C,o=[],mpp=V.mpp;
   const seed=Math.abs(Math.round(ma.lat*1e4)*7919+Math.round(ma.lon*1e4)*104729)||12345,rnd=ilRng(seed),pt=(la,lo)=>[X(lo),Y(la)],cs=Math.max(44,Math.min(62,FW/14));
+  if(!C.noBg){
   o.push(`<rect x="${FX}" y="${FY}" width="${FW}" height="${FH}" fill="${mc('bg')}"/>`);
   const fb=mc('frm'),pal=[-16,-8,0,8,14,-12,4,-22].map(d=>shade(fb,d)),fs=shade(fb,-32);
   ilVoronoi(FX,FY,FW,FH,cs,rnd).forEach(c=>o.push(`<polygon points="${c.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="${pal[Math.floor(rnd()*pal.length)]}" stroke="${fs}" stroke-width=".9" stroke-linejoin="round"/>`));
   used.add('frm');
   for(let gx=FX+100;gx<FX+FW;gx+=100)o.push(`<line x1="${gx}" y1="${FY}" x2="${gx}" y2="${FY+FH}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="6 6"/>`);
   for(let gy=FY+100;gy<FY+FH;gy+=100)o.push(`<line x1="${FX}" y1="${gy}" x2="${FX+FW}" y2="${gy}" stroke="#fff" stroke-opacity=".5" stroke-dasharray="6 6"/>`);
+  
+  }
   const polys=(osm&&osm.polys)||[],lines=(osm&&osm.lines)||[],pois=(osm&&osm.pois)||[],P=p=>p.map(q=>pt(q[0],q[1])),ov=[];
   if(osm){
     if(mmLayOn('res'))polys.filter(q=>q.k==='res').forEach(q=>{const p=P(q.p);o.push(`<path d="${ilPath(p)}Z" fill="${mc('res')}" stroke="${shade(mc('res'),-34)}" stroke-width="1.2"/>`);ov.push({k:'res',p});used.add('res')});
@@ -2368,6 +2384,7 @@ function mmPanelInner(){const g=G(),ma=maGet(),V=MMV,B=MMB,tb=mmTB(),{PX,PW,FY,F
   inf('ศูนย์กลางบริเวณก่อสร้าง (พิกัด)',ma.lat.toFixed(6)+', '+ma.lon.toFixed(6),'#b71c1c');const u=utm(ma.lat,ma.lon);inf('UTM '+u.zone+'N',`E ${Math.round(u.e)}  N ${Math.round(u.n)}`);inf('รัศมีบริเวณ · มาตราส่วน',Math.round(ma.r)+' ม. · 1:'+V.N+' (A4)');line(y+2);y+=10;
   T(PX+10,y+8,'สัญลักษณ์',11,'font-weight="700"');y+=18;
   const lg=(draw,t)=>{o.push(draw(PX+20,y));T(PX+38,y+4,t,10.5);y+=16},sw=(c,s)=>(x,yy)=>`<rect x="${x-10}" y="${yy-5}" width="20" height="10" fill="${c}" stroke="${s||shade(c,-35)}"/>`;
+  if(G().mpBg&&MMT.tiles)lg((x,yy)=>`<rect x="${x-10}" y="${yy-5}" width="20" height="10" fill="#e8eef2" stroke="#888"/>`,'ภาพพื้นหลัง: '+MM_SRC[G().mpBg].n);
   if(mmLayOn('area'))lg((x,yy)=>`<circle cx="${x}" cy="${yy}" r="6" fill="${mc('area')}" fill-opacity=".15" stroke="${mc('area')}" stroke-dasharray="3 2"/>`,'บริเวณก่อสร้าง (โดยสังเขป)');
   if(B.used.has('frm'))lg(sw(mc('frm')),'พื้นที่เกษตร/ทั่วไป (ลายสังเขป)');if(B.used.has('wat'))lg(sw(mc('ww')),'แม่น้ำ/คลอง/แหล่งน้ำ');if(B.used.has('for'))lg(sw(mc('for')),'ป่า/สวน');if(B.used.has('res'))lg(sw(mc('res')),'ชุมชน/หมู่บ้าน');
   if(B.used.has('rod'))lg((x,yy)=>`<line x1="${x-10}" y1="${yy}" x2="${x+10}" y2="${yy}" stroke="${mc('rod')}" stroke-width="3.5"/>`,'ถนน');
@@ -2385,11 +2402,14 @@ function mmPanelInner(){const g=G(),ma=maGet(),V=MMV,B=MMB,tb=mmTB(),{PX,PW,FY,F
 function mmDrawPanel(){const el=$('mmPanel');if(el&&MMB)el.innerHTML=mmPanelInner()}
 // ---- ประกอบแผ่น ----
 function mmBuildBase(){const ma=maGet(),g=G(),V=mmView2(gnum(g.mpScale,0)||0);MMV=V;
-  const key=JSON.stringify([ma,g.mpScale,g.mpC,g.mpL,g.osm&&g.osm.t,g.osm&&(g.osm.pois||[]).length,g.osm&&(g.osm.lines||[]).length,g.osm&&(g.osm.polys||[]).length]);if(MMB&&MMB.key===key)return MMB;
+  const key=JSON.stringify([ma,g.mpScale,g.mpC,g.mpL,g.mpBg,g.mpBgO,g.mpIll,MMT.key+(MMT.tiles?1:0),g.osm&&g.osm.t,g.osm&&(g.osm.pois||[]).length,g.osm&&(g.osm.lines||[]).length,g.osm&&(g.osm.polys||[]).length]);if(MMB&&MMB.key===key)return MMB;
   const{FX,FY,FW,FH}=A4,X=lo=>FX+FW/2+(lo-V.clon)*V.kx/V.mpp,Y=la=>FY+FH/2-(la-V.clat)*V.ky/V.mpp,o=[],used=new Set(),labs=[],HALO='stroke="#fff" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round"';
   const T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
   const lab=(x,y,t,sz,ex)=>{if(!t)return;const w=t.length*sz*.55,r=[x-2,y-sz,x+w+2,y+3];if(labs.some(q=>r[0]<q[2]&&r[2]>q[0]&&r[1]<q[3]&&r[3]>q[1]))return;labs.push(r);o.push(`<text x="${x}" y="${y}" font-size="${sz}" ${ex||''} ${HALO}>${esc(t)}</text>`)};
-  o.push(illBase({V,osm:g.osm,X,Y,FX,FY,FW,FH,g,used,labs,lab,ma}));
+  const tl=g.mpBg&&MMT.tiles;
+  if(tl){o.push(`<rect x="${FX}" y="${FY}" width="${FW}" height="${FH}" fill="#fff"/><g opacity="${g.mpBgO==null?1:g.mpBgO}">`+MMT.tiles.map(t=>`<image href="${t.d}" x="${(t.x-.4).toFixed(2)}" y="${(t.y-.4).toFixed(2)}" width="${(t.s+.8).toFixed(2)}" height="${(t.s+.8).toFixed(2)}" preserveAspectRatio="none"/>`).join('')+'</g>')}
+  if(g.mpIll!==false)o.push(illBase({V,osm:g.osm,X,Y,FX,FY,FW,FH,g,used,labs,lab,ma,noBg:!!tl}));
+  else if(!tl)o.push(`<rect x="${FX}" y="${FY}" width="${FW}" height="${FH}" fill="${mc('bg')}"/>`);
   if(mmLayOn('area')){const cx=X(ma.lon),cy=Y(ma.lat),rp=ma.r/V.mpp,ac=mc('area');o.push(`<circle cx="${cx}" cy="${cy}" r="${rp}" fill="${ac}" fill-opacity=".07" stroke="${ac}" stroke-width="2.8" stroke-dasharray="11 7"/><g stroke="${ac}" stroke-width="2"><line x1="${cx-7}" y1="${cy}" x2="${cx+7}" y2="${cy}"/><line x1="${cx}" y1="${cy-7}" x2="${cx}" y2="${cy+7}"/></g>`);
     o.push(`<text x="${cx}" y="${cy-rp-8}" font-size="12.5" font-weight="700" text-anchor="middle" fill="${shade(ac,-40)}" ${HALO}>บริเวณสถานที่ก่อสร้าง (โดยสังเขป)</text>`)}
   o.push(`<g transform="translate(${FX+FW-44},${FY+44})" opacity=".9"><circle r="27" fill="#fbf8ef" stroke="#8d8672" stroke-width="1.2"/><circle r="22" fill="none" stroke="#b9b29a" stroke-dasharray="2 3"/><polygon points="0,-24 5,0 0,24 -5,0" fill="#6f6a58"/><polygon points="-24,0 0,-5 24,0 0,5" fill="#9a947e"/><polygon points="0,-24 5,0 -5,0" fill="#b71c1c"/><text y="-30" font-size="13" font-weight="700" text-anchor="middle" fill="#333">N</text></g>`);
@@ -2397,13 +2417,13 @@ function mmBuildBase(){const ma=maGet(),g=G(),V=mmView2(gnum(g.mpScale,0)||0);MM
 function mmFullSvg(B){const{W,H,FX,FY,FW,FH}=A4,V=B.V,g=G();
   const nice=[5,10,20,50,100,200,500,1000,2000,5000,10000],nb=nice.reduce((p,c)=>Math.abs(c/V.mpp-150)<Math.abs(p/V.mpp-150)?c:p),bw=nb/V.mpp,bx=FX+18,by=FY+FH-30;
   const sb=`<rect x="${bx-8}" y="${by-24}" width="${bw+76}" height="44" fill="#fff" fill-opacity=".88"/><rect x="${bx}" y="${by}" width="${bw/2}" height="6" fill="#000"/><rect x="${bx+bw/2}" y="${by}" width="${bw/2}" height="6" fill="#fff" stroke="#000"/><text x="${bx}" y="${by-6}" font-size="11">0</text><text x="${bx+bw}" y="${by-6}" font-size="11" text-anchor="middle">${nb>=1000?nb/1000+' กม.':nb+' ม.'}</text><text x="${bx}" y="${by+18}" font-size="11" font-weight="700">มาตราส่วน 1:${V.N} (A4)</text>`;
-  const cr=g.osm?`<text x="${FX+FW-6}" y="${FY+FH-5}" font-size="9" text-anchor="end" fill="#333" stroke="#fff" stroke-width="3.5" paint-order="stroke">ข้อมูลสภาพแวดล้อม © OpenStreetMap contributors (ODbL) ดึงเมื่อ ${g.osm.t}</text>`:'';
+  const bgA=g.mpBg&&MMT.tiles&&MM_SRC[g.mpBg]?MM_SRC[g.mpBg].a:'',cr=(g.osm||bgA)?`<text x="${FX+FW-6}" y="${FY+FH-5}" font-size="9" text-anchor="end" fill="#333" stroke="#fff" stroke-width="3.5" paint-order="stroke">${[bgA&&'ภาพพื้นหลัง '+bgA,g.osm&&g.mpIll!==false&&'ข้อมูลสภาพแวดล้อม © OpenStreetMap contributors (ODbL) ดึงเมื่อ '+g.osm.t].filter(Boolean).join(' · ')}</text>`:'';
   return`<svg xmlns="http://www.w3.org/2000/svg" id="mmSvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Sarabun,Tahoma,sans-serif"><rect width="${W}" height="${H}" fill="#fff"/><rect x="6" y="6" width="${W-12}" height="${H-12}" fill="none" stroke="#000" stroke-width="1.5"/><defs><clipPath id="mmc"><rect x="${FX}" y="${FY}" width="${FW}" height="${FH}"/></clipPath></defs><g clip-path="url(#mmc)"><g id="mmBase">${B.html}</g><g id="mmAnn"></g></g><rect x="${FX}" y="${FY}" width="${FW}" height="${FH}" fill="none" stroke="#000" stroke-width="1.5"/>${sb}${cr}<g id="mmPanel"></g><g id="mmEdit"></g></svg>`}
 function mmSvgStr(){const sv=$('mmSheet')&&$('mmSheet').querySelector('svg');if(!sv)return null;const c=sv.cloneNode(true);const e=c.querySelector('#mmEdit');if(e)e.remove();c.removeAttribute('style');c.setAttribute('width',A4.W);c.setAttribute('height',A4.H);return new XMLSerializer().serializeToString(c)}
 // ===== v35: ตัวแก้ไขวัตถุ (pointer) + แผงคุณสมบัติ + render + ส่งออก =====
 const MM_TOOLS=[['sel','👆 เลือก/ย้าย'],['line','➖ เส้น'],['poly','⬠ หลายเหลี่ยม'],['rect','▭ สี่เหลี่ยม'],['circle','◯ วงกลม'],['ell','⬭ วงรี'],['text','🅣 ข้อความ'],['pin','📍 หมุด/สัญลักษณ์']];
 const MM_TNAME={line:'เส้น',poly:'หลายเหลี่ยม',rect:'สี่เหลี่ยม',circle:'วงกลม',ell:'วงรี',text:'ข้อความ',pin:'หมุด/สัญลักษณ์'};
-let MMBUSY=false,MMKEY='';
+let MMBUSY=false,MMKEY='',MMPEND=false;
 const mmSvgEl=()=>{const b=$('mmSheet');return b&&b.querySelector('svg')};
 function mmPt(ev){const sv=mmSvgEl(),m=sv.getScreenCTM();if(!m)return[0,0];const p=sv.createSVGPoint();p.x=ev.clientX;p.y=ev.clientY;const q=p.matrixTransform(m.inverse());return[q.x,q.y]}
 const mmInFrame=(x,y)=>x>=A4.FX&&x<=A4.FX+A4.FW&&y>=A4.FY&&y<=A4.FY+A4.FH;
@@ -2488,7 +2508,7 @@ function mmToolbarInit(){const b=$('mmTools');if(b.dataset.ok)return;b.dataset.o
   mmPropBind();
   document.addEventListener('keydown',e=>{if(!$('mmSheet')||!$('mmSheet').offsetParent)return;const tg=e.target.tagName;if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT')return;
     if((e.key==='Delete'||e.key==='Backspace')&&ED.sel){e.preventDefault();mmDel()}else if(e.key==='Escape'){ED.draft=null;mmSetTool('sel')}else if(e.key==='Enter'&&ED.draft)mmFinish();else if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();mmUndo()}})}
-async function renderMapSheet(){const box=$('mmSheet');if(!box||MMBUSY)return;MMBUSY=true;
+async function renderMapSheet(){const box=$('mmSheet');if(!box)return;if(MMBUSY){MMPEND=true;return}MMBUSY=true;
  try{const ma=maGet();
   if(!ma){box.innerHTML='<div class="mute" style="padding:14px">ยังไม่ได้กำหนดบริเวณสถานที่ก่อสร้าง — กดปุ่ม "🗺 กำหนดบริเวณก่อสร้าง"</div>';MMB=null;MMKEY='';$('mmExp').style.display='none';$('mmCtl').style.display='none';return}
   $('mmCtl').style.display='';const g=G();mmToolbarInit();
@@ -2496,14 +2516,19 @@ async function renderMapSheet(){const box=$('mmSheet');if(!box||MMBUSY)return;MM
     $('mmScale').innerHTML='<option value="">อัตโนมัติ (พอดีกระดาษ A4)</option>'+MM_SCALES.map(s=>`<option value="${s}">1:${s.toLocaleString()}</option>`).join('')}
   $('mmLayers').querySelectorAll('[data-ml]').forEach(c=>c.checked=mmLayOn(c.dataset.ml));$('mmScale').value=g.mpScale||'';mmColorUI();
   document.querySelectorAll('#mmTB [data-tb]').forEach(i=>{if(document.activeElement!==i)i.value=(mmTB()[i.dataset.tb])||''});
+  $('mmBg').value=g.mpBg||'';$('mmBgO').value=g.mpBgO==null?1:g.mpBgO;$('mmBgOv').textContent=Math.round(($('mmBgO').value)*100)+'%';$('mmIll').checked=g.mpIll!==false;
+  if(g.mpBg){const V0=mmView2(gnum(g.mpScale,0)||0),k=[g.mpBg,V0.clat,V0.clon,V0.N].join('|');
+    if(MMT.key!==k){$('mmNote').textContent='กำลังโหลดภาพพื้นหลัง '+MM_SRC[g.mpBg].n+'…';let t=null;try{t=await mmTiles(V0,g.mpBg)}catch(e){}MMT={key:k,tiles:t};MMB=null;
+      if(!t)toast('โหลดภาพพื้นหลังไม่สำเร็จ (ต้องมีอินเทอร์เน็ต/เว็บต้นทางอาจถูกบล็อก) — ลองเลือกแหล่งอื่น',true)}}
+  else if(MMT.key){MMT={key:'',tiles:null};MMB=null}
   const B=mmBuildBase();
   if(MMKEY!==B.key||!mmSvgEl()){box.innerHTML=mmFullSvg(B);MMKEY=B.key;const sv=mmSvgEl();sv.removeAttribute('width');sv.removeAttribute('height');sv.style.cssText='width:100%;height:auto;border:1px solid var(--line);background:#fff;touch-action:none';mmBind();mmSetTool(ED.tool)}
   mmRefreshAll();$('mmExp').style.display='';
-  const o=g.osm,V=B.V;let note='มาตราส่วน 1:'+V.N+' บนกระดาษ A4 แนวนอน · ภาพวาดสังเขป: ลายแปลงเกษตรเป็นภาพประกอบ ไม่ใช่ขอบเขตที่ดินจริง';
+  const o=g.osm,V=B.V;let note='มาตราส่วน 1:'+V.N+' บนกระดาษ A4 แนวนอน';if(g.mpIll!==false&&!(g.mpBg&&MMT.tiles))note+=' · ภาพวาดสังเขป: ลายแปลงเกษตรเป็นภาพประกอบ ไม่ใช่ขอบเขตที่ดินจริง';if(g.mpBg&&!MMT.tiles)note+=' · ⚠ โหลดภาพพื้นหลังไม่สำเร็จ ใช้พื้นสีสังเขปแทน';
   if(!o)note+=' · ยังไม่ได้ดึงข้อมูลสภาพแวดล้อม — กด "🌐 ดึงข้อมูลสภาพแวดล้อมจาก OSM"';
   else{const b=o.bb,vv=V.view;if(vv.s<b[0]-1e-4||vv.n>b[2]+1e-4||vv.w<b[1]-1e-4||vv.e>b[3]+1e-4)note+=' · ⚠ พื้นที่ขยายเกินข้อมูลที่ดึงไว้ — กดดึงข้อมูลใหม่'}
   $('mmNote').textContent=note;
- }finally{MMBUSY=false}}
+ }finally{MMBUSY=false;if(MMPEND){MMPEND=false;renderMapSheet()}}}
 $('mmFetch').onclick=async()=>{const ma=maGet();if(!ma){toast('กำหนดบริเวณก่อสร้างก่อน',true);return}
   const V=mmView2(gnum(G().mpScale,0)||0),bt=$('mmFetch'),old=bt.textContent;
   if(navigator.onLine===false){problem('OSM_FAIL','เครื่องออฟไลน์');return}
@@ -2513,6 +2538,7 @@ $('mmFetch').onclick=async()=>{const ma=maGet();if(!ma){toast('กำหนด�
     toast(`✔ ได้ข้อมูล: สถานที่ ${d.pois.length} · ถนน/คลอง ${d.lines.length} · พื้นที่ ${d.polys.length}`+(d.big?' (พื้นที่กว้าง ข้ามอาคาร/ต้นไม้)':''));
     MMB=null;await renderMapSheet()}catch(e){problem('OSM_FAIL',e&&e.message)}
   bt.disabled=false;bt.textContent=old};
+$('mmBg').onchange=e=>{G().mpBg=e.target.value;save(true);MMB=null;renderMapSheet()};$('mmBgO').oninput=e=>{G().mpBgO=parseFloat(e.target.value);$('mmBgOv').textContent=Math.round(e.target.value*100)+'%';clearTimeout(window._mmO);window._mmO=setTimeout(()=>{save(true);MMB=null;renderMapSheet()},120)};$('mmIll').onchange=e=>{G().mpIll=e.target.checked;save(true);MMB=null;renderMapSheet()};
 $('mmScale').onchange=e=>{G().mpScale=e.target.value;save(true);renderMapSheet()};
 $('mmLayers').onchange=e=>{const k=e.target.dataset.ml;if(!k)return;const g=G();g.mpL=g.mpL||{};g.mpL[k]=e.target.checked;save(true);renderMapSheet()};
 $('mmTB').oninput=e=>{const k=e.target.dataset.tb;if(!k)return;mmTB()[k]=e.target.value;save();clearTimeout(window._mmT);window._mmT=setTimeout(mmDrawPanel,200)};
@@ -2834,6 +2860,6 @@ function elRefresh(){const g=G(),vals=elVals(g);vals.forEach(v=>{const r=documen
 })();
 
 loadJobs();
-loadLib();fillProj();renderRows();refresh();geoUI();renderPlan();
+loadLib();fillProj();renderRows();refresh();geoUI();renderPlan();showTab('t5');
 </script>
 </body></html>
