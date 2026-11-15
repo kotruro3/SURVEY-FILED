@@ -249,7 +249,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <div id="map"></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">🗺 แผนที่สังเขปบริเวณก่อสร้าง (A4) — วาดเส้นทาง/หมุด/ข้อความเองได้</h3>
    <div class="mute">กำหนดบริเวณก่อสร้างโดยสังเขป (พิกัดศูนย์กลาง + รัศมี) → ดึงสภาพแวดล้อมจาก OpenStreetMap → <b>ลากเส้นทางก่อสร้าง วางหมุดจุดเริ่ม/สิ้นสุด ข้อความ สัญลักษณ์ รูปทรง ด้วยตนเอง</b> ระบบไม่คำนวณเส้นทางหรือจุดสิ้นสุดให้</div>
-   <div class="bar"><button class="b" id="mmFetch">🌐 ดึงข้อมูลสภาพแวดล้อมจาก OSM</button><button class="b ghost" id="mmRe">↻ อัปเดตแผ่น</button><span id="mmExp" style="display:none"><button class="b ghost sm" id="mmPng">⬇ PNG</button> <button class="b ghost sm" id="mmSvgB">⬇ SVG</button> <button class="b ghost sm" id="mmPdf">📄 พิมพ์/PDF (A4)</button></span></div>
+   <div class="bar"><button class="b" id="mmFetch">🌐 ดึงข้อมูลสภาพแวดล้อมจาก OSM</button><button class="b ghost" id="mmRe">↻ อัปเดตแผ่น</button><button class="b ghost" id="mmClrSitesB" style="color:#b3261e">🗑 ล้างจุดที่ตั้ง</button><button class="b ghost" id="mmClrAreaB" style="color:#b3261e">↺ ล้างบริเวณ</button><span id="mmExp" style="display:none"><button class="b ghost sm" id="mmPng">⬇ PNG</button> <button class="b ghost sm" id="mmSvgB">⬇ SVG</button> <button class="b ghost sm" id="mmPdf">📄 พิมพ์/PDF (A4)</button></span></div>
    <div class="mute" id="mmNote"></div>
    <div id="mmCtl" style="display:none">
     <div class="bar"><label style="margin:0">มาตราส่วน</label><select id="mmScale" style="width:auto"></select></div>
@@ -1850,7 +1850,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v37';
+const APPVER='v38';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -1975,46 +1975,57 @@ function mmRoute(){ // → {mp,pts,ll[],len,s0,end,start,hd}
   const ll=pts.map(p=>mmLoc(mp,p.x,p.y));
   return{g,mp,pts,ll,len,s0,start:ll[0],end:ll[ll.length-1],hd:gnum(g.hd),at:s=>{const p=ptAt(pts,s);return{p,ll:mmLoc(mp,p.x,p.y)}}}}
 const mmBear=(a,b)=>{const y=Math.sin((b.lon-a.lon)*DEG)*Math.cos(b.lat*DEG),x=Math.cos(a.lat*DEG)*Math.sin(b.lat*DEG)-Math.sin(a.lat*DEG)*Math.cos(b.lat*DEG)*Math.cos((b.lon-a.lon)*DEG);return(Math.atan2(y,x)/DEG+360)%360};
-// ===== v35: กำหนดบริเวณสถานที่ก่อสร้างโดยสังเขป (ศูนย์กลาง + รัศมี) =====
+// ===== v38: กำหนดบริเวณ + จุดที่ตั้งก่อสร้างหลายจุด =====
 const maGet=()=>{const g=G();if(!g.ma&&g.mp)g.ma={lat:g.mp.lat,lon:g.mp.lon,r:400};return g.ma||null};
-let mmMap=null,mmLay=null,mmMk=null,mmCir=null,mmCur=null,mmRad=400;
+const sitesGet=()=>{const g=G();return g.mpSites||(g.mpSites=[])};
+let mmMap=null,mmLay=null,mmMk=null,mmCir=null,mmCur=null,mmRad=400,mmSites=[],mmMode='area',mmSMk=[];
 (function(){const o=document.createElement('div');o.id='mm';o.className='ov';
- o.innerHTML=`<div class="box" style="max-width:980px"><h3 style="margin:0 0 4px">🗺 กำหนดบริเวณสถานที่ก่อสร้าง (โดยสังเขป)</h3>
- <div class="mute"><b>1)</b> แตะแผนที่ หรือวางพิกัดจาก Google Maps เพื่อกำหนด<b>ศูนย์กลางบริเวณ</b> · <b>2)</b> ปรับ<b>รัศมีบริเวณ</b> (เมตร) ให้คลุมพื้นที่ที่ต้องการแสดง · <b>3)</b> กดสร้างแผ่น แล้วลากเส้นทางก่อสร้าง วางหมุด/สัญลักษณ์ ข้อความ และรูปทรงเองบนแผ่นแผนที่</div>
- <div class="bar" style="margin-top:6px"><button class="b amber sm" id="mmGps">📍 ใช้ตำแหน่งฉัน</button>
-  <input id="mmTxt" placeholder="วางพิกัด/ลิงก์จาก Google Maps เช่น 13.7563, 100.5018" style="max-width:340px"><button class="b ghost sm" id="mmGo">ตั้งจุดจากพิกัด</button><button class="b sm" id="mmGg">🌐 เปิด Google Maps</button><button class="b ghost sm" id="mmGgS">🛰 ดาวเทียม</button>
+ o.innerHTML=`<div class="box" style="max-width:980px"><h3 style="margin:0 0 4px">🗺 กำหนดบริเวณและจุดที่ตั้งสถานที่ก่อสร้าง</h3>
+ <div class="mute"><b>1)</b> กำหนด<b>ศูนย์กลางบริเวณ</b> + <b>รัศมี</b> (กรอบแผนที่สังเขป) · <b>2)</b> เพิ่ม<b>จุดที่ตั้งก่อสร้าง</b>ได้กี่จุดก็ได้ (แสดงหมายเลข+พิกัดบนแผนที่สังเขป) · <b>3)</b> ผิดพลาดกดล้าง/ลบแล้วเลือกใหม่ได้</div>
+ <div class="bar" style="margin-top:6px"><label style="margin:0">แตะแผนที่/วางพิกัด เพื่อ</label><select id="mmMode" style="width:auto"><option value="area">กำหนดศูนย์กลางบริเวณ</option><option value="site">เพิ่มจุดที่ตั้งก่อสร้าง</option></select><button class="b amber sm" id="mmGps">📍 ใช้ตำแหน่งฉัน</button></div>
+ <div class="bar"><input id="mmTxt" placeholder="วางพิกัด/ลิงก์จาก Google Maps เช่น 13.7563, 100.5018" style="max-width:340px"><button class="b ghost sm" id="mmGo">ตั้งตามโหมดที่เลือก</button><button class="b sm" id="mmGg">🌐 เปิด Google Maps</button><button class="b ghost sm" id="mmGgS">🛰 ดาวเทียม</button>
   <label style="margin:0 0 0 6px">รัศมีบริเวณ (ม.)</label><input id="mmR" type="number" min="50" step="50" style="width:100px"></div>
- <div class="mute" style="margin:6px 0;padding:8px 10px;border:1px dashed var(--line);border-radius:8px"><b>เลือกจุดด้วย Google Maps (ไม่ต้องใช้ key):</b> กด <b>🌐 เปิด Google Maps</b> → กดค้างที่กลางบริเวณก่อสร้างจนมีหมุดแดง → แตะตัวเลขพิกัดที่ขึ้นเพื่อคัดลอก → กลับมา<b>วางในช่องพิกัด</b> (วางแล้วตั้งจุดให้อัตโนมัติ)</div>
+ <div class="mute" style="margin:6px 0;padding:8px 10px;border:1px dashed var(--line);border-radius:8px"><b>เลือกจุดด้วย Google Maps (ไม่ต้องใช้ key):</b> กด <b>🌐 เปิด Google Maps</b> → กดค้างที่ตำแหน่งจนมีหมุดแดง → แตะตัวเลขพิกัดเพื่อคัดลอก → กลับมา<b>วางในช่องพิกัด</b> (วางแล้วตั้งจุดให้อัตโนมัติตามโหมดที่เลือก)</div>
  <div id="mmNoMap" class="mute" style="display:none;padding:12px;border:1px solid var(--line);border-radius:8px;margin:6px 0">แผนที่ในแอปโหลดไม่ได้ในขณะนี้ — ใช้ Google Maps เลือกพิกัดแล้ววางในช่องด้านบนได้ตามปกติ</div>
- <div id="mmMapEl" style="height:50vh;min-height:300px;border-radius:8px;border:1px solid var(--line)"></div>
+ <div id="mmMapEl" style="height:44vh;min-height:280px;border-radius:8px;border:1px solid var(--line)"></div>
  <div id="mmInfo" style="margin:8px 0;font-size:14px"></div>
+ <div class="bar"><button class="b ghost sm" id="mmClrArea" style="color:#b3261e">↺ ล้างศูนย์กลางบริเวณ (เลือกใหม่)</button></div>
+ <div style="font-weight:700;margin-top:6px">จุดที่ตั้งสถานที่ก่อสร้าง (<span id="mmSn">0</span> จุด)</div><div id="mmSites" style="margin:4px 0"></div>
+ <div class="bar"><button class="b ghost sm" id="mmClrSites" style="color:#b3261e">🗑 ล้างจุดที่ตั้งทั้งหมด</button></div>
  <div class="bar"><button class="b" id="mmOk">✔ บันทึกและสร้างแผ่นแผนที่สังเขป</button><button class="b ghost" id="mmCancel">ยกเลิก</button></div></div>`;
  document.body.appendChild(o);
  const close=()=>o.classList.remove('on');
- function draw(fit){const info=$('mmInfo');
-  if(!mmCur){info.innerHTML='<span class="mute">ยังไม่ได้กำหนดบริเวณ — แตะแผนที่หรือวางพิกัดจาก Google Maps</span>';return}
+ function listSites(){$('mmSn').textContent=mmSites.length;$('mmSites').innerHTML=mmSites.length?mmSites.map((s,i)=>`<div class="bar" style="margin:3px 0;flex-wrap:nowrap"><b style="min-width:26px">${i+1}.</b><input data-sn="${i}" value="${esc(s.name||'')}" placeholder="ชื่อจุด (เช่น จุดก่อสร้างที่ ${i+1})" style="flex:1;min-width:120px"><span class="mute" style="white-space:nowrap">${s.lat.toFixed(6)}, ${s.lon.toFixed(6)}</span><button class="b ghost sm" data-sd="${i}" style="color:#b3261e" title="ลบจุดนี้">✕</button></div>`).join(''):'<span class="mute">ยังไม่มีจุดที่ตั้ง — เลือกโหมด "เพิ่มจุดที่ตั้งก่อสร้าง" แล้วแตะแผนที่/วางพิกัด</span>'}
+ function draw(fit){const info=$('mmInfo');listSites();
+  if(mmMap){mmSMk.forEach(m=>mmMap.removeLayer(m));mmSMk=mmSites.map((s,i)=>{const m=L.marker([s.lat,s.lon],{draggable:true}).bindTooltip(String(i+1),{permanent:true,direction:'right',offset:[8,-10]}).addTo(mmMap);m.on('dragend',()=>{const p=m.getLatLng();s.lat=p.lat;s.lon=p.lng;listSites()});return m})}
+  if(!mmCur){info.innerHTML='<span class="mute">ยังไม่ได้กำหนดศูนย์กลางบริเวณ</span>';if(mmMk){mmMap.removeLayer(mmMk);mmMk=null}if(mmCir){mmMap.removeLayer(mmCir);mmCir=null}return}
   const la=mmCur.lat,lo=mmCur.lon,dLa=mmRad/110574,dLo=mmRad/(111320*Math.cos(la*DEG));
   info.innerHTML=`<b>ศูนย์กลางบริเวณ</b>: ${fmtLL(la,lo)} · ${esc(utmTxt(mmCur))}<br><b>รัศมี</b> ${mmRad} ม. (กว้างประมาณ ${mmRad*2} ม.)<br><span class="mute">มุมกรอบบริเวณ: เหนือ-ตะวันตก ${fmtLL(la+dLa,lo-dLo)} · ใต้-ตะวันออก ${fmtLL(la-dLa,lo+dLo)}</span>`;
   if(mmMap){if(mmMk)mmMk.setLatLng([la,lo]);else{mmMk=L.marker([la,lo],{draggable:true}).addTo(mmMap);mmMk.on('dragend',()=>{const p=mmMk.getLatLng();mmCur={lat:p.lat,lon:p.lng};draw()})}
    if(mmCir){mmCir.setLatLng([la,lo]);mmCir.setRadius(mmRad)}else mmCir=L.circle([la,lo],{radius:mmRad,color:'#d32f2f',weight:3,dashArray:'8 6',fillColor:'#d32f2f',fillOpacity:.1}).addTo(mmMap);
    if(fit)mmMap.fitBounds(mmCir.getBounds?mmCir.getBounds():[[la-dLa,lo-dLo],[la+dLa,lo+dLo]],{padding:[30,30]})}}
- const setStart=(la,lo,fit)=>{mmCur={lat:la,lon:lo};draw(fit);if(mmMap&&fit&&!mmCir.getBounds)mmMap.setView([la,lo],16)};
- window.openMakeMap=()=>{const ma=maGet();mmCur=ma?{lat:ma.lat,lon:ma.lon}:null;mmRad=ma?ma.r:400;$('mmR').value=mmRad;o.classList.add('on');
+ const place=(la,lo,fit)=>{if(mmMode==='site'){mmSites.push({id:mmUid(),name:'',lat:la,lon:lo});if(!mmCur)mmCur={lat:la,lon:lo};draw(fit);if(mmMap&&fit)mmMap.panTo([la,lo])}else{mmCur={lat:la,lon:lo};draw(fit);if(mmMap&&fit&&!mmCir.getBounds)mmMap.setView([la,lo],16)}};
+ window.openMakeMap=()=>{const ma=maGet();mmCur=ma?{lat:ma.lat,lon:ma.lon}:null;mmRad=ma?ma.r:400;mmSites=JSON.parse(JSON.stringify(sitesGet()));mmMode=mmCur?'site':'area';$('mmMode').value=mmMode;$('mmR').value=mmRad;o.classList.add('on');
   if(!window.L){$('mmMapEl').style.display='none';$('mmNoMap').style.display='';draw();return}
   $('mmNoMap').style.display='none';$('mmMapEl').style.display='';
   if(!mmMap){mmMap=L.map('mmMapEl');const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
-   osm.addTo(mmMap);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat,'Esri World Topo':mmLf('esritopo'),'Esri Street':mmLf('esristreet'),'OpenTopoMap':mmLf('otm')}).addTo(mmMap);mmMap.on('click',e=>setStart(e.latlng.lat,e.latlng.lng))}
+   osm.addTo(mmMap);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat,'Esri World Topo':mmLf('esritopo'),'Esri Street':mmLf('esristreet'),'OpenTopoMap':mmLf('otm')}).addTo(mmMap);mmMap.on('click',e=>place(e.latlng.lat,e.latlng.lng))}
   setTimeout(()=>{mmMap.invalidateSize();if(mmCur){mmMap.setView([mmCur.lat,mmCur.lon],16);draw(true)}else{mmMap.setView([13.75,100.5],6);draw();getPos().then(p=>{if(!mmCur)mmMap.setView([p.coords.latitude,p.coords.longitude],16)}).catch(()=>{})}},80)};
- $('mmGps').onclick=()=>getPos().then(p=>setStart(p.coords.latitude,p.coords.longitude,true)).catch(e=>problem('GPS_FAIL',e.message));
+ $('mmMode').onchange=e=>{mmMode=e.target.value};
+ $('mmGps').onclick=()=>getPos().then(p=>place(p.coords.latitude,p.coords.longitude,true)).catch(e=>problem('GPS_FAIL',e.message));
  const goTxt=quiet=>{const raw=$('mmTxt').value.trim();if(!raw)return;if(/goo\.gl|maps\.app/i.test(raw)){toast('ลิงก์สั้นของ Google อ่านพิกัดไม่ได้ — เปิดลิงก์แล้วคัดลอกตัวเลขพิกัด (เช่น 13.7563, 100.5018) มาวาง',true);return}
    const q=parseLL(raw);if(!q){if(!quiet)toast('อ่านพิกัดไม่ได้ — วางตัวเลขพิกัด เช่น 13.7563, 100.5018 หรือลิงก์ Google Maps แบบยาว',true);return}
-   setStart(q.lat,q.lon,true);if(!quiet)toast('✔ ตั้งศูนย์กลางบริเวณที่ '+q.lat.toFixed(6)+', '+q.lon.toFixed(6))};
+   place(q.lat,q.lon,true);$('mmTxt').value='';toast('✔ '+(mmMode==='site'?'เพิ่มจุดที่ตั้งที่ ':'ตั้งศูนย์กลางบริเวณที่ ')+q.lat.toFixed(6)+', '+q.lon.toFixed(6))};
  $('mmGo').onclick=()=>goTxt(false);$('mmTxt').addEventListener('paste',()=>setTimeout(()=>goTxt(true),50));$('mmTxt').addEventListener('keydown',e=>{if(e.key==='Enter')goTxt(false)});
- const ggUrl=sat=>{const c=mmCur||(maGet()?{lat:maGet().lat,lon:maGet().lon}:null);return c?(sat?`https://www.google.com/maps/@${c.lat.toFixed(6)},${c.lon.toFixed(6)},17z/data=!3m1!1e3`:`https://www.google.com/maps/search/?api=1&query=${c.lat.toFixed(6)},${c.lon.toFixed(6)}`):(sat?'https://www.google.com/maps/@13.75,100.5,15z/data=!3m1!1e3':'https://www.google.com/maps')};
+ const ggUrl=sat=>{const c=mmCur||mmSites[0]||(maGet()?{lat:maGet().lat,lon:maGet().lon}:null);return c?(sat?`https://www.google.com/maps/@${c.lat.toFixed(6)},${c.lon.toFixed(6)},17z/data=!3m1!1e3`:`https://www.google.com/maps/search/?api=1&query=${c.lat.toFixed(6)},${c.lon.toFixed(6)}`):(sat?'https://www.google.com/maps/@13.75,100.5,15z/data=!3m1!1e3':'https://www.google.com/maps')};
  $('mmGg').onclick=()=>window.open(ggUrl(false),'_blank');$('mmGgS').onclick=()=>window.open(ggUrl(true),'_blank');
  $('mmR').oninput=()=>{const v=gnum($('mmR').value,400);if(v>=20&&v<=20000){mmRad=v;draw(false)}};
+ $('mmSites').addEventListener('input',e=>{const i=e.target.dataset.sn;if(i!=null)mmSites[+i].name=e.target.value});
+ $('mmSites').addEventListener('click',e=>{const i=e.target.dataset.sd;if(i!=null){mmSites.splice(+i,1);draw()}});
+ $('mmClrSites').onclick=()=>{if(!mmSites.length)return;if(!confirm('ล้างจุดที่ตั้งทั้งหมด '+mmSites.length+' จุด?'))return;mmSites=[];draw()};
+ $('mmClrArea').onclick=()=>{mmCur=null;mmMode='area';$('mmMode').value='area';draw();toast('ล้างศูนย์กลางบริเวณแล้ว — แตะแผนที่หรือวางพิกัดเพื่อเลือกใหม่')};
  $('mmCancel').onclick=close;o.addEventListener('click',e=>{if(e.target===o)close()});
- $('mmOk').onclick=()=>{if(!mmCur){toast('ยังไม่ได้กำหนดบริเวณ',true);return}const g=G();g.ma={lat:mmCur.lat,lon:mmCur.lon,r:mmRad};g.mpScale='';save(true);close();try{geoUI()}catch(e){}renderMapSheet();toast('✔ สร้างแผ่นแผนที่สังเขปแล้ว — ใช้แถบเครื่องมือด้านล่างวาดเส้นทาง/วางสัญลักษณ์ได้เลย')};
+ $('mmOk').onclick=()=>{if(!mmCur&&mmSites.length)mmCur={lat:mmSites[0].lat,lon:mmSites[0].lon};if(!mmCur){toast('ยังไม่ได้กำหนดบริเวณหรือจุดที่ตั้ง',true);return}const g=G();g.ma={lat:mmCur.lat,lon:mmCur.lon,r:mmRad};g.mpSites=mmSites;g.mpScale='';save(true);close();try{geoUI()}catch(e){}MMB=null;renderMapSheet();toast('✔ บันทึกแล้ว — จุดที่ตั้ง '+mmSites.length+' จุด')};
 })();
 // ===== แผ่นแผนที่สังเขป A4 + สภาพแวดล้อมจาก OpenStreetMap (Overpass) + Title block =====
 let MMSVG=null;
@@ -2315,8 +2326,8 @@ function illBase(C){const{V,osm,X,Y,FX,FY,FW,FH,g,used,labs,lab,ma}=C,o=[],mpp=V
   return o.join('')}
 // ===== v35: มุมมอง + วัตถุที่วาดเอง (เส้น ข้อความ หมุด สัญลักษณ์ รูปทรง) =====
 let MMB=null,MMV=null;
-function mmView2(scaleN){const ma=maGet(),clat=ma.lat,clon=ma.lon,kx=111320*Math.cos(clat*DEG),ky=110574;let N=scaleN;
-  if(!N){N=MM_SCALES[MM_SCALES.length-1];for(const s of MM_SCALES){if(ma.r*2*1.12<=Math.min(A4.FW,A4.FH)*s*MM_MM/1000){N=s;break}}}
+function mmView2(scaleN){const ma=maGet(),clat=ma.lat,clon=ma.lon,kx=111320*Math.cos(clat*DEG),ky=110574;let N=scaleN;const rr=Math.max(ma.r,...sitesGet().map(s=>Math.hypot((s.lon-clon)*kx,(s.lat-clat)*ky)*1.05));
+  if(!N){N=MM_SCALES[MM_SCALES.length-1];for(const s of MM_SCALES){if(rr*2*1.12<=Math.min(A4.FW,A4.FH)*s*MM_MM/1000){N=s;break}}}
   const mpp=N*MM_MM/1000,vw=A4.FW*mpp,vh=A4.FH*mpp;return{clat,clon,kx,ky,N,mpp,view:{s:clat-vh/2/ky,n:clat+vh/2/ky,w:clon-vw/2/kx,e:clon+vw/2/kx}}}
 const mmPx=p=>[A4.FX+A4.FW/2+(p[1]-MMV.clon)*MMV.kx/MMV.mpp,A4.FY+A4.FH/2-(p[0]-MMV.clat)*MMV.ky/MMV.mpp];
 const mmLL=(x,y)=>[MMV.clat-(y-A4.FY-A4.FH/2)*MMV.mpp/MMV.ky,MMV.clon+(x-A4.FX-A4.FW/2)*MMV.mpp/MMV.kx];
@@ -2390,6 +2401,8 @@ function mmPanelInner(){const g=G(),ma=maGet(),V=MMV,B=MMB,tb=mmTB(),{PX,PW,FY,F
   if(B.used.has('rod'))lg((x,yy)=>`<line x1="${x-10}" y1="${yy}" x2="${x+10}" y2="${yy}" stroke="${mc('rod')}" stroke-width="3.5"/>`,'ถนน');
   const symsUsed=[...new Set(mmA().filter(a=>a.t==='pin').map(a=>a.sym||'pin_site'))];
   const pins=mmA().filter(a=>a.t==='pin'),bottom=FY+FH-(()=>{const n=9;return 30*10+0})()-4;
+  const sts=sitesGet();if(sts.length){y+=4;T(PX+10,y+8,'ที่ตั้งสถานที่ก่อสร้าง (พิกัด)',11,'font-weight="700"');y+=18;
+    sts.forEach((s,i)=>{if(y>bottom-30)return;o.push(`<g transform="translate(${PX+20},${y+8}) scale(.36)">${mmPinG('#1565c0','num',String(i+1))}</g>`);const f=mmFit(s.name||('จุดก่อสร้างที่ '+(i+1)),PW-44,10.5,8);T(PX+36,y+4,f.t,f.f,'font-weight="700"');y+=12;T(PX+36,y+4,s.lat.toFixed(6)+', '+s.lon.toFixed(6),9,'fill="#555"');y+=15})}
   if(pins.length){y+=4;T(PX+10,y+8,'หมุด/สัญลักษณ์ที่กำหนด (พิกัด)',11,'font-weight="700"');y+=18;
     for(let i=0;i<pins.length;i++){const a=pins[i];if(y>bottom-36){T(PX+10,y+4,`… และอีก ${pins.length-i} รายการ`,10,'fill="#555"');y+=14;break}
       o.push(`<g>${mmSymSvg({...a,txt:'',sc:1},PX+20,y+8,.36)}</g>`);const f=mmFit(a.txt||mmSymName(a.sym||'pin_site'),PW-44,10.5,8);T(PX+36,y+4,f.t,f.f,'font-weight="700"');y+=12;
@@ -2402,7 +2415,7 @@ function mmPanelInner(){const g=G(),ma=maGet(),V=MMV,B=MMB,tb=mmTB(),{PX,PW,FY,F
 function mmDrawPanel(){const el=$('mmPanel');if(el&&MMB)el.innerHTML=mmPanelInner()}
 // ---- ประกอบแผ่น ----
 function mmBuildBase(){const ma=maGet(),g=G(),V=mmView2(gnum(g.mpScale,0)||0);MMV=V;
-  const key=JSON.stringify([ma,g.mpScale,g.mpC,g.mpL,g.mpBg,g.mpBgO,g.mpIll,MMT.key+(MMT.tiles?1:0),g.osm&&g.osm.t,g.osm&&(g.osm.pois||[]).length,g.osm&&(g.osm.lines||[]).length,g.osm&&(g.osm.polys||[]).length]);if(MMB&&MMB.key===key)return MMB;
+  const key=JSON.stringify([ma,g.mpScale,g.mpC,g.mpL,g.mpBg,g.mpBgO,g.mpIll,g.mpSites,MMT.key+(MMT.tiles?1:0),g.osm&&g.osm.t,g.osm&&(g.osm.pois||[]).length,g.osm&&(g.osm.lines||[]).length,g.osm&&(g.osm.polys||[]).length]);if(MMB&&MMB.key===key)return MMB;
   const{FX,FY,FW,FH}=A4,X=lo=>FX+FW/2+(lo-V.clon)*V.kx/V.mpp,Y=la=>FY+FH/2-(la-V.clat)*V.ky/V.mpp,o=[],used=new Set(),labs=[],HALO='stroke="#fff" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round"';
   const T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
   const lab=(x,y,t,sz,ex)=>{if(!t)return;const w=t.length*sz*.55,r=[x-2,y-sz,x+w+2,y+3];if(labs.some(q=>r[0]<q[2]&&r[2]>q[0]&&r[1]<q[3]&&r[3]>q[1]))return;labs.push(r);o.push(`<text x="${x}" y="${y}" font-size="${sz}" ${ex||''} ${HALO}>${esc(t)}</text>`)};
@@ -2412,6 +2425,8 @@ function mmBuildBase(){const ma=maGet(),g=G(),V=mmView2(gnum(g.mpScale,0)||0);MM
   else if(!tl)o.push(`<rect x="${FX}" y="${FY}" width="${FW}" height="${FH}" fill="${mc('bg')}"/>`);
   if(mmLayOn('area')){const cx=X(ma.lon),cy=Y(ma.lat),rp=ma.r/V.mpp,ac=mc('area');o.push(`<circle cx="${cx}" cy="${cy}" r="${rp}" fill="${ac}" fill-opacity=".07" stroke="${ac}" stroke-width="2.8" stroke-dasharray="11 7"/><g stroke="${ac}" stroke-width="2"><line x1="${cx-7}" y1="${cy}" x2="${cx+7}" y2="${cy}"/><line x1="${cx}" y1="${cy-7}" x2="${cx}" y2="${cy+7}"/></g>`);
     o.push(`<text x="${cx}" y="${cy-rp-8}" font-size="12.5" font-weight="700" text-anchor="middle" fill="${shade(ac,-40)}" ${HALO}>บริเวณสถานที่ก่อสร้าง (โดยสังเขป)</text>`)}
+  sitesGet().forEach((s,i)=>{const x=X(s.lon),y=Y(s.lat),nm=s.name||('จุดก่อสร้างที่ '+(i+1));o.push(`<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) scale(1.05)">${mmPinG('#1565c0','num',String(i+1))}</g>`);
+    o.push(`<text x="${(x+19).toFixed(1)}" y="${(y-24).toFixed(1)}" font-size="12.5" font-weight="700" fill="#0d47a1" ${HALO}>${esc(nm)}</text><text x="${(x+19).toFixed(1)}" y="${(y-10).toFixed(1)}" font-size="10.5" fill="#222" ${HALO}>${s.lat.toFixed(6)}, ${s.lon.toFixed(6)}</text>`)});
   o.push(`<g transform="translate(${FX+FW-44},${FY+44})" opacity=".9"><circle r="27" fill="#fbf8ef" stroke="#8d8672" stroke-width="1.2"/><circle r="22" fill="none" stroke="#b9b29a" stroke-dasharray="2 3"/><polygon points="0,-24 5,0 0,24 -5,0" fill="#6f6a58"/><polygon points="-24,0 0,-5 24,0 0,5" fill="#9a947e"/><polygon points="0,-24 5,0 -5,0" fill="#b71c1c"/><text y="-30" font-size="13" font-weight="700" text-anchor="middle" fill="#333">N</text></g>`);
   MMB={key,html:o.join(''),used,V};return MMB}
 function mmFullSvg(B){const{W,H,FX,FY,FW,FH}=A4,V=B.V,g=G();
@@ -2545,6 +2560,8 @@ $('mmTB').oninput=e=>{const k=e.target.dataset.tb;if(!k)return;mmTB()[k]=e.targe
 async function mmPngBlob(){if(!maGet())return null;await renderMapSheet();const s=mmSvgStr();if(!s)return null;return svgToPng(new DOMParser().parseFromString(s,'image/svg+xml').documentElement)}
 $('mkMapBtn').onclick=()=>openMakeMap();
 $('ggOpen').onclick=()=>{const m=maGet();window.open(m?`https://www.google.com/maps/search/?api=1&query=${m.lat.toFixed(6)},${m.lon.toFixed(6)}`:'https://www.google.com/maps','_blank')};
+$('mmClrSitesB').onclick=()=>{const s=sitesGet();if(!s.length){toast('ยังไม่มีจุดที่ตั้ง');return}if(!confirm('ล้างจุดที่ตั้งก่อสร้างทั้งหมด '+s.length+' จุด?'))return;G().mpSites=[];save(true);MMB=null;renderMapSheet();toast('ล้างจุดที่ตั้งแล้ว')};
+$('mmClrAreaB').onclick=()=>{if(!maGet()){toast('ยังไม่ได้กำหนดบริเวณ');return}if(!confirm('ล้างบริเวณก่อสร้าง (ศูนย์กลาง/รัศมี) เพื่อเลือกใหม่?\nจุดที่ตั้งและวัตถุที่วาดไว้ไม่ถูกลบ'))return;const g=G();g.ma=null;g.mp=null;save(true);MMB=null;MMKEY='';renderMapSheet();toast('ล้างบริเวณแล้ว — กด "กำหนดบริเวณก่อสร้าง" เพื่อเลือกใหม่')};
 $('mmRe').onclick=()=>{MMB=null;renderMapSheet()};
 $('mmPng').onclick=async()=>{const b=await mmPngBlob();if(!b){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}dl(b,fname()+'_MAP.png')};
 $('mmSvgB').onclick=()=>{const s=mmSvgStr();if(!s){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}dl(new Blob([s],{type:'image/svg+xml'}),fname()+'_MAP.svg')};
