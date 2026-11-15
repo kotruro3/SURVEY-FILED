@@ -201,13 +201,14 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <span id="saved" class="saved"></span>
 </header>
 <nav>
-  <button data-t="t5" class="on" title="ขั้นที่ 1 — กำหนดพิกัดและบริเวณสถานที่ก่อสร้าง ว่าอยู่ตรงส่วนไหนของโลก">① LOCATION</button>
-  <button data-t="t3" title="ขั้นที่ 2 — วาดแปลนและรูปตัด แล้วดูว่า PLAN อยู่ส่วนไหนของพื้นที่">② STA</button>
-  <button data-t="t1" title="ขั้นที่ 3 — ตารางสำรวจ STA / ปริมาณงาน">③ TABLE</button>
-  <button data-t="t6" title="ขั้นที่ 4 — รูปถ่ายสภาพปัจจุบันภาคสนามเพื่อวิเคราะห์">④ PHOTO</button>
-  <button data-t="t2" title="ขั้นที่ 5 — สรุปปริมาณงาน (BOQ)">⑤ BOQ FIELD</button>
-  <button data-t="t4" title="ขั้นที่ 6 — ส่งออก/สำรองข้อมูลไปใช้ต่อ">⑥ EXPORT / BACKUP</button>
-  <button data-t="t7" title="ขั้นที่ 7 — ตั้งค่ารายการงาน">⑦ SETTING JOB LIST</button>
+  <button data-t="t0" class="on" title="ขั้นที่ 1 — ข้อมูลโครงการ โลโก้ ผู้ลงนาม และ Title block">① DATA PROJECT</button>
+  <button data-t="t5" title="ขั้นที่ 2 — กำหนดพิกัดและบริเวณสถานที่ก่อสร้าง ว่าอยู่ตรงส่วนไหนของโลก">② LOCATION</button>
+  <button data-t="t3" title="ขั้นที่ 3 — วาดแปลนและรูปตัด แล้วดูว่า PLAN อยู่ส่วนไหนของพื้นที่">③ STA</button>
+  <button data-t="t1" title="ขั้นที่ 4 — ตารางสำรวจ STA / ปริมาณงาน">④ TABLE</button>
+  <button data-t="t6" title="ขั้นที่ 5 — รูปถ่ายสภาพปัจจุบันภาคสนามเพื่อวิเคราะห์">⑤ PHOTO</button>
+  <button data-t="t2" title="ขั้นที่ 6 — สรุปปริมาณงาน (BOQ)">⑥ BOQ FIELD</button>
+  <button data-t="t4" title="ขั้นที่ 7 — ส่งออก/สำรองข้อมูลไปใช้ต่อ">⑦ EXPORT / BACKUP</button>
+  <button data-t="t7" title="ขั้นที่ 8 — ตั้งค่ารายการงาน">⑧ SETTING JOB LIST</button>
 </nav>
 <main>
 <section class="tab" id="t1">
@@ -225,7 +226,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
 
 <section class="tab" id="t2"><div class="card"><div style="overflow:auto"><table id="sumT"></table></div></div></section>
 
-<section class="tab" id="t3">
+<section class="tab on" id="t0">
   <details class="card" id="projCard" open><summary style="font-weight:700;color:var(--brand);cursor:pointer">📁 ข้อมูลโครงการ (รหัส · ชื่อ · หน่วยงาน · สายทาง · ผู้สำรวจ · วันที่)</summary><div style="margin-top:8px"><div class="grid">
     <div><label>รหัสโครงการ (ออกให้อัตโนมัติ)</label><input id="p_code" style="font-weight:700"></div>
     <div><label>รหัสผู้ใช้ (นำหน้ารหัสโครงการ)</label><input id="u_pre" maxlength="3" placeholder="เช่น A" style="font-weight:700;text-transform:uppercase"><div class="mute" id="codeEx" style="margin-top:3px"></div></div>
@@ -236,12 +237,30 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
     <div><label>วันที่</label><input id="p_date" type="date"></div>
   </div>
   <div class="mute" id="info" style="margin-top:8px"></div></div></details>
+  <div class="card" id="tbForm" style="margin-top:12px"><h3 style="margin:0 0 6px">🪪 Title block (กรอบชื่อแบบ)</h3>
+   <div class="mute">กรอกครั้งเดียว ระบบนำไปใส่ในทุกแผ่นให้อัตโนมัติ (แผนที่สังเขป · PLAN · PROFILE · SECTION) · ช่องที่เว้นว่างจะพิมพ์เป็นเส้นประให้เขียนด้วยมือ</div>
+   <div style="font-weight:700;margin-top:8px">1) LOGO หน่วยงาน</div>
+   <div class="bar" style="align-items:center"><img id="tbLogoImg" style="display:none;height:64px;max-width:160px;object-fit:contain;border:1px solid var(--line);background:#fff;border-radius:6px"><span id="tbLogoNo" class="mute">ยังไม่มีโลโก้</span>
+    <label class="b ghost sm" style="cursor:pointer;margin:0">📷 เพิ่มรูป / เลือกไฟล์<input type="file" id="tbLogoFile" accept="image/*" style="display:none"></label><button class="b ghost sm" id="tbLogoDel" style="display:none;color:#b3261e">🗑 ลบโลโก้</button></div>
+   <div style="font-weight:700;margin-top:8px">2) แผนที่สังเขปและที่ตั้ง</div>
+   <div class="mute">ระบบสร้างให้อัตโนมัติจากแท็บ ② LOCATION (บริเวณ จุดที่ตั้ง และเส้นที่วาด) โดยไม่แสดงทิศเหนือซ้ำในแบบ</div>
+   <div style="font-weight:700;margin-top:8px">3) โครงการ / ชื่องาน</div>
+   <div class="grid g2"><div><label>โครงการ / ชื่องาน (เว้นว่าง = ใช้ชื่อโครงการด้านบน)</label><input data-tb="work" type="text" placeholder=""></div><div><label>ชื่อแผ่นงานแผนที่</label><input data-tb="sheetName" type="text" placeholder="แผนที่สังเขปที่ตั้งโครงการ"></div></div>
+   <div style="font-weight:700;margin-top:8px">4) ผู้ลงนาม</div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">เขียนแบบ / สำรวจ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.draw.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.draw.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">วิศวกร</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.eng.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.eng.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">ตรวจสอบ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.chk.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.chk.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">เห็นชอบ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.agr.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.agr.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">อนุมัติ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.apv.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.apv.p" type="text" placeholder="ตำแหน่ง"></div></div></div>
+   <div style="font-weight:700;margin-top:8px">5) มาตราส่วน · พิกัด · รายการสัญลักษณ์ · แผ่นที่ · วันที่ · Remark</div>
+   <div class="grid g4"><div><label>มาตราส่วน</label><input data-tb="scaleT" type="text" placeholder="เว้นว่าง = อัตโนมัติ"></div><div><label>พิกัด</label><input data-tb="coordT" type="text" placeholder="เว้นว่าง = ศูนย์กลางบริเวณ"></div><div><label>แผ่นที่ (แผ่นแผนที่)</label><input data-tb="sheetNo" type="text" placeholder="1"></div><div><label>ทั้งหมด</label><input data-tb="sheetTotal" type="text" placeholder="1"></div></div>
+   <div class="grid g2"><div><label>วันที่ (เว้นว่าง = วันที่โครงการ)</label><input data-tb="date" type="date" placeholder=""></div><div><label>Remark (หมายเหตุ)</label><textarea data-tb="remark" rows="2" style="width:100%"></textarea></div></div>
+   <div class="mute">รายการสัญลักษณ์: แสดงเฉพาะในแผ่นแผนที่สังเขป (สร้างอัตโนมัติจากสิ่งที่ปรากฏบนแผนที่และหมุดที่วาง)</div>
+   <div style="font-weight:700;margin-top:8px">ตัวอย่าง Title block</div><div id="tbPrev"></div></div>
+  <div class="bar" style="margin:14px 0"><button class="b" id="t0Next">ขั้นตอนถัดไป → ② LOCATION</button></div>
+</section>
+<section class="tab" id="t3">
   <div class="wz"><div class="wzL"><div class="card" id="geoCard"></div></div>
   <div class="wzR"><div class="bar"><button class="b" id="pngBtn">⬇ บันทึกภาพ PLAN (PNG)</button><button class="b" data-pdf>📄 ส่งออก PDF</button><span class="pz"><button class="b ghost sm" id="pzO" title="ซูมออก">−</button><b id="pzv">100%</b><button class="b ghost sm" id="pzI" title="ซูมเข้า">＋</button><button class="b ghost sm" id="pzF">พอดี</button></span></div><div class="mute" style="margin:-4px 0 6px">🔍 ซูมตรวจแปลน: ปุ่ม − ＋ / บีบสองนิ้ว / Ctrl+ลูกกลิ้งเมาส์ · ลากเพื่อเลื่อนดู (ซูมเฉพาะตอนดู ไม่กระทบมาตราส่วนตอนพิมพ์/ส่งออก)</div>
   <div class="card"><div id="planbox"></div><div class="legend" id="legend"></div></div></div></div>
 </section>
 
-<section class="tab on" id="t5">
+<section class="tab" id="t5">
   <div class="bar">
     <button class="b" id="mFit">🔍 ดูทั้งหมด</button>
     <button class="b amber" id="mkMapBtn" title="กำหนดบริเวณสถานที่ก่อสร้างโดยสังเขป (ศูนย์กลาง + รัศมี) แล้วสร้างแผนที่สังเขป">🗺 กำหนดบริเวณก่อสร้าง</button><button class="b ghost" id="mMe">📍 ตำแหน่งฉัน</button>
@@ -263,9 +282,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
     <div class="bar" id="mmTools" style="position:sticky;top:0;z-index:5;background:var(--bg,#fff);padding:6px 0"></div>
     <div class="mute" id="mmHint"></div>
     <div id="mmProp" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0;padding:8px;border:1px solid var(--line);border-radius:8px"></div>
-    <details style="margin:6px 0"><summary style="cursor:pointer;font-weight:700">📋 Title block (ระบุภายหลังได้ — เว้นว่างไว้ก็ได้)</summary>
-     <div class="grid g4" id="mmTB" style="margin-top:6px"><div><label>ชื่อแผ่นงาน</label><input data-tb="sheetName" placeholder="แผนที่สังเขปที่ตั้งโครงการ"></div><div><label>ผู้ออกแบบ</label><input data-tb="designer"></div><div><label>ผู้ตรวจ</label><input data-tb="checker"></div><div><label>ผู้อนุมัติ</label><input data-tb="approver"></div><div><label>แผ่นที่</label><input data-tb="sheetNo" placeholder="เช่น 1/12"></div><div><label>วันที่ (ถ้าไม่ใส่ใช้วันที่โครงการ)</label><input data-tb="date" placeholder="เช่น 12 พ.ย. 2569"></div></div>
-     <div class="mute">ชื่อหน่วยงาน/โครงการ/สายทางดึงจากข้อมูลโครงการให้อัตโนมัติ</div></details></div>
+    <div class="mute">ข้อมูล Title block (โลโก้ ผู้ลงนาม มาตราส่วน หมายเหตุ ฯลฯ) กรอกที่แท็บ ① DATA PROJECT</div></div>
    <div id="mmSheet"></div></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 8px">จุดสำคัญ / ภาพรวมโครงการ</h3><div id="pts"></div><div class="mute" id="ptsEmpty"></div></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">📤 ส่งออกแผนที่สังเขป</h3>
@@ -280,7 +297,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
    <div class="bar" style="gap:6px 18px;margin:6px 0"><label class="mck"><input type="checkbox" id="xpOsm" checked><span>รวมข้อมูลสภาพแวดล้อมจาก OSM (ถนน แม่น้ำ พื้นที่ สถานที่)</span></label><label class="mck"><input type="checkbox" id="xpAnn" checked><span>รวมสิ่งที่วาดเอง (เส้น รูปทรง ข้อความ หมุด)</span></label></div>
    <div class="bar"><button class="b" id="xpDxf">⬇ ดาวน์โหลด .dxf</button></div>
    <div class="mute">ไฟล์เป็น 2 มิติ แยกเลเยอร์ (บริเวณ, จุดที่ตั้ง, OSM_*, ANN_*) · SketchUp ฟรีรุ่นเว็บนำเข้า DXF ไม่ได้ ต้องเป็น SketchUp Pro หรือเปิดใน AutoCAD แล้วบันทึกเป็น DWG</div></div>
-  <div class="bar" style="margin:14px 0"><button class="b" id="xpNext">ขั้นตอนถัดไป → ② STA</button></div>
+  <div class="bar" style="margin:14px 0"><button class="b" id="xpNext">ขั้นตอนถัดไป → ③ STA</button></div>
 </section>
 
 <section class="tab" id="t6">
@@ -975,9 +992,9 @@ function importFile(f){if(/\.zip$/i.test(f.name||'')||f.type==='application/zip'
     if(LIB.list[p.id]&&!confirm('มีโครงการ "'+(LIB.list[p.id].proj.name||'')+'" อยู่แล้ว — แทนที่ด้วยไฟล์นี้? (ยกเลิก = เก็บเป็นสำเนาใหม่)')){p.id=uid();p.proj.name=(p.proj.name||'โครงการ')+' (นำเข้า)'}
     LIB.list[p.id]=p;last=p.id});
   if(last){openProj(last);alert('นำเข้าแล้ว '+ps.length+' โครงการ')}}catch(e){problem('JSON_BAD')}})}
-function fillProj(){$('u_pre').value=getPre();showCodeEx();$('p_code').value=S.code||'';$('pkgName').textContent=folderName();[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
+function fillProj(){try{tbFill()}catch(e){}$('u_pre').value=getPre();showCodeEx();$('p_code').value=S.code||'';$('pkgName').textContent=folderName();[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
 // ---- wiring ----
-async function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t5'){setTimeout(()=>renderMap(true),30);if(typeof renderMapSheet==='function')renderMapSheet()}if(t==='t3'){geoUI();renderPlan()}if(t==='t6')renderPhotos();if(t==='t7')renderJobs();if(t==='t4')storeInfo()}
+async function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t0'&&typeof tbFill==='function')tbFill();if(t==='t5'){setTimeout(()=>renderMap(true),30);if(typeof renderMapSheet==='function')renderMapSheet()}if(t==='t3'){geoUI();renderPlan()}if(t==='t6')renderPhotos();if(t==='t7')renderJobs();if(t==='t4')storeInfo()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
 [['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>{$(id).oninput=()=>{S.proj[k]=$(id).value;save();curLabel();$('pkgName').textContent=folderName()}});
 $('u_pre').oninput=()=>{const v=$('u_pre').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);$('u_pre').value=v;try{localStorage.setItem(UPKEY,v||'A')}catch(e){}showCodeEx()};
@@ -1003,7 +1020,7 @@ $('openLib').onclick=()=>{$('libQ').value='';renderLib();$('lib').classList.add(
 $('libClose').onclick=()=>$('lib').classList.remove('on');
 $('lib').onclick=e=>{if(e.target===$('lib'))$('lib').classList.remove('on')};
 $('libQ').oninput=renderLib;
-const makeNew=()=>{save(true);const p=newProj();p.code=nextCode();LIB.list[p.id]=p;openProj(p.id);save(true);showTab('t5');$('projCard').open=true;toast('✔ สร้างโครงการใหม่ '+p.code+' แล้ว — กรอกชื่อโครงการได้เลย');setTimeout(()=>$('p_name').focus(),50)};
+const makeNew=()=>{save(true);const p=newProj();p.code=nextCode();LIB.list[p.id]=p;openProj(p.id);save(true);showTab('t0');$('projCard').open=true;toast('✔ สร้างโครงการใหม่ '+p.code+' แล้ว — กรอกชื่อโครงการได้เลย');setTimeout(()=>$('p_name').focus(),50)};
 $('newProj').onclick=makeNew;$('hNew').onclick=makeNew;$('hSave').onclick=saveProject;
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject()}else if((e.ctrlKey||e.metaKey)&&e.altKey&&e.key.toLowerCase()==='n'){e.preventDefault();makeNew()}});
 $('jobQ').oninput=renderJobs;$('jobCat').onchange=renderJobs;$('jobAdd').onclick=()=>openJobEd(null);
@@ -1268,7 +1285,7 @@ function sheetSvg(M,idx){
   o.push(`<text x="${(bx+4*sb*k+12).toFixed(1)}" y="${by+9}" font-size="12">ม.</text>`);
   // ---- right panel: legend + items ----
   const px=1125,pw=340;
-  o.push(`<rect x="${px}" y="60" width="${pw}" height="${M.hasBot?670:960}" fill="#f7f9fb" stroke="#333"/><text x="${px+12}" y="86" font-size="17" font-weight="700" fill="#1f3a5f">สัญลักษณ์ / รายการงาน</text>`);
+  o.push(`<rect x="${px}" y="60" width="${pw}" height="550" fill="#f7f9fb" stroke="#333"/><text x="${px+12}" y="86" font-size="17" font-weight="700" fill="#1f3a5f">สัญลักษณ์ / รายการงาน</text>`);
   const cats=new Map();inR.forEach(b=>{const c=b.it?b.it.cat:{k:'?',name:'ไม่พบรหัส',color:'#8e8e8e'};cats.set(c.k,c)});
   let y=110;[...cats.values()].slice(0,8).forEach(c=>{o.push(`<rect x="${px+12}" y="${y-12}" width="22" height="14" fill="${c.color}" stroke="#333"/><text x="${px+44}" y="${y}" font-size="13">${esc(cut(c.name,32))}</text>`);y+=22});
   o.push(`<rect x="${px+12}" y="${y-12}" width="22" height="14" fill="#a9b1ba" stroke="#2b2f36"/><text x="${px+44}" y="${y}" font-size="13">ผิวทาง (กว้างตามช่วงที่กรอก)</text>`);y+=22;
@@ -1278,7 +1295,7 @@ function sheetSvg(M,idx){
   if(g.segs.some(s=>s.t!=='L')){o.push(`<circle cx="${px+23}" cy="${y-5}" r="4" fill="#8e44ad"/><text x="${px+44}" y="${y}" font-size="13">จุดต้น/ปลายโค้ง (PC/PT)</text>`);y+=22}
   y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">รายการงานในแผ่นนี้</text>`);y+=30;
   const seen=new Set(),list=[];inR.forEach(b=>{const key=b.code+'|'+b.i;if(seen.has(key))return;seen.add(key);list.push(b)});
-  const maxRows=Math.floor(((M.hasBot?720:1010)-y)/21);
+  const maxRows=Math.floor((600-y)/21);
   list.slice(0,maxRows).forEach(b=>{o.push(`<rect x="${px+12}" y="${y-10}" width="10" height="10" fill="${b.it?b.it.cat.color:'#888'}"/><text x="${px+28}" y="${y}" font-size="12"><tspan font-weight="700">${esc(b.code)}</tspan> ${esc(cut(b.it?b.it.name:'ไม่พบรหัส',17))}</text><text x="${px+pw-10}" y="${y}" font-size="11" fill="#555" text-anchor="end">${fmtSta(b.a)}–${fmtSta(b.b)}</text>`);y+=21});
   if(list.length>maxRows)o.push(`<text x="${px+12}" y="${y}" font-size="12" fill="#777">… และอีก ${list.length-maxRows} รายการ (ดูในตารางสำรวจ)</text>`);
   // PROFILE บนแผ่น PLAN
@@ -1288,11 +1305,8 @@ function sheetSvg(M,idx){
       o.push(profH(g,{id:'p'+idx,x:30,y:600,w:1080,h:420,sa,sb,X,LW:100,ps,Nv:gnum(eN.vs,0),hl}))}
     else if(M.pfV)o.push(profV(g,{id:'v'+idx,x:780,y:60,w:330,h:hasSec?640:960,sa,sb,ps}))}
   // title block
-  const P0=S.proj,tb=[['โครงการ',P0.name||'-'],['หน่วยงาน',P0.agency||'-'],['สายทาง',P0.route||fmtSta(sta0)+' – '+fmtSta(sta0+M.total)],['ผู้สำรวจ',P0.who||'-'],['วันที่',P0.date||'-'],['รหัส',S.code||'-'],['แผ่นที่',`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`]];
-  const ty=M.hasBot?740:1021-7*0;if(M.hasBot){o.push(`<rect x="${px}" y="${ty}" width="${pw}" height="280" fill="#fff" stroke="#333"/>`);
-    tb.forEach(([a,b],i)=>{const yy=ty+i*40;o.push(`<line x1="${px}" y1="${yy+40}" x2="${px+pw}" y2="${yy+40}" stroke="#999"/><text x="${px+10}" y="${yy+25}" font-size="12" fill="#666">${a}</text><text x="${px+78}" y="${yy+25}" font-size="${i===6?12:14}" font-weight="700">${esc(cut(b,i===6?30:26))}</text>`)})}
-  else{ // compact title block bottom of the right panel when no sections
-    const ty2=700;o.push(`<rect x="${px}" y="${ty2}" width="${pw}" height="320" fill="#fff" stroke="#333"/>`);tb.forEach(([a,b],i)=>{const yy=ty2+i*45;o.push(`<line x1="${px}" y1="${yy+45}" x2="${px+pw}" y2="${yy+45}" stroke="#999"/><text x="${px+10}" y="${yy+28}" font-size="12" fill="#666">${a}</text><text x="${px+78}" y="${yy+28}" font-size="${i===6?12:14}" font-weight="700">${esc(cut(b,i===6?30:26))}</text>`)})}
+  const tbc={cols:2,key:true,sheet:`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`,scale:'1:'+N};
+  o.push(tbV(px,620,pw,400,{...tbc,keyH:84}));
   // sections panel
   if(hasSec&&!M.pfB){o.push(`<rect x="30" y="710" width="1080" height="310" fill="#fff" stroke="#333"/>`);
     if(!secIn.length)o.push(`<text x="570" y="870" font-size="15" fill="#888" text-anchor="middle">ไม่มีรูปตัดที่ตำแหน่งในแผ่นนี้</text>`);
@@ -1348,9 +1362,7 @@ function secSheets(M){const g=M.g,sta0=M.sta0,L=[];(g.secs||[]).forEach((sc,i)=>
 <rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="#111" stroke-width="3"/><rect x="20" y="20" width="${W-40}" height="${H-40}" fill="none" stroke="#111"/>`);
     T(32,50,'รูปตัดขวาง (CROSS SECTION)',24,'font-weight="700" fill="#1f3a5f"');T(W-36,50,`แผ่นที่ ${pi+1} / ${np}`,16,'text-anchor="end"');
     part.forEach((q,j)=>{const cx=30+(j%2)*712,cy=66+Math.floor(j/2)*436;o.push(`<rect x="${cx}" y="${cy}" width="712" height="430" fill="#fff" stroke="#333"/>`);o.push(secSvg({...M,idx:id},q,cx,cy,712,430))});
-    o.push(`<rect x="30" y="${H-118+8}" width="${W-60}" height="84" fill="none" stroke="#000"/><line x1="${W/2}" y1="${H-110}" x2="${W/2}" y2="${H-26}" stroke="#000"/>`);
-    kv(42,H-92,'โครงการ',P0.name);kv(42,H-54,'หน่วยงาน / สายทาง',[P0.agency,P0.route].filter(Boolean).join(' · '));
-    kv(W/2+12,H-92,'ผู้ออกแบบ / ผู้ตรวจ',[tb.designer,tb.checker].filter(Boolean).join(' / '));kv(W/2+12,H-54,'รหัส · วันที่',(S.code||'')+' · '+(P0.date||new Date().toISOString().slice(0,10)));
+    o.push(tbStrip(30,H-110,W-60,84,{scale:'ตามรูปตัด',sheet:`${pi+1} / ${np}`}));
     o.push('</svg>');out.push(o.join(''))}
   return out}
 function renderSheets(){
@@ -1728,7 +1740,7 @@ function geoUI(){
          <div class="mute"><span data-ji="${ri}">${jobInfo(r)}</span>${r.fx?` · STA ${esc(r.sta1)}–${esc(r.sta2)} <button class="b ghost sm" data-act="full" data-ri="${ri}">เต็มช่วง</button>`:` · <a href="#" data-act="part" data-ri="${ri}">กำหนดช่วงย่อย</a>`}</div>
          ${r.fx?`<div class="jr1"><input data-rw="${ri}" data-f="sta1" value="${esc(r.sta1)}" placeholder="STA เริ่ม" style="width:100px"><input data-rw="${ri}" data-f="sta2" value="${esc(r.sta2)}" placeholder="STA ถึง" style="width:100px"></div>`:''}</div>`)});
       h.push(`<div class="bar"><button class="b sm" data-act="addJob" data-i="${i}">＋ เพิ่มรายการงานในช่วงนี้</button>${i>0?`<button class="b ghost sm" data-act="cpJob" data-i="${i}">คัดลอกรายการจากช่วงที่ ${i}</button>`:''}</div></div>`)});
-    const un=S.rows.filter(r=>!r.sg&&!isBlank(r)).length;if(un)h.push(`<div class="mute">มี ${un} แถวในแท็บ ③ TABLE ที่ไม่ได้ผูกกับช่วง — ยังแสดงบนแปลนตาม STA ของแถวนั้นๆ</div>`);
+    const un=S.rows.filter(r=>!r.sg&&!isBlank(r)).length;if(un)h.push(`<div class="mute">มี ${un} แถวในแท็บ ④ TABLE ที่ไม่ได้ผูกกับช่วง — ยังแสดงบนแปลนตาม STA ของแถวนั้นๆ</div>`);
     h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="p">← ③ ระดับ PROFILE</button><button class="b" data-act="step" data-v="3">ไปขั้นที่ ⑤ รูปตัด →</button></div>`);
   }else if(step==='3'){
     h.push(`<div class="mute" style="margin:6px 0">เลือก STA ตำแหน่งตัด กำหนดชั้นวัสดุ แล้วกด "สร้าง SECTION" — กดแล้วระบบสร้างแผ่นรูปตัดใหม่ ต่อท้ายแผ่น PLAN/PROFILE (แท็บ ① STA ด้านล่างสุด)</div>`);
@@ -1870,7 +1882,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v41';
+const APPVER='v42';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -1883,11 +1895,11 @@ const HELP={
  PLAN_EMPTY:d=>{const s=[];const g=(typeof S!=='undefined'&&S.geo)||{};
   let nb=0,nsv=0;try{nb=geoBars().bars.length}catch(e){}try{nsv=planSvgs().length}catch(e){}
   if(nsv>0)return{t:'สร้างภาพ PLAN เป็นไฟล์ภาพไม่สำเร็จ',w:'แปลนแสดงบนหน้าจอได้ แต่เบราว์เซอร์แปลงเป็นไฟล์ PNG ไม่ได้ (พบบ่อยในเบราว์เซอร์ที่จำกัดหน่วยความจำ หรือแผ่นใหญ่มาก)',s:['ลองกดอีกครั้ง 1 ครั้ง','ปิดแท็บอื่นๆ เพื่อคืนหน่วยความจำ แล้วลองใหม่','ใช้ปุ่ม PDF แทน (ได้ภาพแปลนเหมือนกัน)','ลองเปิดแอปด้วย Chrome / Safari เวอร์ชันล่าสุด']};
-  s.push('เปิดแท็บ ② STA แล้วดูว่ากรอบภาพแปลนแสดงภาพจริงหรือขึ้นข้อความ "ยังไม่มีข้อมูลสำหรับสร้างแปลน"');
+  s.push('เปิดแท็บ ③ STA แล้วดูว่ากรอบภาพแปลนแสดงภาพจริงหรือขึ้นข้อความ "ยังไม่มีข้อมูลสำหรับสร้างแปลน"');
   s.push('มี 2 วิธีให้ภาพแปลนขึ้น — เลือกวิธีใดวิธีหนึ่ง:');
-  s.push('  วิธี ก) ไปแท็บ ③ TABLE กรอกอย่างน้อย 1 แถวที่มี "STA เริ่ม/สิ้นสุด" และเลือกตำแหน่ง L / C / R แล้ว (แถวที่ว่างจะไม่ถูกนำมาวาด)');
-  s.push('  วิธี ข) (แนะนำ) ในแท็บ ② STA ขั้น ① กด "＋ ช่วงตรง" เพื่อบันทึกผังช่วงแรก แล้วภาพแปลนจะขึ้นทันที');
-  s.push('ตรวจว่าแถวในตาราง ③ มีข้อมูลครบ: STA ใส่ในรูปแบบ 0+000 หรือ 0+120 และเลือก L/C/R อย่างน้อย 1 ช่อง');
+  s.push('  วิธี ก) ไปแท็บ ④ TABLE กรอกอย่างน้อย 1 แถวที่มี "STA เริ่ม/สิ้นสุด" และเลือกตำแหน่ง L / C / R แล้ว (แถวที่ว่างจะไม่ถูกนำมาวาด)');
+  s.push('  วิธี ข) (แนะนำ) ในแท็บ ③ STA ขั้น ① กด "＋ ช่วงตรง" เพื่อบันทึกผังช่วงแรก แล้วภาพแปลนจะขึ้นทันที');
+  s.push('ตรวจว่าแถวในตาราง ④ มีข้อมูลครบ: STA ใส่ในรูปแบบ 0+000 หรือ 0+120 และเลือก L/C/R อย่างน้อย 1 ช่อง');
   s.push('กลับมากดปุ่มเดิมอีกครั้ง');
   return{t:'ยังไม่มีภาพ PLAN',w:'แอปยังไม่มีข้อมูลพอสำหรับวาดแปลน ('+(nb?'พบ '+nb+' แถวในตาราง':'ยังไม่พบแถวที่ใช้วาดได้')+', แนวทาง '+((g.segs||[]).length)+' ช่วง, รูปตัด '+((g.secs||[]).length)+' จุด)',s}},
  ZIP_LIB:()=>({t:'โหลดตัวสร้าง/อ่านไฟล์ zip ไม่ได้',w:'ส่วนช่วยทำ zip ดาวน์โหลดไม่สำเร็จ — '+NET,s:LIBSTEPS}),
@@ -1981,7 +1993,7 @@ async function showDiag(){const o=$('hlp');if(!o.classList.contains('on')){o.que
       const keep={id:S.id,code:S.code,created:S.created,proj:$('clrInfo').checked?S.proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)}};
       const fresh=newProj();Object.keys(S).forEach(k=>delete S[k]);Object.assign(S,fresh,keep,{rows:$('clrPh').checked?[newRow()]:[newRow()],pts:[]});
       S.updated=Date.now();delete S.geo;
-      save(true);fillProj();renderRows();refresh();G();geoUI();renderPlan();close();showTab('t5');toast('✔ ล้างข้อมูลแล้ว — เริ่มกรอกใหม่ได้เลย (รหัสเดิม '+S.code+')')
+      save(true);fillProj();renderRows();refresh();G();geoUI();renderPlan();close();showTab('t0');toast('✔ ล้างข้อมูลแล้ว — เริ่มกรอกใหม่ได้เลย (รหัสเดิม '+S.code+')')
     }catch(e){problem('EXPORT_FAIL',e.message)}bt.disabled=false};
   const hb=document.querySelector('.hbtns');if(hb){const b=document.createElement('button');b.id='hClear';b.textContent='🧹 Clear data';b.title='ล้างข้อมูลโครงการนี้ แต่คงรหัสเดิม';b.onclick=window.openClear;const hn=$('hNew');hb.insertBefore(b,hn?hn.nextSibling:null)}
   const np=$('newProj');if(np){const b=document.createElement('button');b.className='b ghost';b.id='clrProj';b.textContent='🧹 ล้างข้อมูล (คงรหัสเดิม)';b.onclick=window.openClear;np.parentNode.insertBefore(b,np.nextSibling)}
@@ -2409,31 +2421,23 @@ function mmDrawEdit(){const el=$('mmEdit');if(!el)return;let s='';const h=(x,y,i
     else if(a.t==='circle')s+=h(P[0][0]+(a.r||50)/MMV.mpp,P[0][1],0);else if(a.t==='ell'){s+=h(P[0][0]+(a.rx||80)/MMV.mpp,P[0][1],0)+h(P[0][0],P[0][1]+(a.ry||50)/MMV.mpp,1)}}
   el.innerHTML=s;const fin=$('mmFin');if(fin)fin.style.display=ED.draft?'':'none'}
 // ---- แผงด้านขวา ----
-function mmPanelInner(){const g=G(),ma=maGet(),V=MMV,B=MMB,tb=mmTB(),{PX,PW,FY,FH}=A4,o=[],T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
-  o.push(`<rect x="${PX}" y="${FY}" width="${PW}" height="${FH}" fill="#fff" stroke="#000" stroke-width="1.5"/>`);let y=FY;const line=yy=>o.push(`<line x1="${PX}" y1="${yy}" x2="${PX+PW}" y2="${yy}" stroke="#000"/>`);
-  o.push(`<g transform="translate(${PX+PW-34},${y+36})"><path d="M0,-24 L9,11 L0,5 L-9,11 Z" fill="#222"/><text y="-28" font-size="14" font-weight="700" text-anchor="middle">N</text></g>`);
-  const ttl=mmFit(tb.sheetName||'แผนที่สังเขปที่ตั้งโครงการ',PW-70,15,11);T(PX+10,y+22,ttl.t,ttl.f,'font-weight="700"');T(PX+10,y+40,'และสภาพแวดล้อมโดยรอบ',12);y+=58;line(y);
-  const inf=(l,v,c)=>{T(PX+10,y+14,l,10,'fill="#555"');const f=mmFit(v,PW-18,11.5,8);T(PX+10,y+28,f.t,f.f,'font-weight="700"'+(c?` fill="${c}"`:''));y+=32};
-  inf('ศูนย์กลางบริเวณก่อสร้าง (พิกัด)',ma.lat.toFixed(6)+', '+ma.lon.toFixed(6),'#b71c1c');const u=utm(ma.lat,ma.lon);inf('UTM '+u.zone+'N',`E ${Math.round(u.e)}  N ${Math.round(u.n)}`);inf('รัศมีบริเวณ · มาตราส่วน',Math.round(ma.r)+' ม. · 1:'+V.N+' (A4)');line(y+2);y+=10;
-  T(PX+10,y+8,'สัญลักษณ์',11,'font-weight="700"');y+=18;
-  const lg=(draw,t)=>{o.push(draw(PX+20,y));T(PX+38,y+4,t,10.5);y+=16},sw=(c,s)=>(x,yy)=>`<rect x="${x-10}" y="${yy-5}" width="20" height="10" fill="${c}" stroke="${s||shade(c,-35)}"/>`;
-  if(G().mpBg&&MMT.tiles)lg((x,yy)=>`<rect x="${x-10}" y="${yy-5}" width="20" height="10" fill="#e8eef2" stroke="#888"/>`,'ภาพพื้นหลัง: '+MM_SRC[G().mpBg].n);
-  if(mmLayOn('area'))lg((x,yy)=>`<circle cx="${x}" cy="${yy}" r="6" fill="${mc('area')}" fill-opacity=".15" stroke="${mc('area')}" stroke-dasharray="3 2"/>`,'บริเวณก่อสร้าง (โดยสังเขป)');
+function mmLegendFn(x,y0,w,hAv){const g=G(),ma=maGet(),B=MMB,o=[],{PX}=A4;let y=y0;const T=(xx,yy,t,sz,ex)=>o.push(`<text x="${xx}" y="${yy}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
+  const lim=y0+hAv,lg=(draw,t)=>{if(y>lim-4)return;o.push(draw(x+16,y));T(x+32,y+4,t,10,'');y+=15},sw=(c,s)=>(xx,yy)=>`<rect x="${xx-10}" y="${yy-5}" width="20" height="10" fill="${c}" stroke="${s||shade(c,-35)}"/>`;
+  T(x+6,y+4,'รัศมีบริเวณ '+Math.round(ma.r)+' ม. · 1:'+MMV.N+' (A4)',9,'fill="#555"');y+=14;
+  if(g.mpBg&&MMT.tiles)lg((xx,yy)=>`<rect x="${xx-10}" y="${yy-5}" width="20" height="10" fill="#e8eef2" stroke="#888"/>`,'ภาพพื้นหลัง: '+MM_SRC[g.mpBg].n);
+  if(mmLayOn('area'))lg((xx,yy)=>`<circle cx="${xx}" cy="${yy}" r="6" fill="${mc('area')}" fill-opacity=".15" stroke="${mc('area')}" stroke-dasharray="3 2"/>`,'บริเวณก่อสร้าง (โดยสังเขป)');
   if(B.used.has('frm'))lg(sw(mc('frm')),'พื้นที่เกษตร/ทั่วไป (ลายสังเขป)');if(B.used.has('wat'))lg(sw(mc('ww')),'แม่น้ำ/คลอง/แหล่งน้ำ');if(B.used.has('for'))lg(sw(mc('for')),'ป่า/สวน');if(B.used.has('res'))lg(sw(mc('res')),'ชุมชน/หมู่บ้าน');
-  if(B.used.has('rod'))lg((x,yy)=>`<line x1="${x-10}" y1="${yy}" x2="${x+10}" y2="${yy}" stroke="${mc('rod')}" stroke-width="3.5"/>`,'ถนน');
-  const symsUsed=[...new Set(mmA().filter(a=>a.t==='pin').map(a=>a.sym||'pin_site'))];
-  const pins=mmA().filter(a=>a.t==='pin'),bottom=FY+FH-(()=>{const n=9;return 30*10+0})()-4;
-  const sts=sitesGet();if(sts.length){y+=4;T(PX+10,y+8,'ที่ตั้งสถานที่ก่อสร้าง (พิกัด)',11,'font-weight="700"');y+=18;
-    sts.forEach((s,i)=>{if(y>bottom-30)return;o.push(`<g transform="translate(${PX+20},${y+8}) scale(.36)">${mmPinG('#1565c0','num',String(i+1))}</g>`);const f=mmFit(s.name||('จุดก่อสร้างที่ '+(i+1)),PW-44,10.5,8);T(PX+36,y+4,f.t,f.f,'font-weight="700"');y+=12;T(PX+36,y+4,s.lat.toFixed(6)+', '+s.lon.toFixed(6),9,'fill="#555"');y+=15})}
-  if(pins.length){y+=4;T(PX+10,y+8,'หมุด/สัญลักษณ์ที่กำหนด (พิกัด)',11,'font-weight="700"');y+=18;
-    for(let i=0;i<pins.length;i++){const a=pins[i];if(y>bottom-36){T(PX+10,y+4,`… และอีก ${pins.length-i} รายการ`,10,'fill="#555"');y+=14;break}
-      o.push(`<g>${mmSymSvg({...a,txt:'',sc:1},PX+20,y+8,.36)}</g>`);const f=mmFit(a.txt||mmSymName(a.sym||'pin_site'),PW-44,10.5,8);T(PX+36,y+4,f.t,f.f,'font-weight="700"');y+=12;
-      const ll=a.pts[0];T(PX+36,y+4,ll[0].toFixed(6)+', '+ll[1].toFixed(6),9,'fill="#555"');y+=15}}
-  if(!g.osm){T(PX+10,y+10,'(ยังไม่ได้ดึงข้อมูล OSM)',10,'fill="#b3261e"')}
-  const rows=[['หน่วยงาน',S.proj.agency||'',1],['ชื่อโครงการ',S.proj.name||'',2],['สายทาง/ตอน',S.proj.route||'',1],['ชื่อแผ่นงาน',tb.sheetName||'แผนที่สังเขปที่ตั้งโครงการ',1],['ผู้ออกแบบ',tb.designer||'',1],['ผู้ตรวจ',tb.checker||'',1],['ผู้อนุมัติ',tb.approver||'',1],['รหัส/แผ่นที่',(S.code||'')+(tb.sheetNo?'  แผ่นที่ '+tb.sheetNo:''),1],['มาตราส่วน · วันที่','1:'+V.N+' (A4) · '+(tb.date||S.proj.date||new Date().toISOString().slice(0,10)),1]];
-  const RH=30,total=rows.reduce((t,r)=>t+r[2]*RH,0);let ty=FY+FH-total;o.push(`<rect x="${PX}" y="${ty}" width="${PW}" height="${total}" fill="#fff"/>`);line(ty);
-  rows.forEach(([l,v,h])=>{const hh=h*RH;T(PX+6,ty+10,l,8.5,'fill="#666"');const f=mmFit(String(v),PW-14,12,9);T(PX+8,ty+hh-6,f.t,f.f,'font-weight="700"');ty+=hh;line(ty)});
+  if(B.used.has('rod'))lg((xx,yy)=>`<line x1="${xx-10}" y1="${yy}" x2="${xx+10}" y2="${yy}" stroke="${mc('rod')}" stroke-width="3.5"/>`,'ถนน');
+  const sts=sitesGet(),pins=mmA().filter(a=>a.t==='pin');
+  if(sts.length){y+=5;T(x+6,y+7,'ที่ตั้งสถานที่ก่อสร้าง',9.5,'font-weight="700"');y+=18;
+    sts.forEach((s,i)=>{if(y>lim-26)return;o.push(`<g transform="translate(${x+16},${y+7}) scale(.34)">${mmPinG('#1565c0','num',String(i+1))}</g>`);const f=mmFit(s.name||('จุดก่อสร้างที่ '+(i+1)),w-40,10,8);T(x+32,y+3,f.t,f.f,'font-weight="700"');y+=11;T(x+32,y+3,s.lat.toFixed(6)+', '+s.lon.toFixed(6),8.5,'fill="#555"');y+=13})}
+  if(pins.length){y+=5;T(x+6,y+7,'หมุด/สัญลักษณ์ที่กำหนด',9.5,'font-weight="700"');y+=18;
+    for(let i=0;i<pins.length;i++){const a=pins[i];if(y>lim-26){T(x+6,y+4,`… และอีก ${pins.length-i} รายการ`,9,'fill="#555"');break}
+      o.push(`<g>${mmSymSvg({...a,txt:'',sc:1},x+16,y+7,.34)}</g>`);const f=mmFit(a.txt||mmSymName(a.sym||'pin_site'),w-40,10,8);T(x+32,y+3,f.t,f.f,'font-weight="700"');y+=11;
+      const ll=a.pts[0];T(x+32,y+3,ll[0].toFixed(6)+', '+ll[1].toFixed(6),8.5,'fill="#555"');y+=13}}
+  if(!g.osm&&y<lim-10)T(x+6,y+8,'(ยังไม่ได้ดึงข้อมูล OSM)',9,'fill="#b3261e"');
   return o.join('')}
+function mmPanelInner(){const{PX,PW,FY,FH}=A4;return tbV(PX,FY,PW,FH,{cols:1,legend:mmLegendFn,scale:'1:'+MMV.N+' (A4)',coord:tbCoord()})}
 function mmDrawPanel(){const el=$('mmPanel');if(el&&MMB)el.innerHTML=mmPanelInner()}
 // ---- ประกอบแผ่น ----
 function mmBuildBase(){const ma=maGet(),g=G(),V=mmView2(gnum(g.mpScale,0)||0);MMV=V;
@@ -2449,7 +2453,7 @@ function mmBuildBase(){const ma=maGet(),g=G(),V=mmView2(gnum(g.mpScale,0)||0);MM
     o.push(`<text x="${cx}" y="${cy-rp-8}" font-size="12.5" font-weight="700" text-anchor="middle" fill="${shade(ac,-40)}" ${HALO}>บริเวณสถานที่ก่อสร้าง (โดยสังเขป)</text>`)}
   sitesGet().forEach((s,i)=>{const x=X(s.lon),y=Y(s.lat),nm=s.name||('จุดก่อสร้างที่ '+(i+1));o.push(`<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) scale(1.05)">${mmPinG('#1565c0','num',String(i+1))}</g>`);
     o.push(`<text x="${(x+19).toFixed(1)}" y="${(y-24).toFixed(1)}" font-size="12.5" font-weight="700" fill="#0d47a1" ${HALO}>${esc(nm)}</text><text x="${(x+19).toFixed(1)}" y="${(y-10).toFixed(1)}" font-size="10.5" fill="#222" ${HALO}>${s.lat.toFixed(6)}, ${s.lon.toFixed(6)}</text>`)});
-  o.push(`<g transform="translate(${FX+FW-44},${FY+44})" opacity=".9"><circle r="27" fill="#fbf8ef" stroke="#8d8672" stroke-width="1.2"/><circle r="22" fill="none" stroke="#b9b29a" stroke-dasharray="2 3"/><polygon points="0,-24 5,0 0,24 -5,0" fill="#6f6a58"/><polygon points="-24,0 0,-5 24,0 0,5" fill="#9a947e"/><polygon points="0,-24 5,0 -5,0" fill="#b71c1c"/><text y="-30" font-size="13" font-weight="700" text-anchor="middle" fill="#333">N</text></g>`);
+  o.push(`<g class="mmCompass" transform="translate(${FX+FW-44},${FY+44})" opacity=".9"><circle r="27" fill="#fbf8ef" stroke="#8d8672" stroke-width="1.2"/><circle r="22" fill="none" stroke="#b9b29a" stroke-dasharray="2 3"/><polygon points="0,-24 5,0 0,24 -5,0" fill="#6f6a58"/><polygon points="-24,0 0,-5 24,0 0,5" fill="#9a947e"/><polygon points="0,-24 5,0 -5,0" fill="#b71c1c"/><text y="-30" font-size="13" font-weight="700" text-anchor="middle" fill="#333">N</text></g>`);
   MMB={key,html:o.join(''),used,V};return MMB}
 function mmFullSvg(B){const{W,H,FX,FY,FW,FH}=A4,V=B.V,g=G();
   const nice=[5,10,20,50,100,200,500,1000,2000,5000,10000],nb=nice.reduce((p,c)=>Math.abs(c/V.mpp-150)<Math.abs(p/V.mpp-150)?c:p),bw=nb/V.mpp,bx=FX+18,by=FY+FH-30;
@@ -2552,7 +2556,6 @@ async function renderMapSheet(){const box=$('mmSheet');if(!box)return;if(MMBUSY)
   if(!$('mmLayers').dataset.ok){$('mmLayers').innerHTML=MM_LAY.map(([k,t])=>`<label class="mch"><input type="checkbox" data-ml="${k}" style="width:auto"> ${t}</label>`).join('');$('mmLayers').dataset.ok=1;
     $('mmScale').innerHTML='<option value="">อัตโนมัติ (พอดีกระดาษ A4)</option>'+MM_SCALES.map(s=>`<option value="${s}">1:${s.toLocaleString()}</option>`).join('')}
   $('mmLayers').querySelectorAll('[data-ml]').forEach(c=>c.checked=mmLayOn(c.dataset.ml));$('mmScale').value=g.mpScale||'';mmColorUI();
-  document.querySelectorAll('#mmTB [data-tb]').forEach(i=>{if(document.activeElement!==i)i.value=(mmTB()[i.dataset.tb])||''});
   $('mmBg').value=g.mpBg||'';$('mmBgO').value=g.mpBgO==null?1:g.mpBgO;$('mmBgOv').textContent=Math.round(($('mmBgO').value)*100)+'%';$('mmIll').checked=g.mpIll!==false;
   if(g.mpBg){const V0=mmView2(gnum(g.mpScale,0)||0),k=[g.mpBg,V0.clat,V0.clon,V0.N].join('|');
     if(MMT.key!==k){$('mmNote').textContent='กำลังโหลดภาพพื้นหลัง '+MM_SRC[g.mpBg].n+'…';let t=null;try{t=await mmTiles(V0,g.mpBg)}catch(e){}MMT={key:k,tiles:t};MMB=null;
@@ -2578,7 +2581,7 @@ $('mmFetch').onclick=async()=>{const ma=maGet();if(!ma){toast('กำหนด�
 $('mmBg').onchange=e=>{G().mpBg=e.target.value;save(true);MMB=null;renderMapSheet()};$('mmBgO').oninput=e=>{G().mpBgO=parseFloat(e.target.value);$('mmBgOv').textContent=Math.round(e.target.value*100)+'%';clearTimeout(window._mmO);window._mmO=setTimeout(()=>{save(true);MMB=null;renderMapSheet()},120)};$('mmIll').onchange=e=>{G().mpIll=e.target.checked;save(true);MMB=null;renderMapSheet()};
 $('mmScale').onchange=e=>{G().mpScale=e.target.value;save(true);renderMapSheet()};
 $('mmLayers').onchange=e=>{const k=e.target.dataset.ml;if(!k)return;const g=G();g.mpL=g.mpL||{};g.mpL[k]=e.target.checked;save(true);renderMapSheet()};
-$('mmTB').oninput=e=>{const k=e.target.dataset.tb;if(!k)return;mmTB()[k]=e.target.value;save();clearTimeout(window._mmT);window._mmT=setTimeout(mmDrawPanel,200)};
+
 async function mmPngBlob(){if(!maGet())return null;await renderMapSheet();const s=mmSvgStr();if(!s)return null;return svgToPng(new DOMParser().parseFromString(s,'image/svg+xml').documentElement)}
 $('mkMapBtn').onclick=()=>openMakeMap();
 $('ggOpen').onclick=()=>{const m=maGet();window.open(m?`https://www.google.com/maps/search/?api=1&query=${m.lat.toFixed(6)},${m.lon.toFixed(6)}`:'https://www.google.com/maps','_blank')};
@@ -2846,10 +2849,8 @@ function profSvgs(g){const e=elN(g),ps=profScale(g);if(!ps)return[];
     o.push(`<rect width="${W}" height="${H}" fill="#fff"/><rect x="8" y="8" width="${W-16}" height="${H-16}" fill="none" stroke="#000" stroke-width="2"/>`);
     o.push(`<text x="${W/2}" y="48" font-size="28" font-weight="700" text-anchor="middle">PROFILE ตามแนวสายทาง</text><text x="${W/2}" y="76" font-size="16" text-anchor="middle">STA ${fmtSta(sa)} – ${fmtSta(sb)} · แผ่นที่ ${idx+1}/${sheets.length}</text>`);
     o.push(profH(g,{id:'s'+idx,x:bx,y:96,w:bw,h:H-96-130,sa,sb,X,LW,ps,Nv:gnum(e.vs,0),hl:Nh}));
-    const tb=g.tb||{},T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz}" ${ex||''}>${esc(t)}</text>`),kv=(x,y,l,v)=>{T(x,y,l,10,'fill="#666"');T(x,y+18,v||'-',14,'font-weight="700"')};
-    o.push(`<rect x="30" y="${H-118}" width="${W-60}" height="92" fill="none" stroke="#000"/><line x1="${W/2}" y1="${H-118}" x2="${W/2}" y2="${H-26}" stroke="#000"/>`);
-    kv(42,H-100,'โครงการ',S.proj.name);kv(42,H-60,'หน่วยงาน / สายทาง',[S.proj.agency,S.proj.route].filter(Boolean).join(' · '));
-    kv(W/2+12,H-100,'ผู้ออกแบบ / ผู้ตรวจ',[tb.designer,tb.checker].filter(Boolean).join(' / '));kv(W/2+12,H-60,'รหัส · วันที่',(S.code||'')+' · '+(S.proj.date||new Date().toISOString().slice(0,10)));
+    const T=(x,y,t,sz,ex)=>o.push(`<text x="${x}" y="${y}" font-size="${sz}" ${ex||''}>${esc(t)}</text>`);
+    o.push(tbStrip(30,H-118,W-60,92,{scale:'H 1:'+Nh+(gnum(e.vs,0)?'  V 1:'+gnum(e.vs):''),sheet:`${idx+1} / ${sheets.length}`}));
     T(W-40,H-34,'ค่าที่ไม่ระบุใช้ระดับ Elev '+fmtSta(ss)+' = '+(isFinite(parseFloat(e.e0))?parseFloat(e.e0).toFixed(3):'-')+(e.mode==='i'?' (ประมาณค่าระหว่างจุดที่ระบุ)':''),10,'text-anchor="end" fill="#555"');
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Sarabun,Tahoma,sans-serif">${o.join('')}</svg>`})}
 function profCsv(g){const ps=profScale(g),v=elVals(g),D=ps&&ps.D;return '﻿STA,ระดับผิวทางเดิม (ม.),ระดับออกแบบ (ม.),แหล่งที่มา\n'+v.map(x=>{const d=D?D.f(x.s):null;return[fmtSta(x.s),elF(x.z),d==null?'':elF(d),x.src==='set'?'ระบุ':x.src==='int'?'ประมาณค่า':'ค่าเริ่มต้น'].join(',')}).join('\n')+'\n'}
@@ -2966,6 +2967,66 @@ $('xpDxf').onclick=()=>{if(!maGet()){toast('ยังไม่มีแผนท
 $('xpNext').onclick=()=>showTab('t3');
 mmXpInit();
 
-loadLib();fillProj();renderRows();refresh();geoUI();renderPlan();showTab('t5');
+// ===== v42: TITLE BLOCK กลาง (ข้อมูลจากแท็บ ① DATA PROJECT) =====
+const TB_ROLES=[['draw','เขียนแบบ/สำรวจ'],['eng','วิศวกร'],['chk','ตรวจสอบ'],['agr','เห็นชอบ'],['apv','อนุมัติ']];
+const tbPath=k=>{let o=mmTB();for(const p of k.split('.')){if(o==null)return'';o=o[p]}return o==null?'':o};
+const tbSetP=(k,v)=>{const ps=k.split('.');let o=mmTB();for(let i=0;i<ps.length-1;i++)o=o[ps[i]]||(o[ps[i]]={});o[ps[ps.length-1]]=v};
+function tbD(){const t=mmTB(),P=S.proj,mig={draw:P.who||t.designer||'',chk:t.checker||'',apv:t.approver||''};
+  return{logo:t.logo||'',agency:P.agency||'',route:P.route||'',work:t.work||P.name||'',sheetName:t.sheetName||'',date:t.date||P.date||new Date().toISOString().slice(0,10),remark:t.remark||'',scaleT:t.scaleT||'',coordT:t.coordT||'',sheetNo:t.sheetNo||'1',sheetTot:t.sheetTotal||'1',
+    roles:TB_ROLES.map(([k,h])=>({h,n:tbPath('r.'+k+'.n')||mig[k]||'',p:tbPath('r.'+k+'.p')||''}))}}
+const tbCoord=()=>{const m=maGet();return m?m.lat.toFixed(6)+', '+m.lon.toFixed(6):''};
+function tbWrap(s,n){s=String(s||'');if(s.length<=n)return[s];let k=s.lastIndexOf(' ',n);if(k<n*.5)k=n;const a=s.slice(0,k).trim();let b=s.slice(k).trim();if(b.length>n)b=b.slice(0,n-1)+'…';return[a,b]}
+function tbLogo(o,x,y,w,h,d){if(d.logo)o.push(`<image href="${d.logo}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"/>`);else o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#bbb" stroke-dasharray="3 3"/><text x="${x+w/2}" y="${y+h/2+3}" font-size="8" fill="#aaa" text-anchor="middle">LOGO</text>`)}
+function tbKey(x,y,w,h){const ma=maGet();if(!ma)return`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#f4f4f4" stroke="#bbb"/><text x="${x+w/2}" y="${y+h/2}" font-size="8" fill="#999" text-anchor="middle">(ยังไม่กำหนดบริเวณ)</text>`;
+  try{const B=mmBuildBase(),base=B.html.replace(/<g class="mmCompass">[\s\S]*?<\/g>/,'').replace(/<image [^>]*\/>/g,'').replace(/<text[\s\S]*?<\/text>/g,''),ann=mmA().map(annSvg).join(''),{FX,FY,FW,FH}=A4;
+    return`<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${FX} ${FY} ${FW} ${FH}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${FX}" y="${FY}" width="${FW}" height="${FH}" fill="#fff"/>${base}${ann}</svg><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#555"/>`}catch(e){return''}}
+function tbCell(x,y,w,h,r,fs){const o=[],e=esc,hh=mmFit(r.h,w-8,fs+1.5,fs),y0=y+fs+3,st=Math.max(fs+2.5,(h-fs-6)/3);o.push(`<text x="${x+5}" y="${y0.toFixed(1)}" font-size="${hh.f}" font-weight="700">${e(hh.t)}</text>`);
+  const ys=y0+st;o.push(`<text x="${x+5}" y="${ys.toFixed(1)}" font-size="${fs}">ลงชื่อ</text><line x1="${(x+5+fs*3.3).toFixed(1)}" y1="${(ys+1).toFixed(1)}" x2="${x+w-6}" y2="${(ys+1).toFixed(1)}" stroke="#444" stroke-dasharray="1.5 2.5"/>`);
+  [['ชื่อ',r.n,2],['ตำแหน่ง',r.p,3]].forEach(([l,v,k])=>{const yy=y0+st*k,lw=fs*(l==='ชื่อ'?2:4.4);o.push(`<text x="${x+5}" y="${yy.toFixed(1)}" font-size="${fs}">${l}</text>`);
+    if(v){const f=mmFit(v,w-lw-12,fs,fs-3);o.push(`<text x="${(x+5+lw).toFixed(1)}" y="${yy.toFixed(1)}" font-size="${f.f}" font-weight="700">${e(f.t)}</text>`)}else o.push(`<line x1="${(x+5+lw).toFixed(1)}" y1="${(yy+1).toFixed(1)}" x2="${x+w-6}" y2="${(yy+1).toFixed(1)}" stroke="#444" stroke-dasharray="1.5 2.5"/>`)});
+  return o.join('')}
+const tbLV=(o,x,y,w,l,v,fs,max)=>{o.push(`<text x="${x+5}" y="${y+8}" font-size="7.5" fill="#666">${esc(l)}</text>`);const f=mmFit(String(v||''),w-10,fs||11,8);o.push(`<text x="${x+5}" y="${y+8+(fs||11)+1}" font-size="${f.f}" font-weight="700">${esc(f.t)}</text>`)};
+// แนวตั้ง (แผงด้านขวา) — cols 1 = แผ่นแผนที่ / cols 2 = แผงแปลน
+function tbV(x,y,w,h,c){c=c||{};const d=tbD(),o=[],cols=c.cols||1,fs=cols===2?9:10,dense=false,E=esc;
+  o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#000" stroke-width="1.5"/>`);const hr=yy=>o.push(`<line x1="${x}" y1="${yy.toFixed(1)}" x2="${x+w}" y2="${yy.toFixed(1)}" stroke="#000"/>`);let cy=y;
+  const lh=cols===2?(dense?34:42):56;tbLogo(o,x+4,cy+3,lh-6,lh-6,d);const ag=mmFit(d.agency||'หน่วยงาน',w-lh-8,12,8);o.push(`<text x="${x+lh}" y="${cy+lh/2-1}" font-size="${ag.f}" font-weight="700">${E(ag.t)}</text>`);
+  if(d.route){const rt=mmFit(d.route,w-lh-8,9.5,7.5);o.push(`<text x="${x+lh}" y="${cy+lh/2+12}" font-size="${rt.f}" fill="#444">${E(rt.t)}</text>`)}cy+=lh;hr(cy);
+  if(c.key){const kh=c.keyH||110;o.push(`<text x="${x+6}" y="${cy+9}" font-size="8" fill="#666">แผนที่สังเขปและที่ตั้ง</text>`);o.push(tbKey(x+4,cy+12,w-8,kh-16));cy+=kh;hr(cy)}
+  const wh=cols===2?(dense?32:36):(d.sheetName?60:46),mx=Math.floor((w-12)/(11*.5)),wl=tbWrap(d.work,mx);o.push(`<text x="${x+5}" y="${cy+9}" font-size="7.5" fill="#666">โครงการ / ชื่องาน</text>`);
+  wl.forEach((t,i)=>o.push(`<text x="${x+5}" y="${cy+22+i*13}" font-size="11" font-weight="700">${E(t)}</text>`));if(cols===1&&d.sheetName)o.push(`<text x="${x+5}" y="${cy+22+wl.length*13+4}" font-size="9.5" fill="#444">${E(mmFit(d.sheetName,w-10,9.5,7.5).t)}</text>`);cy+=wh;hr(cy);
+  const rows=Math.ceil(5/cols),cw=w/cols,rh=cols===2?Math.max(44,Math.min(66,(y+h-cy-28-24)/rows)):58;
+  d.roles.forEach((r,i)=>{const cx=x+(i%cols)*cw,ry=cy+Math.floor(i/cols)*rh;o.push(tbCell(cx,ry,cw,rh,r,fs))});
+  const n6=rows*cols-5;if(n6>0){const cx=x+(cols-1)*cw,ry=cy+(rows-1)*rh;o.push(`<text x="${cx+5}" y="${ry+12}" font-size="8" fill="#666">แผ่นที่ / ทั้งหมด</text><text x="${cx+5}" y="${ry+25}" font-size="11" font-weight="700">${E(c.sheet||d.sheetNo+' / '+d.sheetTot)}</text><text x="${cx+5}" y="${ry+rh-4}" font-size="8" fill="#666">วันที่ <tspan font-weight="700" fill="#000">${E(d.date)}</tspan></text>`)}
+  for(let i=1;i<rows;i++)hr(cy+i*rh);if(cols===2)o.push(`<line x1="${x+cw}" y1="${cy}" x2="${x+cw}" y2="${cy+rows*rh}" stroke="#000"/>`);cy+=rows*rh;hr(cy);
+  const sc=d.scaleT||c.scale||'',co=d.coordT||c.coord||tbCoord();
+  if(cols===2){const rhh=dense?26:28;tbLV(o,x,cy,w/2,'มาตราส่วน',sc,10);tbLV(o,x+w/2,cy,w/2,'พิกัด',co,9);o.push(`<line x1="${x+w/2}" y1="${cy}" x2="${x+w/2}" y2="${cy+rhh}" stroke="#000"/>`);cy+=rhh;hr(cy);
+    o.push(`<text x="${x+5}" y="${cy+9}" font-size="7.5" fill="#666">Remark</text><text x="${x+5}" y="${cy+20}" font-size="9">${E(mmFit(d.remark||'',w-10,9,7).t)}</text>`);return o.join('')}
+  tbLV(o,x,cy,w,'มาตราส่วน',sc,11);cy+=26;hr(cy);tbLV(o,x,cy,w,'พิกัด (WGS84)',co,11);const ma=maGet();if(ma){const u=utm(ma.lat,ma.lon);o.push(`<text x="${x+5}" y="${cy+34}" font-size="9" fill="#333">UTM ${u.zone}N  E ${Math.round(u.e)}  N ${Math.round(u.n)}</text>`)}cy+=40;hr(cy);
+  const bh=24+24+42,by=y+h-bh;if(c.legend){o.push(`<text x="${x+5}" y="${cy+11}" font-size="9.5" font-weight="700">รายการสัญลักษณ์</text>`);o.push(c.legend(x,cy+16,w,by-cy-16))}
+  hr(by);tbLV(o,x,by,w,'แผ่นที่ / ทั้งหมด',c.sheet||d.sheetNo+' / '+d.sheetTot,11);hr(by+24);tbLV(o,x,by+24,w,'วันที่',d.date,11);hr(by+48);
+  o.push(`<text x="${x+5}" y="${by+57}" font-size="7.5" fill="#666">Remark</text>`);tbWrap(d.remark,Math.floor((w-10)/5)).forEach((t,i)=>o.push(`<text x="${x+5}" y="${by+69+i*11}" font-size="9">${E(t)}</text>`));return o.join('')}
+// แนวนอน (แถบด้านล่างของแผ่น PROFILE / SECTION)
+function tbStrip(x,y,w,h,c){c=c||{};const d=tbD(),o=[],E=esc,lw=100,kw=150,ww=250,iw=250,rw=(w-lw-kw-ww-iw)/5;
+  o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#000" stroke-width="1.5"/>`);let cx=x;const vl=xx=>o.push(`<line x1="${xx.toFixed(1)}" y1="${y}" x2="${xx.toFixed(1)}" y2="${y+h}" stroke="#000"/>`);
+  tbLogo(o,cx+4,y+4,lw-8,h-8,d);cx+=lw;vl(cx);
+  o.push(`<text x="${cx+4}" y="${y+9}" font-size="7.5" fill="#666">แผนที่สังเขปและที่ตั้ง</text>`);o.push(tbKey(cx+3,y+12,kw-6,h-15));cx+=kw;vl(cx);
+  o.push(`<text x="${cx+5}" y="${y+10}" font-size="7.5" fill="#666">โครงการ / ชื่องาน</text>`);tbWrap(d.work,Math.floor((ww-10)/6)).forEach((t,i)=>o.push(`<text x="${cx+5}" y="${y+25+i*15}" font-size="12.5" font-weight="700">${E(t)}</text>`));
+  const ar=mmFit([d.agency,d.route].filter(Boolean).join(' · '),ww-10,10,7.5);o.push(`<text x="${cx+5}" y="${y+h-8}" font-size="${ar.f}" fill="#333">${E(ar.t)}</text>`);cx+=ww;vl(cx);
+  d.roles.forEach(r=>{o.push(tbCell(cx,y,rw,h,r,10));cx+=rw;vl(cx)});
+  const it=[['มาตราส่วน',d.scaleT||c.scale||''],['พิกัด',d.coordT||tbCoord()],['แผ่นที่',c.sheet||d.sheetNo+' / '+d.sheetTot],['วันที่',d.date],['Remark',d.remark]],sp=h/5;
+  it.forEach(([l,v],i)=>{const f=mmFit(String(v||''),iw-68,10,7);o.push(`<text x="${cx+5}" y="${(y+sp*i+sp*.68).toFixed(1)}" font-size="8.5" fill="#666">${l}</text><text x="${cx+56}" y="${(y+sp*i+sp*.68).toFixed(1)}" font-size="${f.f}" font-weight="700">${E(f.t)}</text>`)});
+  return o.join('')}
+// ---- UI: แท็บ ① DATA PROJECT ----
+function tbFill(){document.querySelectorAll('#tbForm [data-tb]').forEach(i=>{if(document.activeElement===i)return;i.value=tbPath(i.dataset.tb)});
+  const d=tbD(),im=$('tbLogoImg');if(im){im.style.display=d.logo?'':'none';im.src=d.logo||'';$('tbLogoNo').style.display=d.logo?'none':'';$('tbLogoDel').style.display=d.logo?'':'none'}tbPrev()}
+function tbPrev(){const b=$('tbPrev');if(!b)return;try{b.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 410" style="width:100%;max-width:420px;border:1px solid var(--line);background:#fff" font-family="Sarabun,Tahoma,sans-serif">${tbV(4,4,372,402,{cols:2,key:true,keyH:84,sheet:(tbD().sheetNo+' / '+tbD().sheetTot)})}</svg>`}catch(e){b.textContent=''}}
+$('tbForm').addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.tb;if(!k)return;tbSetP(k,e.target.value);save();clearTimeout(window._tbT);window._tbT=setTimeout(()=>{tbPrev();try{mmDrawPanel()}catch(x){}},200)});
+$('tbLogoFile').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,420/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);
+  let u=c.toDataURL('image/png');if(u.length>260000){x.globalCompositeOperation='destination-over';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);u=c.toDataURL('image/jpeg',.85)}
+  mmTB().logo=u;save(true);tbFill();toast('✔ ใส่โลโก้หน่วยงานแล้ว')};im.onerror=()=>toast('อ่านรูปไม่ได้ — เลือกไฟล์ภาพ (PNG/JPG)',true);im.src=fr.result};fr.readAsDataURL(f)};
+$('tbLogoDel').onclick=()=>{delete mmTB().logo;save(true);tbFill()};
+$('t0Next').onclick=()=>showTab('t5');
+
+loadLib();fillProj();renderRows();refresh();geoUI();renderPlan();showTab('t0');
 </script>
 </body></html>
