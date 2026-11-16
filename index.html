@@ -187,6 +187,9 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
 .mck{display:inline-flex;flex-direction:row;align-items:center;gap:8px;margin:0;font-size:14px;font-weight:400;cursor:pointer}
 .mck input[type=checkbox],.mch input[type=checkbox]{width:17px;height:17px;min-width:17px;margin:0;padding:0;flex:none}
 .mck span{line-height:1.3}
+.mjT{border-collapse:collapse;width:100%;font-size:13px}.mjT th,.mjT td{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left}.mjT th{background:#eef3f0}.mjT .r{text-align:right}
+.svh{font-size:11px;margin-top:2px;line-height:1.35}.mjov{color:#b45f00;font-weight:700}.mjrs{border:1px solid #e08a00;background:#fff3dc;color:#b45f00;border-radius:6px;padding:0 6px;font-size:13px;cursor:pointer}
+input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{margin:4px 0;font-size:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.mjbase{background:#e8f1ff;color:#1b4d8f;border-radius:99px;padding:1px 9px}
 </style>
 </head>
 <body>
@@ -204,7 +207,7 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <button data-t="t0" class="on" title="ขั้นที่ 1 — ข้อมูลโครงการ โลโก้ ผู้ลงนาม และ Title block">① DATA PROJECT</button>
   <button data-t="t5" title="ขั้นที่ 2 — กำหนดพิกัดและบริเวณสถานที่ก่อสร้าง ว่าอยู่ตรงส่วนไหนของโลก">② LOCATION</button>
   <button data-t="t3" title="ขั้นที่ 3 — วาดแปลนและรูปตัด แล้วดูว่า PLAN อยู่ส่วนไหนของพื้นที่">③ STA</button>
-  <button data-t="t1" title="ขั้นที่ 4 — ตารางสำรวจ STA / ปริมาณงาน">④ TABLE</button>
+  <button data-t="t1" title="ขั้นที่ 4 — กำหนดงาน/ออกแบบ จากข้อมูลสำรวจ STA แล้วคิดปริมาณ-ราคา">④ MAKE JOB</button>
   <button data-t="t6" title="ขั้นที่ 5 — รูปถ่ายสภาพปัจจุบันภาคสนามเพื่อวิเคราะห์">⑤ PHOTO</button>
   <button data-t="t2" title="ขั้นที่ 6 — สรุปปริมาณงาน (BOQ)">⑥ BOQ FIELD</button>
   <button data-t="t4" title="ขั้นที่ 7 — ส่งออก/สำรองข้อมูลไปใช้ต่อ">⑦ EXPORT / BACKUP</button>
@@ -216,10 +219,11 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <div class="bar">
     <button class="b amber" id="quick" title="บันทึกพิกัดตำแหน่งปัจจุบันเป็นรายการใหม่ทันที แล้วกรอกรายละเอียดทีหลัง">⚡ จุดด่วน (จับพิกัด)</button>
     <button class="b" id="add">＋ เพิ่มรายการ</button>
-    <select id="flt" style="width:auto"><option value="all">แสดงทั้งหมด</option><option value="inc">เฉพาะที่ยังไม่ครบ</option><option value="flag">เฉพาะที่ติดธง ⚑</option></select>
+    <select id="flt" style="width:auto"><option value="all">แสดงทั้งหมด</option><option value="inc">เฉพาะที่ยังไม่ครบ</option><option value="flag">เฉพาะที่ติดธง ⚑</option><option value="ovr">เฉพาะที่แก้ต่างจากสำรวจ ✎</option></select>
     <select id="bgo" style="width:auto" title="ความชัดของรูปประกอบงานมุมขวาล่างของการ์ด"><option value="0">รูปประกอบงาน: ปิด</option><option value="0.4">รูปประกอบงาน: จาง</option><option value="0.7">รูปประกอบงาน: ปานกลาง</option><option value="1">รูปประกอบงาน: ชัด</option></select>
   </div>
   <div class="mute" style="margin:0 2px 8px">STA กรอกเป็นเมตร (150 = 0+150) หรือ 0+150 · รหัสงานพิมพ์บางคำได้ เช่น <i>ท่อ 0.60</i> · ปริมาณ = กว้าง × ยาว/จำนวน × ลึก/หนา × ตัวคูณ (ไม่ใส่ "ยาว" = ใช้ระยะจาก STA) · ติดธง ⚑ ไว้ที่รายการที่ต้องกลับมาตรวจทีหลัง</div>
+  <div class="card" id="mjBase" style="margin-bottom:10px"></div>
   <div id="rows"></div>
   <div class="bar"><button class="b" id="add2">＋ เพิ่มรายการ</button><button class="b ghost" id="clearAll">ล้างรายการทั้งหมด</button><button class="b ghost" id="sample">ใส่ข้อมูลตัวอย่าง</button></div>
 </section>
@@ -258,6 +262,20 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
   <div class="wz"><div class="wzL"><div class="card" id="geoCard"></div></div>
   <div class="wzR"><div class="bar"><button class="b" id="pngBtn">⬇ บันทึกภาพ PLAN (PNG)</button><button class="b" data-pdf>📄 ส่งออก PDF</button><span class="pz"><button class="b ghost sm" id="pzO" title="ซูมออก">−</button><b id="pzv">100%</b><button class="b ghost sm" id="pzI" title="ซูมเข้า">＋</button><button class="b ghost sm" id="pzF">พอดี</button></span></div><div class="mute" style="margin:-4px 0 6px">🔍 ซูมตรวจแปลน: ปุ่ม − ＋ / บีบสองนิ้ว / Ctrl+ลูกกลิ้งเมาส์ · ลากเพื่อเลื่อนดู (ซูมเฉพาะตอนดู ไม่กระทบมาตราส่วนตอนพิมพ์/ส่งออก)</div>
   <div class="card"><div id="planbox"></div><div class="legend" id="legend"></div></div></div></div>
+  <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">📤 ส่งออกแบบ PLAN / PROFILE / SECTION</h3>
+   <div class="mute">ส่งออกจากแผ่นที่แสดงด้านบน (ใช้ Title block จากแท็บ ① DATA PROJECT)</div>
+   <div style="font-weight:700;margin-top:8px">🖼 1) ไฟล์รูปภาพ (นำไปทำ Presentation / เอกสาร)</div>
+   <div class="bar" style="gap:6px 18px;margin:6px 0"><label class="mck"><input type="checkbox" id="xsPlan" checked><span>แผ่น PLAN</span></label><label class="mck"><input type="checkbox" id="xsProf" checked><span>แผ่น PROFILE</span></label><label class="mck"><input type="checkbox" id="xsSec" checked><span>แผ่น SECTION</span></label></div>
+   <div class="grid g3"><div><label>ขนาดกระดาษ / สไลด์</label><select id="xsPaper"></select></div><div><label>ความละเอียด</label><select id="xsRes"></select></div><div><label>ชนิดไฟล์</label><select id="xsFmt"><option value="png">PNG (คมชัด)</option><option value="jpg">JPG (ไฟล์เล็ก)</option></select></div></div>
+   <div class="mute" id="xsInfo" style="margin:4px 0"></div>
+   <div class="bar"><button class="b" id="xsImg">⬇ ดาวน์โหลดรูปภาพ</button></div>
+   <div style="font-weight:700;margin-top:10px">📐 2) ไฟล์ DXF (เปิดใน AutoCAD / BricsCAD / DraftSight / QGIS / SketchUp Pro)</div>
+   <div class="grid g2" style="margin-top:4px"><div><label>ระบบพิกัด</label><select id="xsCoord"><option value="loc">พิกัดท้องถิ่น (จุดเริ่มต้น = 0,0)</option><option value="utm">UTM จริง (ต้องมีพิกัดจุดเริ่มต้นสายทาง)</option></select></div><div><label>ขนาดตัวอักษรตามมาตราส่วนพิมพ์ 1:</label><input id="xsN" type="number" value="1000" min="100" step="100"></div></div>
+   <div class="grid g2"><div><label>พิกัดจุดเริ่มต้นสายทาง (สำหรับ UTM จริง · วางจาก Google Maps)</label><input id="xsLL" placeholder="13.7563, 100.5018"></div><div><label>&nbsp;</label><div class="bar" style="margin:0"><select id="xsLLSel" style="width:auto"></select><button class="b ghost sm" id="xsLLClr" style="color:#b3261e">ล้างพิกัด</button></div></div></div>
+   <div class="bar" style="gap:6px 18px;margin:6px 0"><label class="mck"><input type="checkbox" id="xsJobs" checked><span>รวมรายการงาน (JOB) ตาม STA</span></label><label class="mck"><input type="checkbox" id="xsOsm" checked><span>รวมข้อมูลสภาพแวดล้อม OSM (ต้องมีพิกัดจุดเริ่มต้นสายทางและดึงข้อมูลไว้แล้ว)</span></label></div>
+   <div class="bar"><button class="b" id="xsDxf">⬇ ดาวน์โหลด .dxf</button></div>
+   <div class="mute">ไฟล์เป็น 2 มิติ แยกเลเยอร์ (แนวทาง, ขอบผิวทาง, ROW, STA, สภาพแวดล้อม, วัตถุสำรวจ, JOB ฯลฯ) · SketchUp ฟรีรุ่นเว็บนำเข้า DXF ไม่ได้ ต้องเป็น SketchUp Pro หรือเปิดใน AutoCAD แล้วบันทึกเป็น DWG</div></div>
+  <div class="bar" style="margin:14px 0"><button class="b" id="xsNext">ขั้นตอนถัดไป → ④ MAKE JOB</button></div>
 </section>
 
 <section class="tab" id="t5">
@@ -537,7 +555,7 @@ function search(q){q=q.trim().toLowerCase();if(!q)return[];const ws=q.split(/\s+
 function renderRows(){
   const box=$('rows');box.innerHTML='';let shown=0;
   S.rows.forEach((r,i)=>{
-    if(FILTER==='inc'&&!incomplete(r))return;if(FILTER==='flag'&&!r.flag)return;shown++;
+    if(FILTER==='inc'&&!incomplete(r))return;if(FILTER==='flag'&&!r.flag)return;if(FILTER==='ovr'&&!(typeof mjOvList==='function'&&mjOvList(r).length))return;shown++;
     const el=document.createElement('div');el.className='row';
     el.innerHTML=`<div class="rowtop"><span class="n">${i+1}</span><span class="nm" data-nm></span><button class="b ghost sm" data-flag title="ติดธง ตรวจสอบภายหลัง">⚑</button><button class="b ghost sm" data-dup title="ทำซ้ำ">⧉</button><button class="b red sm" data-del title="ลบ">✕</button></div>
     <div class="chips" data-chips></div>
@@ -994,7 +1012,7 @@ function importFile(f){if(/\.zip$/i.test(f.name||'')||f.type==='application/zip'
   if(last){openProj(last);alert('นำเข้าแล้ว '+ps.length+' โครงการ')}}catch(e){problem('JSON_BAD')}})}
 function fillProj(){try{tbFill()}catch(e){}$('u_pre').value=getPre();showCodeEx();$('p_code').value=S.code||'';$('pkgName').textContent=folderName();[['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>$(id).value=S.proj[k]||'')}
 // ---- wiring ----
-async function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t0'&&typeof tbFill==='function')tbFill();if(t==='t5'){setTimeout(()=>renderMap(true),30);if(typeof renderMapSheet==='function')renderMapSheet()}if(t==='t3'){geoUI();renderPlan()}if(t==='t6')renderPhotos();if(t==='t7')renderJobs();if(t==='t4')storeInfo()}
+async function showTab(t){document.querySelectorAll('nav button,.tab').forEach(e=>e.classList.remove('on'));document.querySelector(`nav button[data-t=${t}]`).classList.add('on');$(t).classList.add('on');refresh();if(t==='t0'&&typeof tbFill==='function')tbFill();if(t==='t5'){setTimeout(()=>renderMap(true),30);if(typeof renderMapSheet==='function')renderMapSheet()}if(t==='t3'){geoUI();renderPlan();try{xsInit();xsInfo();xsLLFill()}catch(e){}}if(t==='t1'&&typeof mjBaseRender==='function')mjBaseRender();if(t==='t6')renderPhotos();if(t==='t7')renderJobs();if(t==='t4')storeInfo()}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
 [['p_name','name'],['p_agency','agency'],['p_route','route'],['p_who','who'],['p_date','date']].forEach(([id,k])=>{$(id).oninput=()=>{S.proj[k]=$(id).value;save();curLabel();$('pkgName').textContent=folderName()}});
 $('u_pre').oninput=()=>{const v=$('u_pre').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);$('u_pre').value=v;try{localStorage.setItem(UPKEY,v||'A')}catch(e){}showCodeEx()};
@@ -1375,7 +1393,7 @@ function renderSheets(){
   box.innerHTML=h;
   $('legend').innerHTML=M.un?`<span class="warn">ไม่แสดงใน PLAN ${M.un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
   const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>${M.chunks.length} แผ่น</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`}
-function planSvgs(){return [...$('planbox').querySelectorAll('svg')]}
+function planSvgs(){return [...$('planbox').querySelectorAll('svg.sheet')]}
 
 // ===================== v12 UI: ตั้งค่าแปลน =====================
 let geoTmr=null;const geoRedraw=()=>{clearTimeout(geoTmr);geoTmr=setTimeout(()=>{save();renderPlan()},140)};
@@ -1740,7 +1758,7 @@ function geoUI(){
          <div class="mute"><span data-ji="${ri}">${jobInfo(r)}</span>${r.fx?` · STA ${esc(r.sta1)}–${esc(r.sta2)} <button class="b ghost sm" data-act="full" data-ri="${ri}">เต็มช่วง</button>`:` · <a href="#" data-act="part" data-ri="${ri}">กำหนดช่วงย่อย</a>`}</div>
          ${r.fx?`<div class="jr1"><input data-rw="${ri}" data-f="sta1" value="${esc(r.sta1)}" placeholder="STA เริ่ม" style="width:100px"><input data-rw="${ri}" data-f="sta2" value="${esc(r.sta2)}" placeholder="STA ถึง" style="width:100px"></div>`:''}</div>`)});
       h.push(`<div class="bar"><button class="b sm" data-act="addJob" data-i="${i}">＋ เพิ่มรายการงานในช่วงนี้</button>${i>0?`<button class="b ghost sm" data-act="cpJob" data-i="${i}">คัดลอกรายการจากช่วงที่ ${i}</button>`:''}</div></div>`)});
-    const un=S.rows.filter(r=>!r.sg&&!isBlank(r)).length;if(un)h.push(`<div class="mute">มี ${un} แถวในแท็บ ④ TABLE ที่ไม่ได้ผูกกับช่วง — ยังแสดงบนแปลนตาม STA ของแถวนั้นๆ</div>`);
+    const un=S.rows.filter(r=>!r.sg&&!isBlank(r)).length;if(un)h.push(`<div class="mute">มี ${un} แถวในแท็บ ④ MAKE JOB ที่ไม่ได้ผูกกับช่วง — ยังแสดงบนแปลนตาม STA ของแถวนั้นๆ</div>`);
     h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="p">← ③ ระดับ PROFILE</button><button class="b" data-act="step" data-v="3">ไปขั้นที่ ⑤ รูปตัด →</button></div>`);
   }else if(step==='3'){
     h.push(`<div class="mute" style="margin:6px 0">เลือก STA ตำแหน่งตัด กำหนดชั้นวัสดุ แล้วกด "สร้าง SECTION" — กดแล้วระบบสร้างแผ่นรูปตัดใหม่ ต่อท้ายแผ่น PLAN/PROFILE (แท็บ ① STA ด้านล่างสุด)</div>`);
@@ -1794,11 +1812,7 @@ function geoUI(){
     else if(act==='stdLay'){g.secs[i].layers=STD_LAYERS_NEW()}
     else if(act==='ovLay'){g.secs[i].layers=OVERLAY_LAYERS()}
     else if(act==='cpLay'){g.secs[i].layers=JSON.parse(JSON.stringify(g.secs[0].layers))}
-    else if(act==='mkJobs'){const s=g.secs[i];if(!s.id)s.id=uid();compilePL(g);const ts=parseSta(s.sta);const seg=g.pl.find(p=>ts!=null&&ts>=p._a-1e-6&&ts<=p._b+1e-6);
-      const ra=parseSta(s.a),rb=parseSta(s.b),ranged=ra!=null&&rb!=null;let a,bb;if(ranged){a=ra;bb=rb}else if(seg){a=seg._a;bb=seg._b}else{a=parseSta(g.sta0)||0;bb=g._end!=null?g._end:a}
-      let made=0;(s.layers||[]).forEach((l,j)=>{if(!l.code)return;const src=s.id+':'+j;let r=S.rows.find(r=>r.src===src);if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src};S.rows.push(r)}
-        const wd=seg?(seg._wl||0)+(seg._wr||0):0;Object.assign(r,{code:l.code,sta1:fmtSta(a),sta2:fmtSta(bb),d:String(Math.round(gnum(l.t,0)*10)/1000),w:wd?String(Math.round(wd*100)/100):'',C:true,L:false,R:false,sg:(seg&&!ranged)?seg.id:undefined,fx:(ranged||!seg)?1:0});made++});
-      if(!made){problem('SEC_NOCODE');return}renderRows();refresh();toast('✔ สร้าง/อัปเดต '+made+' รายการงานแล้ว (ดูในขั้น ②)')}
+    else if(act==='mkJobs'){const s=g.secs[i];if(!s.id)s.id=uid();const n=mjPull(s);if(n)toast('✔ สร้าง/อัปเดต '+n+' รายการงานแล้ว (ดูในขั้น ④ MAKE JOB)');return}
     else if(act==='obtab'){g.obtab=d.v}
     else if(act==='addOb'){g.ob.push(newOb(g,d.t))}
     else if(act==='delOb'){g.ob.splice(i,1)}
@@ -1882,7 +1896,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v42';
+const APPVER='v44';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -1897,7 +1911,7 @@ const HELP={
   if(nsv>0)return{t:'สร้างภาพ PLAN เป็นไฟล์ภาพไม่สำเร็จ',w:'แปลนแสดงบนหน้าจอได้ แต่เบราว์เซอร์แปลงเป็นไฟล์ PNG ไม่ได้ (พบบ่อยในเบราว์เซอร์ที่จำกัดหน่วยความจำ หรือแผ่นใหญ่มาก)',s:['ลองกดอีกครั้ง 1 ครั้ง','ปิดแท็บอื่นๆ เพื่อคืนหน่วยความจำ แล้วลองใหม่','ใช้ปุ่ม PDF แทน (ได้ภาพแปลนเหมือนกัน)','ลองเปิดแอปด้วย Chrome / Safari เวอร์ชันล่าสุด']};
   s.push('เปิดแท็บ ③ STA แล้วดูว่ากรอบภาพแปลนแสดงภาพจริงหรือขึ้นข้อความ "ยังไม่มีข้อมูลสำหรับสร้างแปลน"');
   s.push('มี 2 วิธีให้ภาพแปลนขึ้น — เลือกวิธีใดวิธีหนึ่ง:');
-  s.push('  วิธี ก) ไปแท็บ ④ TABLE กรอกอย่างน้อย 1 แถวที่มี "STA เริ่ม/สิ้นสุด" และเลือกตำแหน่ง L / C / R แล้ว (แถวที่ว่างจะไม่ถูกนำมาวาด)');
+  s.push('  วิธี ก) ไปแท็บ ④ MAKE JOB กรอกอย่างน้อย 1 แถวที่มี "STA เริ่ม/สิ้นสุด" และเลือกตำแหน่ง L / C / R แล้ว (แถวที่ว่างจะไม่ถูกนำมาวาด)');
   s.push('  วิธี ข) (แนะนำ) ในแท็บ ③ STA ขั้น ① กด "＋ ช่วงตรง" เพื่อบันทึกผังช่วงแรก แล้วภาพแปลนจะขึ้นทันที');
   s.push('ตรวจว่าแถวในตาราง ④ มีข้อมูลครบ: STA ใส่ในรูปแบบ 0+000 หรือ 0+120 และเลือก L/C/R อย่างน้อย 1 ช่อง');
   s.push('กลับมากดปุ่มเดิมอีกครั้ง');
@@ -3026,6 +3040,107 @@ $('tbLogoFile').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.
   mmTB().logo=u;save(true);tbFill();toast('✔ ใส่โลโก้หน่วยงานแล้ว')};im.onerror=()=>toast('อ่านรูปไม่ได้ — เลือกไฟล์ภาพ (PNG/JPG)',true);im.src=fr.result};fr.readAsDataURL(f)};
 $('tbLogoDel').onclick=()=>{delete mmTB().logo;save(true);tbFill()};
 $('t0Next').onclick=()=>showTab('t5');
+
+// ===== v43: ส่งออกจากแท็บ ③ STA (รูปภาพ PLAN/PROFILE/SECTION + DXF) =====
+function xsSize(){const P=MM_PAPER.find(p=>p[0]===$('xsPaper').value)||MM_PAPER[0],D=MM_DPI[+$('xsRes').value]||MM_DPI[1],slide=P[0][0]==='s'||P[0]==='sq';let w,h;
+  if(slide){w=D[2];h=Math.round(w*P[3]/P[2])}else{w=Math.round(P[2]/25.4*D[0]);h=Math.round(P[3]/25.4*D[0])}
+  let cap=false;if(w*h>30e6){const k=Math.sqrt(30e6/(w*h));w=Math.floor(w*k);h=Math.floor(h*k);cap=true}return{w,h,cap}}
+function xsInfo(){const s=xsSize(),n=xsSheets().length;$('xsInfo').textContent='ขนาดรูปต่อแผ่น: '+s.w+' × '+s.h+' พิกเซล (~'+(s.w*s.h/1e6).toFixed(1)+' ล้านพิกเซล)'+(s.cap?' · ลดอัตโนมัติ':'')+' · จะได้ '+n+' แผ่น'+(n>1?' (รวมเป็นไฟล์ ZIP)':'')}
+function xsSheets(){const want={plan:$('xsPlan').checked,prof:$('xsProf').checked,sec:$('xsSec').checked},out=[];let sv=[];try{renderPlan();sv=planSvgs()}catch(e){}
+  if(want.plan)sv.filter(s=>!s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'PLAN_'+(i+1),svg:s}));
+  if(want.prof){try{profSvgs(G()).forEach((x,i)=>out.push({n:'PROFILE_'+(i+1),svg:new DOMParser().parseFromString(x,'image/svg+xml').documentElement}))}catch(e){}}
+  if(want.sec)sv.filter(s=>s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'SECTION_'+(i+1),svg:s}));return out}
+async function xsRaster(svg,z,type){const c=svg.cloneNode(true),vb=c.viewBox.baseVal,k=Math.min(z.w/vb.width,z.h/vb.height),dw=Math.round(vb.width*k),dh=Math.round(vb.height*k);c.setAttribute('width',dw);c.setAttribute('height',dh);c.removeAttribute('style');c.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(c)],{type:'image/svg+xml;charset=utf-8'}));
+  try{const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('วาดรูปไม่สำเร็จ'));i.src=url});
+    const cv=document.createElement('canvas');cv.width=z.w;cv.height=z.h;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,z.w,z.h);x.drawImage(img,Math.round((z.w-dw)/2),Math.round((z.h-dh)/2),dw,dh);
+    return await new Promise(res=>cv.toBlob(res,type,.93))}finally{URL.revokeObjectURL(url)}}
+function xsInit(){const P=$('xsPaper');if(P.dataset.ok)return;P.dataset.ok=1;P.innerHTML=MM_PAPER.map(p=>`<option value="${p[0]}">${p[1]}</option>`).join('');$('xsRes').innerHTML=MM_DPI.map((d,i)=>`<option value="${i}">${d[1]}</option>`).join('');$('xsRes').value='1';
+  ['xsPaper','xsRes','xsFmt','xsPlan','xsProf','xsSec'].forEach(i=>$(i).onchange=xsInfo)}
+function xsLLFill(){const m=G().mp,i=$('xsLL');if(i&&document.activeElement!==i)i.value=m?m.lat.toFixed(6)+', '+m.lon.toFixed(6):'';
+  const s=$('xsLLSel');if(s)s.innerHTML='<option value="">เติมจาก…</option>'+(maGet()?'<option value="a">ศูนย์กลางบริเวณก่อสร้าง</option>':'')+sitesGet().map((x,i)=>`<option value="s${i}">จุดที่ตั้ง ${i+1}${x.name?' · '+esc(x.name):''}</option>`).join('')}
+function xsSetStart(la,lo){const g=G();if(la==null){g.mp=null}else g.mp={lat:la,lon:lo};save(true);xsLLFill()}
+$('xsImg').onclick=async()=>{const sh=xsSheets();if(!sh.length){toast('ไม่มีแผ่นให้ส่งออก — ติ๊กเลือกชุดแผ่น และตรวจว่ามีข้อมูล PLAN/PROFILE/SECTION แล้ว',true);return}
+  const bt=$('xsImg'),old=bt.textContent,z=xsSize(),jpg=$('xsFmt').value==='jpg',type=jpg?'image/jpeg':'image/png',ext=jpg?'.jpg':'.png';bt.disabled=true;
+  try{const files=[];for(let i=0;i<sh.length;i++){bt.textContent='กำลังสร้างรูป '+(i+1)+' / '+sh.length+'…';const b=await xsRaster(sh[i].svg,z,type);if(!b)throw new Error('สร้างรูปไม่สำเร็จ');files.push([fname()+'_'+sh[i].n+'_'+$('xsPaper').value.toUpperCase()+'_'+z.w+'x'+z.h+ext,b])}
+    if(files.length===1)dlReady(files[0][1],files[0][0]);
+    else{if(!window.JSZip){problem('ZIP_LIB');return}const zp=new JSZip();files.forEach(([n,b])=>zp.file(n,b));dlReady(await zp.generateAsync({type:'blob'}),fname()+'_SHEETS_'+files.length+'.zip')}
+    toast('✔ สร้างรูป '+files.length+' แผ่นแล้ว')}catch(e){problem('MAPIMG_FAIL',e&&e.message)}finally{bt.disabled=false;bt.textContent=old}};
+$('xsLL').addEventListener('change',e=>{const v=e.target.value.trim();if(!v){xsSetStart(null);toast('ล้างพิกัดจุดเริ่มต้นสายทางแล้ว');return}const q=parseLL(v);if(!q){toast('อ่านพิกัดไม่ได้ — วางตัวเลข เช่น 13.7563, 100.5018 หรือลิงก์ Google Maps แบบยาว',true);return}xsSetStart(q.lat,q.lon);toast('✔ ตั้งพิกัดจุดเริ่มต้นสายทางแล้ว')});
+$('xsLLSel').onchange=e=>{const v=e.target.value;if(!v)return;const m=maGet(),p=v==='a'?m:sitesGet()[+v.slice(1)];if(p)xsSetStart(p.lat,p.lon!=null?p.lon:p.lon);e.target.value=''};
+$('xsLLClr').onclick=()=>{xsSetStart(null);toast('ล้างพิกัดจุดเริ่มต้นสายทางแล้ว')};
+$('xsDxf').onclick=()=>{try{const N=Math.max(100,gnum($('xsN').value,1000)),utmOn=$('xsCoord').value==='utm';if(utmOn&&!G().mp){toast('ยังไม่มีพิกัดจุดเริ่มต้นสายทาง — กรอกช่อง "พิกัดจุดเริ่มต้นสายทาง" ก่อน หรือเลือกพิกัดท้องถิ่น',true);return}
+  const r=dxfBuild({th:N*0.0025,utm:utmOn,jobs:$('xsJobs').checked,osm:$('xsOsm').checked});if(!r){problem('PLAN_EMPTY');return}
+  dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_PLAN.dxf');toast('✔ ส่งออก DXF แล้ว · '+r.layers.length+' Layer · ยาว '+Math.round(r.len)+' ม.'+(r.zone?' · UTM '+r.zone:''))}catch(e){problem('EXPORT_FAIL',e&&e.message)}};
+$('xsNext').onclick=()=>showTab('t1');
+xsInit();
+
+// ===== v44 MAKE JOB : ฐานจากการสำรวจ STA + ค่าที่ใช้ออกแบบแทนค่าสำรวจ =====
+const MJ_F=[['w','กว้าง','ม.'],['l','ยาว/จำนวน','ม.'],['d','ลึก/หนา','ม.'],['m1','ตัวคูณ 1',''],['m2','ตัวคูณ 2','']];
+const mjR2=v=>String(Math.round(v*1000)/1000);
+function mjSame(a,b){const x=num(a),y=num(b);return x==null&&y==null?true:(x!=null&&y!=null&&Math.abs(x-y)<1e-9)}
+const mjOv=(r,f)=>!!(r.sv&&(f in r.sv)&&!mjSame(r[f],r.sv[f]));
+const mjOvList=r=>r.sv?MJ_F.filter(x=>mjOv(r,x[0])).map(x=>x[0]):[];
+function mjSegSec(g,p){ // รูปตัดที่ใช้กับช่วงนี้
+  const L=(g.secs||[]).map(s=>({s,t:parseSta(s.sta)})).filter(x=>x.t!=null&&!(parseSta(x.s.a)!=null&&parseSta(x.s.b)!=null)).sort((a,b)=>a.t-b.t);
+  if(!L.length)return null;
+  return (L.find(x=>x.t>=p._a-1e-6&&x.t<=p._b+1e-6)||L.filter(x=>x.t<=p._a+1e-6).pop()||L[0]).s}
+function mjSecW(s,p){const has=v=>String(v==null?'':v).trim()!=='';const t=s?parseSta(s.sta):null,inside=!p||(t!=null&&t>=p._a-1e-6&&t<=p._b+1e-6)||(parseSta(s.a)!=null&&parseSta(s.b)!=null);if(s&&inside&&(has(s.wl)||has(s.wr)))return gnum(s.wl,0)+gnum(s.wr,0);return p?(p._wl||0)+(p._wr||0):0}
+function mjTargets(g,only){const T=[];compilePL(g);
+  (g.secs||[]).forEach(s=>{if(only&&s!==only)return;const ra=parseSta(s.a),rb=parseSta(s.b);if(ra!=null&&rb!=null){if(!s.id)s.id=uid();const seg=g.pl.find(p=>ra>=p._a-1e-6&&ra<=p._b+1e-6);T.push({s,a:ra,b:rb,seg:seg||null,ranged:true,src:s.id})}});
+  g.pl.forEach(p=>{if(p.lead||!(p._b>p._a))return;const s=mjSegSec(g,p);if(!s||(only&&s!==only))return;if(!s.id)s.id=uid();T.push({s,a:p._a,b:p._b,seg:p,ranged:false,src:s.id+'@'+p.id})});
+  return T}
+function mjPull(only){const g=G();const T=mjTargets(g,only);if(!T.length){toast('ยังไม่มีข้อมูลให้ดึง — ไปแท็บ ③ STA สร้างผังช่วงและรูปตัด (พร้อมชั้นทาง) ก่อน');return 0}
+  let made=0,upd=0,kept=0;
+  T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{
+    const src=t.src+':'+j;let r=S.rows.find(x=>x.src===src);
+    const sv={code:l.code||'',w:mjR2(mjSecW(t.s,t.seg)||0).replace(/^0$/,''),l:'',d:mjR2(gnum(l.t,0)/100),m1:'',m2:''};
+    const info=(l.k==='old'?'[เดิม] ':'')+(l.n||'ชั้นทาง')+' หนา '+gnum(l.t,0)+' ซม. · รูปตัด '+(t.s.lbl||'')+' STA '+(t.s.sta||'');
+    if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:sv.code,w:sv.w,d:sv.d,sta1:fmtSta(t.a),sta2:fmtSta(t.b),sg:t.ranged?undefined:t.seg.id,fx:t.ranged?1:0});S.rows.push(r);made++}
+    else{const old=r.sv||{};MJ_F.forEach(([f])=>{if(!(f in sv))return;const wasOv=r.sv?!mjSame(r[f],old[f]):false;if(!wasOv)r[f]=sv[f];else kept++});if(!(r.sv&&r.code!==old.code))r.code=sv.code||r.code;r.sv={...sv};r.svn=info;upd++}
+    });});
+  S.rows.forEach(r=>{if(r.sv&&r.sv.code!==undefined&&r.code===r.sv.code){}});
+  save(true);renderRows();refresh();
+  toast('✔ ดึงจากสำรวจ: เพิ่มใหม่ '+made+' · อัปเดต '+upd+' รายการ'+(kept?' (คงค่าที่คุณแก้ไว้ '+kept+' ช่อง)':''));return made+upd}
+function mjResetRow(r){if(!r.sv)return;MJ_F.forEach(([f])=>{if(f in r.sv)r[f]=r.sv[f]});if(r.sv.code)r.code=r.sv.code}
+function mjSegCard(g,p,i){
+  const a=p._a,b=p._b,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'}[p.t]||p.t;
+  const pc=(g.pc||[]).filter(x=>{const A=parseSta(x.a),B=parseSta(x.b);return A!=null&&B!=null&&A<b-1e-6&&B>a+1e-6}).map(x=>(x.type||'ผิวทาง')+(x.cond?' ('+x.cond+')':'')+(x.dmg?' '+x.dmg:''));
+  const s=mjSegSec(g,p),lay=s?(s.layers||[]).map(l=>(l.k==='old'?'เดิม ':'')+(l.n||'?')+' '+gnum(l.t,0)+'ซม.').join(' / '):'';
+  const ob={};(g.ob||[]).forEach(o=>{const t=parseSta(o.sta);if(t!=null&&t>=a-1e-6&&t<b+1e-6&&OB[o.k])ob[OB[o.k].n]=(ob[OB[o.k].n]||0)+1});
+  const rows=S.rows.filter(r=>r.sg===p.id||(r.src&&r.src.indexOf('@'+p.id+':')>0));const nov=rows.filter(r=>mjOvList(r).length).length;
+  return `<tr><td><b>${i+1}</b></td><td>${esc(fmtSta(a))} – ${esc(fmtSta(b))}<br><span class="mute">${tn} · ยาว ${nf(b-a)} ม.</span></td><td class="r">${nf((p._wl||0)+(p._wr||0))}<br><span class="mute">ซ้าย ${nf(p._wl||0)} / ขวา ${nf(p._wr||0)}</span></td>
+   <td>${pc.length?esc(pc.join(' · ')):'<span class="mute">-</span>'}</td><td>${lay?esc(lay)+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีรูปตัด</span>'}</td>
+   <td>${Object.keys(ob).length?esc(Object.keys(ob).map(k=>k+' ×'+ob[k]).join(', ')):'<span class="mute">-</span>'}</td><td class="r">${rows.length}${nov?`<br><span class="mjov">แก้ ${nov}</span>`:''}</td></tr>`}
+function mjBaseRender(){const box=$('mjBase');if(!box||!S)return;const g=G();
+  try{compilePL(g)}catch(e){}
+  const segs=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);
+  const nr=S.rows.filter(r=>r.sv).length,nov=S.rows.filter(r=>mjOvList(r).length).length,nf2=S.rows.filter(r=>mjOvList(r).length).reduce((a,r)=>a+mjOvList(r).length,0);
+  box.innerHTML=`<details ${segs.length?'open':''}><summary style="font-weight:700;color:var(--brand);cursor:pointer">📐 ฐานข้อมูลจากการสำรวจ ③ STA (${segs.length} ช่วง)</summary>
+   <div class="mute" style="margin:6px 0">ข้อมูลที่สำรวจไว้ในแท็บ ③ STA ทุกช่วง (ความกว้าง สภาพผิวทางเดิม ชั้นทางจากรูปตัด สิ่งก่อสร้าง) ใช้เป็น <b>ค่าเริ่มต้น</b> ของรายการงานด้านล่าง · แต่ละรายการแก้ <b>กว้าง / ยาว / ลึก-หนา / ตัวคูณ</b> ให้ต่างจากค่าสำรวจได้ — ช่องที่แก้จะเป็นสีส้ม มีปุ่ม ↺ คืนค่าสำรวจ</div>
+   ${segs.length?`<div style="overflow:auto"><table class="mjT"><tr><th>#</th><th>ช่วง STA</th><th class="r">กว้างรวม (ม.)</th><th>ผิวทางเดิม</th><th>ชั้นทาง (รูปตัด)</th><th>สิ่งที่สำรวจพบ</th><th class="r">รายการ</th></tr>${segs.map((p,i)=>mjSegCard(g,p,i)).join('')}</table></div>`:'<div class="mute" style="padding:8px">ยังไม่มีผังช่วงในแท็บ ③ STA</div>'}
+   <div class="bar" style="margin-top:8px"><button class="b" id="mjPull" ${segs.length?'':'disabled'}>⤓ ดึงข้อมูลสำรวจทุกช่วงมาเป็นฐาน / อัปเดต</button><span class="mute" id="mjSt">${nr?`มี ${nr} รายการผูกกับค่าสำรวจ · แก้ต่างจากสำรวจ ${nov} รายการ (${nf2} ช่อง) · กดอัปเดตซ้ำได้ ระบบ<b>ไม่ทับค่าที่คุณแก้ไว้</b>`:'ยังไม่ได้ดึง — ระบบจะสร้างรายการงานตามชั้นทางของแต่ละช่วงให้'}</span></div></details>`;
+  const b=$('mjPull');if(b)b.onclick=()=>mjPull()}
+function mjMark(el,r){
+  MJ_F.forEach(([f,lab,u])=>{const inp=el.querySelector('[data-f='+f+']');if(!inp)return;const wrap=inp.parentNode;let h=wrap.querySelector('.svh');
+    if(!r.sv||!(f in r.sv)||((f==='m1'||f==='m2')&&r.sv[f]===''&&!mjOv(r,f))){if(h)h.remove();inp.classList.remove('ovr');return}
+    if(!h){h=document.createElement('div');h.className='svh';wrap.appendChild(h)}
+    const ov=mjOv(r,f);inp.classList.toggle('ovr',ov);
+    let sv=r.sv[f];if(f==='l'&&sv==='')sv='';const c=calc(r);
+    const shown=f==='l'?(c.dist!=null?nf(c.dist)+' (ระยะช่วง)':'-'):(sv===''?'-':sv);
+    h.innerHTML=ov?`<span class="mjov">✎ แก้จากสำรวจ</span> สำรวจ: ${esc(shown)} <button class="mjrs" title="คืนค่าสำรวจ">↺</button>`:`<span class="mute">สำรวจ: ${esc(shown)}</span>`;
+    const bt=h.querySelector('.mjrs');if(bt)bt.onclick=()=>{r[f]=r.sv[f];inp.value=r[f];save();update(el,r)}});
+  let top=el.querySelector('.mjtop');
+  if(!r.sv){if(top)top.remove();return}
+  if(!top){top=document.createElement('div');top.className='mjtop';el.querySelector('[data-chips]').after(top)}
+  const ovs=mjOvList(r),codeOv=r.sv.code&&r.code!==r.sv.code;
+  top.innerHTML=`<span class="mjbase">ฐานจากสำรวจ: ${esc(r.svn||'')}</span>`+(codeOv?` <span class="mjov">รหัสงานต่างจากรูปตัด (${esc(r.sv.code)})</span>`:'')+((ovs.length||codeOv)?` <button class="b ghost sm mjall">↺ คืนค่าสำรวจทั้งแถว</button>`:'');
+  const ba=top.querySelector('.mjall');if(ba)ba.onclick=()=>{mjResetRow(r);save();renderRows();refresh()}}
+(function(){const _rr=renderRows;renderRows=function(){_rr();try{mjBaseRender()}catch(e){}};
+ const _up=update;update=function(el,r,q){_up(el,r,q);try{mjMark(el,r)}catch(e){}}})();
+// ตัวกรอง "เฉพาะที่แก้จากสำรวจ"
+(function(){const _f=$('flt');if(_f&&!_f.querySelector('[value=ovr]')){const o=document.createElement('option');o.value='ovr';o.textContent='เฉพาะที่แก้ต่างจากสำรวจ ✎';_f.appendChild(o)}})();
+// ปุ่ม "สร้าง/อัปเดตรายการงาน" ในรูปตัด ให้ใช้ตัวดึงเดียวกัน (กันแถวซ้ำ)
 
 loadLib();fillProj();renderRows();refresh();geoUI();renderPlan();showTab('t0');
 </script>
