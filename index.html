@@ -257,6 +257,7 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
   <div class="bar">
     <button class="b amber" id="quick" title="บันทึกพิกัดตำแหน่งปัจจุบันเป็นรายการใหม่ทันที แล้วกรอกรายละเอียดทีหลัง">⚡ จุดด่วน (จับพิกัด)</button>
     <button class="b" id="add">＋ เพิ่มรายการ</button>
+    <button class="b red" id="clearJob" title="ล้างรายการงานทั้งหมดในแท็บ MAKE JOB">🧹 CLEAR JOB</button><button class="b ghost" id="clearUndo" hidden>↩ กู้คืน</button>
     <select id="flt" style="width:auto"><option value="all">แสดงทั้งหมด</option><option value="inc">เฉพาะที่ยังไม่ครบ</option><option value="flag">เฉพาะที่ติดธง ⚑</option><option value="ovr">เฉพาะที่แก้ต่างจากสำรวจ ✎</option></select>
     <select id="bgo" style="width:auto" title="ความชัดของรูปประกอบงานมุมขวาล่างของการ์ด"><option value="0">รูปประกอบงาน: ปิด</option><option value="0.4">รูปประกอบงาน: จาง</option><option value="0.7">รูปประกอบงาน: ปานกลาง</option><option value="1">รูปประกอบงาน: ชัด</option></select>
   </div>
@@ -1059,6 +1060,11 @@ $('p_code').oninput=()=>{S.code=$('p_code').value.trim().toUpperCase().replace(/
 $('p_code').onchange=()=>{if(!S.code){S.code=nextCode();$('p_code').value=S.code;save();curLabel()}else if(Object.values(LIB.list).some(x=>x.code===S.code&&x.id!==S.id)){problem('DUP_CODE','รหัส '+S.code+' ซ้ำกับโครงการอื่น');S.code=nextCode();$('p_code').value=S.code;save();curLabel()}};
 const addRow=()=>{S.rows.push(newRow());save();FILTER='all';$('flt').value='all';renderRows();refresh();const l=$('rows').lastElementChild;l&&l.querySelector('[data-f=sta1]').focus()};
 $('add').onclick=addRow;$('add2').onclick=addRow;
+let MJ_UNDO=null;
+function mjClear(){const n=S.rows.filter(r=>!isBlank(r)).length;if(!n){toast('ยังไม่มีรายการงานให้ล้าง');return}
+  if(!confirm('CLEAR JOB — ล้างรายการงานทั้งหมดในแท็บ MAKE JOB ('+n+' รายการ รวมรูปภาพที่แนบกับรายการ)?\n\nข้อมูลสำรวจในแท็บ ① ② ③ ไม่ถูกลบ · กด "↩ กู้คืน" ได้ทันทีหากล้างผิด'))return;
+  MJ_UNDO=JSON.stringify(S.rows);S.rows=[];save(true);renderRows();refresh();$('clearUndo').hidden=false;toast('✔ ล้างรายการงานแล้ว ('+n+' รายการ) · กด ↩ กู้คืน ได้')}
+$('clearJob').onclick=mjClear;$('clearUndo').onclick=()=>{if(!MJ_UNDO)return;S.rows=JSON.parse(MJ_UNDO);MJ_UNDO=null;$('clearUndo').hidden=true;save(true);renderRows();refresh();toast('↩ กู้คืนรายการงานแล้ว')};
 $('flt').onchange=()=>{FILTER=$('flt').value;renderRows()};
 $('quick').onclick=async()=>{const b=$('quick');b.disabled=true;const old=b.textContent;b.textContent='กำลังหาพิกัด…';
   try{const p=await getPos();const r=newRow();r.g1=fmtLL(p.coords.latitude,p.coords.longitude);r.a1=Math.round(p.coords.accuracy);r.flag=true;r.note='จุดด่วน '+new Date().toLocaleTimeString('th-TH')+' — กรอกรายละเอียดภายหลัง';
@@ -1935,7 +1941,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v49';
+const APPVER='v50';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -3196,7 +3202,7 @@ function mjTargets(g,only){const T=[];compilePL(g);
   return T}
 function mjPull(only){const g=G();const T=mjTargets(g,only);if(!T.length){toast('ยังไม่มีข้อมูลให้ดึง — ไปแท็บ ③ STA สร้างผังช่วงและรูปตัด (พร้อมชั้นทาง) ก่อน');return 0}
   let made=0,upd=0,kept=0;
-  T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{
+  T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{if(l.k==='old')return; // ชั้นทาง/ผิวทางเดิม ไม่สร้างเป็นรายการงาน (แสดงเป็นข้อมูลประกอบ)
     const src=t.src+':'+j;let r=S.rows.find(x=>x.src===src);
     const sv={code:l.code||'',w:mjR2(mjSecW(t.s,t.seg)||0).replace(/^0$/,''),l:'',d:mjR2(gnum(l.t,0)/100),m1:'',m2:'',qn:''};
     const info=(l.k==='old'?'[เดิม] ':'')+(l.n||'ชั้นทาง')+' หนา '+gnum(l.t,0)+' ซม. · รูปตัด '+(t.s.lbl||'')+' STA '+(t.s.sta||'');
@@ -3210,20 +3216,21 @@ function mjResetRow(r){if(!r.sv)return;MJ_F.forEach(([f])=>{if(f in r.sv)r[f]=r.
 function mjSegCard(g,p,i){
   const a=p._a,b=p._b,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'}[p.t]||p.t;
   const pc=(g.pc||[]).filter(x=>{const A=parseSta(x.a),B=parseSta(x.b);return A!=null&&B!=null&&A<b-1e-6&&B>a+1e-6}).map(x=>(x.type||'ผิวทาง')+(x.cond?' ('+x.cond+')':'')+(x.dmg?' '+x.dmg:''));
-  const s=mjSegSec(g,p),lay=s?(s.layers||[]).map(l=>(l.k==='old'?'เดิม ':'')+(l.n||'?')+' '+gnum(l.t,0)+'ซม.').join(' / '):'';
+  const s=mjSegSec(g,p),LY=s?(s.layers||[]):[];
+  const oldL=LY.filter(l=>l.k==='old').map(l=>(l.n||'?')+' '+gnum(l.t,0)+' ซม.'),newL=LY.filter(l=>l.k!=='old').map(l=>(l.n||'?')+' '+gnum(l.t,0)+' ซม.');
   const ob={};(g.ob||[]).forEach(o=>{const t=parseSta(o.sta);if(t!=null&&t>=a-1e-6&&t<b+1e-6&&OB[o.k])ob[OB[o.k].n]=(ob[OB[o.k].n]||0)+1});
+  const ex=[].concat(pc.map(x=>'ผิวทาง: '+x),oldL.map(x=>'ชั้นเดิม: '+x),Object.keys(ob).map(k=>k+' ×'+ob[k]));
   const rows=S.rows.filter(r=>r.sg===p.id||(r.src&&r.src.indexOf('@'+p.id+':')>0));const nov=rows.filter(r=>mjOvList(r).length).length;
   return `<tr><td><b>${i+1}</b></td><td>${esc(fmtSta(a))} – ${esc(fmtSta(b))}<br><span class="mute">${tn} · ยาว ${nf(b-a)} ม.</span></td><td class="r">${nf((p._wl||0)+(p._wr||0))}<br><span class="mute">ซ้าย ${nf(p._wl||0)} / ขวา ${nf(p._wr||0)}</span></td>
-   <td>${pc.length?esc(pc.join(' · ')):'<span class="mute">-</span>'}</td><td>${lay?esc(lay)+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีรูปตัด</span>'}</td>
-   <td>${Object.keys(ob).length?esc(Object.keys(ob).map(k=>k+' ×'+ob[k]).join(', ')):'<span class="mute">-</span>'}</td><td class="r">${rows.length}${nov?`<br><span class="mjov">แก้ ${nov}</span>`:''}</td></tr>`}
+   <td class="mjex">${ex.length?ex.map(esc).join('<br>'):'<span class="mute">- ไม่มีบันทึก -</span>'}</td><td>${newL.length?esc(newL.join(' / '))+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีชั้นทางใหม่</span>'}</td><td class="r">${rows.length}${nov?`<br><span class="mjov">แก้ ${nov}</span>`:''}</td></tr>`}
 function mjBaseRender(){const box=$('mjBase');if(!box||!S)return;const g=G();
   try{compilePL(g)}catch(e){}
   const segs=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);
   const nr=S.rows.filter(r=>r.sv).length,nov=S.rows.filter(r=>mjOvList(r).length).length,nf2=S.rows.filter(r=>mjOvList(r).length).reduce((a,r)=>a+mjOvList(r).length,0);
   box.innerHTML=`<details ${segs.length?'open':''}><summary style="font-weight:700;color:var(--brand);cursor:pointer">📐 ฐานข้อมูลจากการสำรวจ ③ STA (${segs.length} ช่วง)</summary>
-   <div class="mute" style="margin:6px 0">ข้อมูลที่สำรวจไว้ในแท็บ ③ STA ทุกช่วง (ความกว้าง สภาพผิวทางเดิม ชั้นทางจากรูปตัด สิ่งก่อสร้าง) ใช้เป็น <b>ค่าเริ่มต้น</b> ของรายการงานด้านล่าง · แต่ละรายการแก้ <b>กว้าง / ยาว / ลึก-หนา / ตัวคูณ</b> ให้ต่างจากค่าสำรวจได้ — ช่องที่แก้จะเป็นสีส้ม มีปุ่ม ↺ คืนค่าสำรวจ</div>
-   ${segs.length?`<div style="overflow:auto"><table class="mjT"><tr><th>#</th><th>ช่วง STA</th><th class="r">กว้างรวม (ม.)</th><th>ผิวทางเดิม</th><th>ชั้นทาง (รูปตัด)</th><th>สิ่งที่สำรวจพบ</th><th class="r">รายการ</th></tr>${segs.map((p,i)=>mjSegCard(g,p,i)).join('')}</table></div>`:'<div class="mute" style="padding:8px">ยังไม่มีผังช่วงในแท็บ ③ STA</div>'}
-   <div class="bar" style="margin-top:8px"><button class="b" id="mjPull" ${segs.length?'':'disabled'}>⤓ ดึงข้อมูลสำรวจทุกช่วงมาเป็นฐาน / อัปเดต</button><span class="mute" id="mjSt">${nr?`มี ${nr} รายการผูกกับค่าสำรวจ · แก้ต่างจากสำรวจ ${nov} รายการ (${nf2} ช่อง) · กดอัปเดตซ้ำได้ ระบบ<b>ไม่ทับค่าที่คุณแก้ไว้</b>`:'ยังไม่ได้ดึง — ระบบจะสร้างรายการงานตามชั้นทางของแต่ละช่วงให้'}</span></div></details>`;
+   <div class="mute" style="margin:6px 0">ข้อมูลจากแท็บ ③ STA ทุกช่วง: <b>ชั้นทางใหม่</b> + ความกว้าง ใช้เป็น <b>ค่าเริ่มต้น</b> ของรายการงานด้านล่าง · ส่วน <b>รายการเดิม</b> (ผิวทาง/ชั้นทางเดิม/สิ่งก่อสร้างที่สำรวจพบ) แสดงให้ดูประกอบการตัดสินใจเท่านั้น ระบบ<b>ไม่สร้างรายการงานให้</b> — เพิ่มรายการใหม่เองเมื่อจำเป็น · แต่ละรายการแก้ <b>กว้าง / ยาว / ลึก-หนา / ตัวคูณ</b> ให้ต่างจากค่าสำรวจได้ — ช่องที่แก้จะเป็นสีส้ม มีปุ่ม ↺ คืนค่าสำรวจ</div>
+   ${segs.length?`<div style="overflow:auto"><table class="mjT"><tr><th>#</th><th>ช่วง STA</th><th class="r">กว้างรวม (ม.)</th><th>รายการเดิมที่พบ (ข้อมูลประกอบ — ไม่สร้างรายการ)</th><th>ชั้นทางใหม่ (ฐานรายการงาน)</th><th class="r">รายการงาน</th></tr>${segs.map((p,i)=>mjSegCard(g,p,i)).join('')}</table></div>`:'<div class="mute" style="padding:8px">ยังไม่มีผังช่วงในแท็บ ③ STA</div>'}
+   <div class="bar" style="margin-top:8px"><button class="b" id="mjPull" ${segs.length?'':'disabled'}>⤓ ดึงข้อมูลสำรวจทุกช่วงมาเป็นฐาน / อัปเดต</button><span class="mute" id="mjSt">${nr?`มี ${nr} รายการผูกกับค่าสำรวจ · แก้ต่างจากสำรวจ ${nov} รายการ (${nf2} ช่อง) · กดอัปเดตซ้ำได้ ระบบ<b>ไม่ทับค่าที่คุณแก้ไว้</b>`:'ยังไม่ได้ดึง — ระบบจะสร้างรายการงานตามชั้นทางใหม่ของแต่ละช่วงให้ (ไม่รวมชั้นเดิม)'}</span></div></details>`;
   const b=$('mjPull');if(b)b.onclick=()=>mjPull()}
 function mjMark(el,r){
   MJ_F.forEach(([f,lab,u])=>{const inp=el.querySelector('[data-f='+f+']');if(!inp)return;const wrap=inp.parentNode;let h=wrap.querySelector('.svh');
