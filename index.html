@@ -1241,7 +1241,7 @@ function relabel(str,C){const{g,P,wf,sta0,s0,s1,k,area}=C,RAD=Math.PI/180;
     out[it.idx]=`<g class="lbl"><line x1="${it.ax.toFixed(1)}" y1="${it.ay.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="#555" stroke-width=".7"/><circle cx="${it.ax.toFixed(1)}" cy="${it.ay.toFixed(1)}" r="1.8" fill="#555"/><text x="${best.cx.toFixed(1)}" y="${(best.cy+Hh*.3).toFixed(1)}" text-anchor="middle" fill="${fill}"${attrs}>${it.tx}</text></g>`});
   return str.replace(/\u0001(\d+)\u0001/g,(m,i)=>out[+i])}
 function sheetSvg(M,idx){
-  const{g,bars,sta0,pts,wf,area,N,chunks,hasSec}=M;const[s0,s1]=chunks[idx];const k=5000/N;
+  const sid=M.ov?'ov':idx;const{g,bars,sta0,pts,wf,area,N,chunks,hasSec}=M;const[s0,s1]=chunks[idx];const k=5000/N;
   const fr=chunkFrame(pts,s0,s1,M.lay,M.mg);
   const cxm=(fr.x0+fr.x1)/2,cym=(fr.y0+fr.y1)/2,acx=(area.x0+area.x1)/2,acy=(area.y0+area.y1)/2;
   const SX=(x,y)=>{const rx=fr.c*x-fr.sn*y,ry=fr.sn*x+fr.c*y;return[acx+(rx-cxm)*k,acy-(ry-cym)*k]};
@@ -1252,13 +1252,13 @@ function sheetSvg(M,idx){
   const sam=(a,b,st)=>{const o=[];const A=Math.max(a,s0),B=Math.min(b,s1);if(B<=A)return o;for(let t=A;t<B;t+=st)o.push(t);o.push(B);return o};
   const st=Math.max(.5,Math.min(2,3/k*5));
   const W=1485,H=1050;let o=[];
-  o.push(`<svg class="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Sarabun,Tahoma,sans-serif"><rect width="${W}" height="${H}" fill="#fff"/>
-<defs><clipPath id="clp${idx}"><rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}"/></clipPath>
-<pattern id="gr${idx}" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="#e8eef4"/></pattern>
-<pattern id="ea${idx}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#b9a37a" stroke-width="1.5"/></pattern></defs>
+  o.push(`<svg class="sheet"${M.ov?' data-ov="1"':''} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Sarabun,Tahoma,sans-serif"><rect width="${W}" height="${H}" fill="#fff"/>
+<defs><clipPath id="clp${sid}"><rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}"/></clipPath>
+<pattern id="gr${sid}" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="#e8eef4"/></pattern>
+<pattern id="ea${sid}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#b9a37a" stroke-width="1.5"/></pattern></defs>
 <rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="#111" stroke-width="3"/><rect x="20" y="20" width="${W-40}" height="${H-40}" fill="none" stroke="#111"/>
-<text x="32" y="50" font-size="22" font-weight="700" fill="#1f3a5f">แปลนแสดงที่ตั้งและรายการงาน (PLAN) · มาตราส่วน 1:${N}</text>
-<rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}" fill="url(#gr${idx})" stroke="#333"/><g clip-path="url(#clp${idx})">`);
+<text x="32" y="50" font-size="22" font-weight="700" fill="#1f3a5f">${M.ov?'ผังบริเวณดำเนินการ (OVERALL LAYOUT) · ตลอดโครงการ STA '+fmtSta(sta0)+' – '+fmtSta(sta0+M.total)+' · มาตราส่วน 1:'+N:'แปลนแสดงที่ตั้งและรายการงาน (PLAN) · มาตราส่วน 1:'+N}</text>
+<rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}" fill="url(#gr${sid})" stroke="#333"/><g clip-path="url(#clp${sid})">`);
   const gi0=o.length;
   // side strips (L/R) lane stacking
   const inR=bars.filter(b=>b.b>=s0+sta0&&b.a<=s1+sta0);
@@ -1285,7 +1285,7 @@ function sheetSvg(M,idx){
   (g.env||[]).forEach(e=>{const A=Math.max(e.a-sta0,s0),B=Math.min(e.b-sta0,s1);if(B-A<=.01)return;const sg=e.side==='L'?1:-1,T=sam(A,B,st);
     const e0=t=>{const w=wf(t+sta0),rw=rowAt(g,t+sta0);return(sg>0?Math.max(w[0],rw[0]):Math.max(w[1],rw[1]))+.3};
     const P1=T.map(t=>P(t,sg*e0(t))),P2=T.map(t=>P(t,sg*(e0(t)+e.w)));const water=/คลอง|แม่น้ำ|ร่อง|น้ำ/.test(e.t),home=envIsHome(e.t),agr=envIsAg(e.t);
-    const fill=water?'#cfe8f7':home?'#f8f4ea':agr?'#f6f9e6':'url(#ea'+idx+')',sk=water?'#3b82b8':agr?'#8a9b3f':'#9a8458';
+    const fill=water?'#cfe8f7':home?'#f8f4ea':agr?'#f6f9e6':'url(#ea'+sid+')',sk=water?'#3b82b8':agr?'#8a9b3f':'#9a8458';
     o.push(`<polygon points="${pstr(P1.concat(P2.slice().reverse()))}" fill="${fill}" stroke="${sk}" stroke-width="1"${(home||agr)?' stroke-dasharray="5 3"':''}><title>${esc(e.t)}</title></polygon>`);
     if(home||agr){const M=(ta,d)=>{const tr=ta-sta0;return P(tr,sg*(e0(tr)+d))},EDG=(a0,b0,d)=>{const r=[];for(let x=a0;x<b0;x+=8)r.push(M(x,d));r.push(M(b0,d));return r};
       envLay(e).forEach(it=>{const ta=it.k==='house'?it.p[0][0]:it.t!=null?it.t:it.a,tb=it.k==='house'?it.p[1][0]:it.t!=null?it.t:it.b;if(tb-sta0<A-1||ta-sta0>B+1)return;
@@ -1356,19 +1356,21 @@ function sheetSvg(M,idx){
   o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#c0392b" stroke-width="2"/><text x="${px+44}" y="${y}" font-size="13">ขีด STA</text>`);y+=22;
   if(secIn.length||hasSec){o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#d35400" stroke-width="2" stroke-dasharray="8 3"/><text x="${px+44}" y="${y}" font-size="13">แนวตัดรูปตัด</text>`);y+=22}
   if(g.segs.some(s=>s.t!=='L')){o.push(`<circle cx="${px+23}" cy="${y-5}" r="4" fill="#8e44ad"/><text x="${px+44}" y="${y}" font-size="13">จุดต้น/ปลายโค้ง (PC/PT)</text>`);y+=22}
-  y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">รายการงานในแผ่นนี้</text>`);y+=30;
+  y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">${M.ov?'ข้อมูลภาพรวมโครงการ':'รายการงานในแผ่นนี้'}</text>`);y+=30;
+  if(M.ov){ovPanel(M,o,px,pw,y,inR,secIn)}else{
   const seen=new Set(),list=[];inR.forEach(b=>{const key=b.code+'|'+b.i;if(seen.has(key))return;seen.add(key);list.push(b)});
   const maxRows=Math.floor((600-y)/21);
   list.slice(0,maxRows).forEach(b=>{o.push(`<rect x="${px+12}" y="${y-10}" width="10" height="10" fill="${b.it?b.it.cat.color:'#888'}"/><text x="${px+28}" y="${y}" font-size="12"><tspan font-weight="700">${esc(b.code)}</tspan> ${esc(cut(b.it?b.it.name:'ไม่พบรหัส',17))}</text><text x="${px+pw-10}" y="${y}" font-size="11" fill="#555" text-anchor="end">${fmtSta(b.a)}–${fmtSta(b.b)}</text>`);y+=21});
   if(list.length>maxRows)o.push(`<text x="${px+12}" y="${y}" font-size="12" fill="#777">… และอีก ${list.length-maxRows} รายการ (ดูในตารางสำรวจ)</text>`);
+  }
   // PROFILE บนแผ่น PLAN
   if(M.ps){const ps=M.ps,sa=s0+sta0,sb=s1+sta0,eN=elN(g);
     if(M.pfB){let X,hl=N;o.push(`<rect x="30" y="600" width="1080" height="420" fill="#fff" stroke="#333"/>`);
       if(M.pos==='p')X=s=>P(s-sta0,0)[0];else{const Lc=Math.max(1,sb-sa);hl=[100,200,250,500,1000,2000,2500,5000].find(n=>Lc*5000/n<=1080-100-40)||5000;X=s=>140+(s-sa)*5000/hl}
-      o.push(profH(g,{id:'p'+idx,x:30,y:600,w:1080,h:420,sa,sb,X,LW:100,ps,Nv:gnum(eN.vs,0),hl}))}
-    else if(M.pfV)o.push(profV(g,{id:'v'+idx,x:780,y:60,w:330,h:hasSec?640:960,sa,sb,ps}))}
+      o.push(profH(g,{id:'p'+sid,x:30,y:600,w:1080,h:420,sa,sb,X,LW:100,ps,Nv:gnum(eN.vs,0),hl}))}
+    else if(M.pfV)o.push(profV(g,{id:'v'+sid,x:780,y:60,w:330,h:hasSec?640:960,sa,sb,ps}))}
   // title block
-  const tbc={cols:2,sheet:`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`,scale:'1:'+N};
+  const tbc={cols:2,sheet:M.ov?'ผังบริเวณภาพรวม':`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`,scale:'1:'+N};
   o.push(tbV(px,620,pw,400,{...tbc,keyH:84}));
   // sections panel
   if(hasSec&&!M.pfB){o.push(`<rect x="30" y="710" width="1080" height="310" fill="#fff" stroke="#333"/>`);
@@ -1376,6 +1378,19 @@ function sheetSvg(M,idx){
     else{const n=Math.min(4,secIn.length),cw=1080/n;secIn.slice(0,n).forEach((q,j)=>o.push(secSvg(M,q,30+j*cw,710,cw,310)));
       if(secIn.length>4)o.push(`<text x="1100" y="1012" font-size="11" fill="#c0392b" text-anchor="end">มีรูปตัดอีก ${secIn.length-4} รูปในแผ่นนี้ (แสดงสูงสุด 4)</text>`)}}
   o.push('</svg>');return o.join('')}
+function ovPanel(M,o,px,pw,y,inR,secIn){const g=M.g,sta0=M.sta0,ln=[],T=(t,b,c)=>ln.push({t,b,c});
+  const f1=v=>(Math.round(v*10)/10).toString(),cv=curvesList(g,sta0);
+  let wmin=1e9,wmax=0;for(let t=0;t<=M.total;t+=Math.max(1,M.total/60)){const w=M.wf(t+sta0),s=w[0]+w[1];wmin=Math.min(wmin,s);wmax=Math.max(wmax,s)}
+  T('ความยาวทั้งโครงการ '+f1(M.total)+' ม.',1,'#1f3a5f');T('STA '+fmtSta(sta0)+' – '+fmtSta(sta0+M.total));
+  T('ผิวทางกว้าง '+(Math.abs(wmax-wmin)<.05?f1(wmax):f1(wmin)+'–'+f1(wmax))+' ม. · โค้ง '+cv.length+' แห่ง');T('รูปตัดขวาง '+(g.secs||[]).filter(x=>parseSta(x.sta)!=null).length+' รูป · ช่วงทาง '+(g.pl||[]).filter(p=>!p.lead).length+' ช่วง');
+  const rl=Math.max(gnum(g.rowl,0),...(g.rz||[]).map(z=>z.l)),rr=Math.max(gnum(g.rowr,0),...(g.rz||[]).map(z=>z.r));if(rl>0||rr>0)T('เขตทาง ซ้าย '+f1(rl)+' / ขวา '+f1(rr)+' ม.');
+  const pc=(g.pc||[]).filter(x=>x.type||x.cond);if(pc.length){T('ผิวทางเดิม:',1,'#7a4b00');pc.slice(0,3).forEach(x=>T(' · '+(x.a||'')+'–'+(x.b||'')+' '+(x.type||'')+(x.cond?' ('+x.cond+')':'')));if(pc.length>3)T(' … อีก '+(pc.length-3)+' ช่วง',0,'#777')}
+  const ev=(g.env||[]).filter(e=>e.t);if(ev.length){T('สภาพแวดล้อม:',1,'#2e6b2e');ev.slice(0,6).forEach(e=>T(' · '+(e.side==='L'?'ซ้าย':'ขวา')+' '+e.t+(e.name?' '+e.name:'')+' '+fmtSta(e.a)+'–'+fmtSta(e.b)));if(ev.length>6)T(' … อีก '+(ev.length-6)+' รายการ',0,'#777')}
+  const ob={};(g.ob||[]).forEach(q=>{if(OB[q.k])ob[OB[q.k].n]=(ob[OB[q.k].n]||0)+1});const ok=Object.keys(ob);if(ok.length)T('สิ่งก่อสร้าง/จุดสำรวจ: '+ok.map(k=>k+' '+ob[k]).join(', '),0,'#444');
+  const nj=new Set(inR.map(b=>b.code)).size;T('รายการงานทั้งหมด '+nj+' ชนิด · '+inR.length+' ช่วงงาน',0,'#444');
+  const maxY=598;let n=0;for(const l of ln){if(y>maxY-4)break;o.push('<text x="'+(px+12)+'" y="'+y+'" font-size="12" '+(l.b?'font-weight="700" ':'')+'fill="'+(l.c||'#222')+'">'+esc(cut(l.t,46))+'</text>');y+=17;n++}
+  if(n<ln.length)o.push('<text x="'+(px+12)+'" y="'+(maxY)+'" font-size="11" fill="#c0392b">… ข้อมูลเพิ่มเติมดูในแผ่นถัดไป/ตารางสำรวจ</text>')}
+function ovModel(M){const f=chunkFrame(M.pts,0,M.total,M.lay,M.mg);const need=Math.max(f.bw*5000/M.AW,f.bh*5000/M.AH);const N=Math.max(M.N>0&&M.chunks.length===1?M.N:0,Math.ceil(need/50)*50);return{...M,ov:true,chunks:[[0,M.total]],N,idx:0}}
 function secSvg(M,q,x0,y0,w,h){
   const{g,wf,sta0}=M,sc=q.sc,t=q.s+sta0,wDef=wf(t);
   const wl=gnum(sc.wl,0)>0?gnum(sc.wl):wDef[0],wr=gnum(sc.wr,0)>0?gnum(sc.wr):wDef[1];
@@ -1433,11 +1448,12 @@ function renderSheets(){
   const{bars}=geoBars();
   if(!bars.length&&!g.segs.length&&!g.ws.length&&!(g.secs||[]).length){box.innerHTML='<div class="mute" style="padding:30px">ยังไม่มีข้อมูลสำหรับสร้างแปลน — กรอก STA/ตำแหน่ง (L/C/R) ในตารางสำรวจ หรือกำหนดแนวทางด้านบน</div>';$('legend').innerHTML='';$('geoInfo')&&($('geoInfo').textContent='');window.PLANM=null;return}
   const M=planModel();window.PLANM=M;let h='';
-  M.chunks.forEach((c,i)=>{M.idx=i;h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นที่ ${i+1} / ${M.chunks.length} · STA ${fmtSta(c[0]+M.sta0)} – ${fmtSta(c[1]+M.sta0)} · มาตราส่วน 1:${M.N}</div>${sheetSvg(M,i)}</div>`});
+  {const OM=ovModel(M);h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px;font-weight:700;color:var(--brand)">🗺 แผ่นแรก: ผังบริเวณดำเนินการ (ภาพรวมทั้งโครงการ) · STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)} · มาตราส่วน 1:${OM.N}</div>${sheetSvg(OM,0)}</div>`}
+  if(M.chunks.length>1)M.chunks.forEach((c,i)=>{M.idx=i;h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นที่ ${i+1} / ${M.chunks.length} · STA ${fmtSta(c[0]+M.sta0)} – ${fmtSta(c[1]+M.sta0)} · มาตราส่วน 1:${M.N}</div>${sheetSvg(M,i)}</div>`});
   {const ss=secSheets(M);if(ss.length){h+=`<div id="secSheets" class="mute" style="margin:14px 0 2px;font-weight:700;color:var(--brand)">▼ แผ่นรูปตัด SECTION (ต่อท้ายแผ่น PLAN / PROFILE) · ${ss.length} แผ่น</div>`+ss.map((x,i)=>`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นรูปตัดที่ ${i+1} / ${ss.length}</div>${x}</div>`).join('')}}
   box.innerHTML=h;
   $('legend').innerHTML=M.un?`<span class="warn">ไม่แสดงใน PLAN ${M.un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
-  const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>${M.chunks.length} แผ่น</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`}
+  const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>${M.chunks.length>1?M.chunks.length+' แผ่นแยกช่วง + ':''}1 แผ่นผังบริเวณภาพรวม</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`}
 function planSvgs(){return [...$('planbox').querySelectorAll('svg.sheet')]}
 
 // ===================== v12 UI: ตั้งค่าแปลน =====================
@@ -1941,7 +1957,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v50';
+const APPVER='v51';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -3157,7 +3173,7 @@ function xsSize(){const P=MM_PAPER.find(p=>p[0]===$('xsPaper').value)||MM_PAPER[
   let cap=false;if(w*h>30e6){const k=Math.sqrt(30e6/(w*h));w=Math.floor(w*k);h=Math.floor(h*k);cap=true}return{w,h,cap}}
 function xsInfo(){const s=xsSize(),n=xsSheets().length;$('xsInfo').textContent='ขนาดรูปต่อแผ่น: '+s.w+' × '+s.h+' พิกเซล (~'+(s.w*s.h/1e6).toFixed(1)+' ล้านพิกเซล)'+(s.cap?' · ลดอัตโนมัติ':'')+' · จะได้ '+n+' แผ่น'+(n>1?' (รวมเป็นไฟล์ ZIP)':'')}
 function xsSheets(w){const want=w||{plan:$('xsPlan').checked,prof:$('xsProf').checked,sec:$('xsSec').checked},out=[];let sv=[];try{renderPlan();sv=planSvgs()}catch(e){}
-  if(want.plan)sv.filter(s=>!s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'PLAN_'+(i+1),svg:s}));
+  if(want.plan){let pn=0;sv.filter(s=>!s.classList.contains('secsheet')).forEach(s=>out.push({n:s.dataset.ov?'PLAN_OVERVIEW':'PLAN_'+(++pn),svg:s}))};
   if(want.prof){try{profSvgs(G()).forEach((x,i)=>out.push({n:'PROFILE_'+(i+1),svg:new DOMParser().parseFromString(x,'image/svg+xml').documentElement}))}catch(e){}}
   if(want.sec)sv.filter(s=>s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'SECTION_'+(i+1),svg:s}));return out}
 async function xsRaster(svg,z,type){const c=svg.cloneNode(true),vb=c.viewBox.baseVal,k=Math.min(z.w/vb.width,z.h/vb.height),dw=Math.round(vb.width*k),dh=Math.round(vb.height*k);c.setAttribute('width',dw);c.setAttribute('height',dh);c.removeAttribute('style');c.setAttribute('xmlns','http://www.w3.org/2000/svg');
