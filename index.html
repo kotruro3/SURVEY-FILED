@@ -299,7 +299,7 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
 </section>
 <section class="tab" id="t3">
   <div class="wz"><div class="wzL"><div class="card" id="geoCard"></div></div>
-  <div class="wzR"><div class="bar"><button class="b" id="pngBtn">⬇ บันทึกภาพ PLAN (PNG)</button><button class="b" data-pdf>📄 ส่งออก PDF</button><span class="pz"><button class="b ghost sm" id="pzO" title="ซูมออก">−</button><b id="pzv">100%</b><button class="b ghost sm" id="pzI" title="ซูมเข้า">＋</button><button class="b ghost sm" id="pzF">พอดี</button></span></div><div class="mute" style="margin:-4px 0 6px">🔍 ซูมตรวจแปลน: ปุ่ม − ＋ / บีบสองนิ้ว / Ctrl+ลูกกลิ้งเมาส์ · ลากเพื่อเลื่อนดู (ซูมเฉพาะตอนดู ไม่กระทบมาตราส่วนตอนพิมพ์/ส่งออก)</div>
+  <div class="wzR"><div class="bar"><button class="b" id="pngBtn">⬇ บันทึกภาพ PLAN (PNG)</button><button class="b" data-pdf>📄 ส่งออก PDF</button><span class="pz"><button class="b ghost sm" id="pzO" title="ซูมออก">−</button><b id="pzv">100%</b><button class="b ghost sm" id="pzI" title="ซูมเข้า">＋</button><button class="b ghost sm" id="pzF">พอดี</button></span><label class="mck" style="margin-left:8px"><input type="checkbox" id="ovEnvT"><span>แสดงสภาพแวดล้อมซ้าย/ขวาในผังบริเวณ (แผ่นแรก)</span></label></div><div class="mute" style="margin:-4px 0 6px">🔍 ซูมตรวจแปลน: ปุ่ม − ＋ / บีบสองนิ้ว / Ctrl+ลูกกลิ้งเมาส์ · ลากเพื่อเลื่อนดู (ซูมเฉพาะตอนดู ไม่กระทบมาตราส่วนตอนพิมพ์/ส่งออก)</div>
   <div class="card"><div id="planbox"></div><div class="legend" id="legend"></div></div></div></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">📤 ส่งออกแบบ PLAN / PROFILE / SECTION</h3>
    <div class="mute">ส่งออกจากแผ่นที่แสดงด้านบน (ใช้ Title block จากแท็บ ① DATA PROJECT)</div>
@@ -1356,7 +1356,7 @@ function sheetSvg(M,idx){
   o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#c0392b" stroke-width="2"/><text x="${px+44}" y="${y}" font-size="13">ขีด STA</text>`);y+=22;
   if(secIn.length||hasSec){o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#d35400" stroke-width="2" stroke-dasharray="8 3"/><text x="${px+44}" y="${y}" font-size="13">แนวตัดรูปตัด</text>`);y+=22}
   if(g.segs.some(s=>s.t!=='L')){o.push(`<circle cx="${px+23}" cy="${y-5}" r="4" fill="#8e44ad"/><text x="${px+44}" y="${y}" font-size="13">จุดต้น/ปลายโค้ง (PC/PT)</text>`);y+=22}
-  y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">${M.ov?'ข้อมูลภาพรวมโครงการ':'รายการงานในแผ่นนี้'}</text>`);y+=30;
+  y=obLegend(g,o,px,y);y+=6;if(!M.ov)y=segNote(M,o,px,pw,y,s0,s1);o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">${M.ov?'ข้อมูลภาพรวมโครงการ':'รายการงานในแผ่นนี้'}</text>`);y+=30;
   if(M.ov){ovPanel(M,o,px,pw,y,inR,secIn)}else{
   const seen=new Set(),list=[];inR.forEach(b=>{const key=b.code+'|'+b.i;if(seen.has(key))return;seen.add(key);list.push(b)});
   const maxRows=Math.floor((600-y)/21);
@@ -1390,6 +1390,18 @@ function ovPanel(M,o,px,pw,y,inR,secIn){const g=M.g,sta0=M.sta0,ln=[],T=(t,b,c)=
   const maxY=598;let n=0;for(const l of ln){if(y>maxY-4)break;o.push('<text x="'+(px+12)+'" y="'+y+'" font-size="12" '+(l.b?'font-weight="700" ':'')+'fill="'+(l.c||'#222')+'">'+esc(cut(l.t,46))+'</text>');y+=17;n++}
   if(n<ln.length)o.push('<text x="'+(px+12)+'" y="'+(maxY)+'" font-size="11" fill="#c0392b">… ข้อมูลเพิ่มเติมดูในแผ่นถัดไป/ตารางสำรวจ</text>')}
 function ovModel(M){const f=chunkFrame(M.pts,0,M.total,M.lay,M.mg);const need=Math.max(f.bw*5000/M.AW,f.bh*5000/M.AH);const N=Math.max(M.N>0&&M.chunks.length===1?M.N:0,Math.ceil(need/50)*50);return{...M,g:M.g.ovEnv?M.g:{...M.g,env:[]},ov:true,chunks:[[0,M.total]],N,idx:0}}
+function segNote(M,o,px,pw,y,s0,s1){const g=M.g,sta0=M.sta0,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'};
+  const sg=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a&&p._a<s1+sta0-1e-6&&p._b>s0+sta0+1e-6).map(p=>({a:Math.max(p._a,s0+sta0),b:Math.min(p._b,s1+sta0),t:tn[p.t]||''}));
+  if(sg.length<2)return y;
+  const W=pw-24,x=px+12,mx=6,show=sg.slice(0,mx);let tot=0;sg.forEach(s=>tot+=s.b-s.a);
+  o.push(`<rect x="${x}" y="${y-12}" width="${W}" height="20" fill="#e8eef6" stroke="#1f3a5f"/><text x="${x+6}" y="${y+2}" font-size="13" font-weight="700" fill="#1f3a5f">Note · สรุปช่วง STA ในแผ่นนี้ (${sg.length} ช่วง)</text>`);y+=22;
+  const cx=[x+4,x+40,x+W-95,x+W-6];
+  o.push(`<text x="${cx[0]}" y="${y}" font-size="11" font-weight="700">#</text><text x="${cx[1]}" y="${y}" font-size="11" font-weight="700">STA เริ่ม–สิ้นสุด · ชนิด</text><text x="${cx[3]}" y="${y}" font-size="11" font-weight="700" text-anchor="end">ระยะ (ม.)</text>`);y+=4;
+  o.push(`<line x1="${x}" y1="${y}" x2="${x+W}" y2="${y}" stroke="#888"/>`);y+=14;
+  show.forEach((s,i)=>{o.push(`<text x="${cx[0]}" y="${y}" font-size="11">${i+1}</text><text x="${cx[1]}" y="${y}" font-size="11">${fmtSta(s.a)}–${fmtSta(s.b)} ${s.t}</text><text x="${cx[3]}" y="${y}" font-size="11" text-anchor="end">${(s.b-s.a).toFixed(2)}</text>`);y+=15});
+  if(sg.length>mx){o.push(`<text x="${cx[1]}" y="${y}" font-size="11" fill="#666">… อีก ${sg.length-mx} ช่วง</text>`);y+=15}
+  o.push(`<line x1="${x}" y1="${y-10}" x2="${x+W}" y2="${y-10}" stroke="#888"/><text x="${cx[0]}" y="${y+2}" font-size="12" font-weight="700">รวม ${sg.length} ช่วง</text><text x="${cx[3]}" y="${y+2}" font-size="12" font-weight="700" text-anchor="end">${tot.toFixed(2)} ม.</text>`);
+  return y+22}
 function secSvg(M,q,x0,y0,w,h){
   const{g,wf,sta0}=M,sc=q.sc,t=q.s+sta0,wDef=wf(t);
   const wl=gnum(sc.wl,0)>0?gnum(sc.wl):wDef[0],wr=gnum(sc.wr,0)>0?gnum(sc.wr):wDef[1];
@@ -1447,10 +1459,10 @@ function renderSheets(){
   const{bars}=geoBars();
   if(!bars.length&&!g.segs.length&&!g.ws.length&&!(g.secs||[]).length){box.innerHTML='<div class="mute" style="padding:30px">ยังไม่มีข้อมูลสำหรับสร้างแปลน — กรอก STA/ตำแหน่ง (L/C/R) ในตารางสำรวจ หรือกำหนดแนวทางด้านบน</div>';$('legend').innerHTML='';$('geoInfo')&&($('geoInfo').textContent='');window.PLANM=null;return}
   const M=planModel();window.PLANM=M;let h='';
-  {const OM=ovModel(M);h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px;font-weight:700;color:var(--brand)">🗺 แผ่นแรก: ผังบริเวณดำเนินการ (ภาพรวมทั้งโครงการ) · STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)} · มาตราส่วน 1:${OM.N} <label class="mck" style="margin-left:10px"><input type="checkbox" id="ovEnvT" ${g.ovEnv?'checked':''}><span>แสดงสภาพแวดล้อมซ้าย/ขวาในผังบริเวณ</span></label></div>${sheetSvg(OM,0)}</div>`}
+  {const OM=ovModel(M);h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px;font-weight:700;color:var(--brand)">🗺 แผ่นแรก: ผังบริเวณดำเนินการ (ภาพรวมทั้งโครงการ) · STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)} · มาตราส่วน 1:${OM.N} </div>${sheetSvg(OM,0)}</div>`}
   M.chunks.forEach((c,i)=>{M.idx=i;h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นที่ ${i+1} / ${M.chunks.length} · STA ${fmtSta(c[0]+M.sta0)} – ${fmtSta(c[1]+M.sta0)} · มาตราส่วน 1:${M.N} · รวม ${(g.pl||[]).filter(p=>!p.lead&&p._b>p._a&&p._a<M.sta0+c[1]-1e-6&&p._b>M.sta0+c[0]+1e-6).length} ช่วงทางในแผ่นนี้ (จัดรวมอัตโนมัติตามมาตราส่วน)</div>${sheetSvg(M,i)}</div>`});
   {const ss=secSheets(M);if(ss.length){h+=`<div id="secSheets" class="mute" style="margin:14px 0 2px;font-weight:700;color:var(--brand)">▼ แผ่นรูปตัด SECTION (ต่อท้ายแผ่น PLAN / PROFILE) · ${ss.length} แผ่น</div>`+ss.map((x,i)=>`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นรูปตัดที่ ${i+1} / ${ss.length}</div>${x}</div>`).join('')}}
-  box.innerHTML=h;{const ce=$('ovEnvT');if(ce)ce.onchange=()=>{G().ovEnv=ce.checked;save(true);renderPlan()}}
+  box.innerHTML=h;{const ce=$('ovEnvT');if(ce){ce.checked=!!G().ovEnv;ce.onchange=()=>{G().ovEnv=ce.checked;save(true);renderPlan()}}}
   $('legend').innerHTML=M.un?`<span class="warn">ไม่แสดงใน PLAN ${M.un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
   const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>1 แผ่นผังบริเวณภาพรวม + ${M.chunks.length} แผ่นแยกช่วง</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`+(()=>{const pls=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);return `<div class="mute" style="margin-top:4px">แผ่นแยกช่วง (รวมหลายช่วง STA ไว้ในแผ่นเดียวอัตโนมัติตามมาตราส่วน): ${M.chunks.map((c,i)=>{const n=pls.filter(p=>p._a<M.sta0+c[1]-1e-6&&p._b>M.sta0+c[0]+1e-6).length;return `<b>แผ่น ${i+1}</b> STA ${fmtSta(M.sta0+c[0])}–${fmtSta(M.sta0+c[1])} (${n} ช่วงทาง)`}).join(' · ')}</div>`})()}
 function planSvgs(){return [...$('planbox').querySelectorAll('svg.sheet')]}
@@ -1956,7 +1968,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v55';
+const APPVER='v56';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
