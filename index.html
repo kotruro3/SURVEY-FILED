@@ -279,7 +279,7 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
    <div class="bar" style="align-items:center"><img id="tbLogoImg" style="display:none;height:64px;max-width:160px;object-fit:contain;border:1px solid var(--line);background:#fff;border-radius:6px"><span id="tbLogoNo" class="mute">ยังไม่มีโลโก้</span>
     <label class="b ghost sm" style="cursor:pointer;margin:0">📷 เพิ่มรูป / เลือกไฟล์<input type="file" id="tbLogoFile" accept="image/*" style="display:none"></label><button class="b ghost sm" id="tbLogoDel" style="display:none;color:#b3261e">🗑 ลบโลโก้</button></div>
    <div style="font-weight:700;margin-top:8px">2) แผนที่สังเขปและที่ตั้ง</div>
-   <div class="mute">ระบบสร้างให้อัตโนมัติจากแท็บ ② LOCATION (บริเวณ จุดที่ตั้ง และเส้นที่วาด) โดยไม่แสดงทิศเหนือซ้ำในแบบ</div>
+   <div class="mute">แผนที่สังเขปสร้างจากแท็บ ② LOCATION (บริเวณ จุดที่ตั้ง และเส้นที่วาด) · ในแผ่นแบบของแท็บ ③ STA (PLAN / PROFILE / SECTION) <b>ไม่แสดงช่องแผนที่สังเขป</b> เพื่อเพิ่มพื้นที่ให้ข้อความของ Title block</div>
    <div style="font-weight:700;margin-top:8px">3) โครงการ / ชื่องาน</div>
    <div class="grid g2"><div><label>โครงการ / ชื่องาน (เว้นว่าง = ใช้ชื่อโครงการด้านบน)</label><input data-tb="work" type="text" placeholder=""></div><div><label>ชื่อแผ่นงานแผนที่</label><input data-tb="sheetName" type="text" placeholder="แผนที่สังเขปที่ตั้งโครงการ"></div></div>
    <div style="font-weight:700;margin-top:8px">4) ผู้ลงนาม</div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">เขียนแบบ / สำรวจ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.draw.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.draw.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">วิศวกร</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.eng.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.eng.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">ตรวจสอบ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.chk.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.chk.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">เห็นชอบ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.agr.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.agr.p" type="text" placeholder="ตำแหน่ง"></div></div></div><div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0"><div style="font-weight:700;margin-bottom:4px">อนุมัติ</div><div class="mute" style="margin:0 0 4px">ลงชื่อ ........................ (เซ็นด้วยมือบนแบบพิมพ์)</div><div class="grid g2"><div><label>ชื่อ</label><input data-tb="r.apv.n" type="text" placeholder="ชื่อ-นามสกุล"></div><div><label>ตำแหน่ง</label><input data-tb="r.apv.p" type="text" placeholder="ตำแหน่ง"></div></div></div>
@@ -305,6 +305,9 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
    <div class="grid g2" style="margin-top:4px"><div><label>ระบบพิกัด</label><select id="xsCoord"><option value="loc">พิกัดท้องถิ่น (จุดเริ่มต้น = 0,0)</option><option value="utm">UTM จริง (ต้องมีพิกัดจุดเริ่มต้นสายทาง)</option></select></div><div><label>ขนาดตัวอักษรตามมาตราส่วนพิมพ์ 1:</label><input id="xsN" type="number" value="1000" min="100" step="100"></div></div>
    <div class="grid g2"><div><label>พิกัดจุดเริ่มต้นสายทาง (สำหรับ UTM จริง · วางจาก Google Maps)</label><input id="xsLL" placeholder="13.7563, 100.5018"></div><div><label>&nbsp;</label><div class="bar" style="margin:0"><select id="xsLLSel" style="width:auto"></select><button class="b ghost sm" id="xsLLClr" style="color:#b3261e">ล้างพิกัด</button></div></div></div>
    <div class="bar" style="gap:6px 18px;margin:6px 0"><label class="mck"><input type="checkbox" id="xsJobs" checked><span>รวมรายการงาน (JOB) ตาม STA</span></label><label class="mck"><input type="checkbox" id="xsOsm" checked><span>รวมข้อมูลสภาพแวดล้อม OSM (ต้องมีพิกัดจุดเริ่มต้นสายทางและดึงข้อมูลไว้แล้ว)</span></label></div>
+   <div style="font-weight:700;margin-top:6px">แผ่นแบบที่แปลงจากภาพ (วางต่อใต้แผนผังจริงในไฟล์เดียวกัน)</div>
+   <div class="bar" style="gap:6px 18px;margin:4px 0"><label class="mck"><input type="checkbox" id="xdPlan" checked><span>แผ่น PLAN (กรอบ · Legend · Title block)</span></label><label class="mck"><input type="checkbox" id="xdProf" checked><span>แผ่น PROFILE (ระดับ ELEVATION · ตาราง)</span></label><label class="mck"><input type="checkbox" id="xdSec" checked><span>แผ่น SECTION (รูปตัด)</span></label></div>
+   <div class="mute">แต่ละแผ่นแปลงเป็นเส้นและข้อความที่แก้ไขได้ (แยก Layer ตามประเภท/สี) ขนาด A3 ที่มาตราส่วนพิมพ์ 1:N ตามช่องด้านบน · พื้นสี/ลายแรเงา/รูป LOGO ไม่ถูกแปลง (เหลือเฉพาะเส้นขอบและข้อความ) · ไม่ติ๊ก = ได้เฉพาะแผนผังจริงแบบเดิม</div>
    <div class="bar"><button class="b" id="xsDxf">⬇ ดาวน์โหลด .dxf</button></div>
    <div class="mute">ไฟล์เป็น 2 มิติ แยกเลเยอร์ (แนวทาง, ขอบผิวทาง, ROW, STA, สภาพแวดล้อม, วัตถุสำรวจ, JOB ฯลฯ) · SketchUp ฟรีรุ่นเว็บนำเข้า DXF ไม่ได้ ต้องเป็น SketchUp Pro หรือเปิดใน AutoCAD แล้วบันทึกเป็น DWG</div></div>
   <div class="bar" style="margin:14px 0"><button class="b" id="xsNext">ขั้นตอนถัดไป → ④ MAKE JOB</button></div>
@@ -1355,7 +1358,7 @@ function sheetSvg(M,idx){
       o.push(profH(g,{id:'p'+idx,x:30,y:600,w:1080,h:420,sa,sb,X,LW:100,ps,Nv:gnum(eN.vs,0),hl}))}
     else if(M.pfV)o.push(profV(g,{id:'v'+idx,x:780,y:60,w:330,h:hasSec?640:960,sa,sb,ps}))}
   // title block
-  const tbc={cols:2,key:true,sheet:`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`,scale:'1:'+N};
+  const tbc={cols:2,sheet:`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`,scale:'1:'+N};
   o.push(tbV(px,620,pw,400,{...tbc,keyH:84}));
   // sections panel
   if(hasSec&&!M.pfB){o.push(`<rect x="30" y="710" width="1080" height="310" fill="#fff" stroke="#333"/>`);
@@ -1928,7 +1931,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v45';
+const APPVER='v47';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -2719,6 +2722,71 @@ function dxfBuild(op){
   const tbx=[bnd[0],bnd[1]-H*6];
   tx(lay('TITLE',7),tbx,'โครงการ: '+(S.proj.name||'-')+'   สายทาง: '+(S.proj.route||'-'),H*1.3);tx('TITLE',[tbx[0],tbx[1]-H*2],'หน่วยงาน: '+(S.proj.agency||'-')+'   รหัส: '+(S.code||'-')+'   STA '+fmtSta(s0)+' - '+fmtSta(s0+len),H);
   tx('TITLE',[tbx[0],tbx[1]-H*3.7],'พิกัด: '+(ox?('UTM โซน '+zone+' (WGS84) หน่วยเมตร'):'พิกัดท้องถิ่น (จุดเริ่ม = 0,0 ทิศเหนือ = +Y)')+'   สร้างจาก Survey Field '+APPVER+'   '+new Date().toISOString().slice(0,10),H*.8);
+  // ---- v46: แผ่นแบบ (PLAN-sheet / PROFILE / SECTION) แปลงจาก SVG เป็นเส้น+ข้อความ DXF ----
+  let shInfo=null;
+  if(op.sheets&&op.sheets.length){
+    const NN=op.N||1000,k=NN*0.42/1485,gap=NN*0.04,SW=1485*k,SH=1050*k;
+    const ACI=[[1,255,0,0],[2,255,255,0],[3,0,200,0],[4,0,200,200],[5,0,0,255],[6,255,0,255],[7,0,0,0],[8,128,128,128],[9,192,192,192],[30,255,127,0],[34,150,100,40]];
+    const hex=s=>{s=String(s||'').trim().toLowerCase();let m=s.match(/^#([0-9a-f]{3})$/);if(m)s='#'+m[1].split('').map(c=>c+c).join('');m=s.match(/^#([0-9a-f]{6})$/);if(m){const n=parseInt(m[1],16);return[n>>16,n>>8&255,n&255]}const nm={black:[0,0,0],red:[255,0,0],blue:[0,0,255],green:[0,128,0],gray:[128,128,128],grey:[128,128,128],orange:[255,165,0]};return nm[s]||null};
+    const aciOf=s=>{const c=hex(s);if(!c)return 7;let b=7,bd=1e9;ACI.forEach(a=>{const d=(a[1]-c[0])**2+(a[2]-c[1])**2+(a[3]-c[2])**2;if(d<bd){bd=d;b=a[0]}});if(c[0]+c[1]+c[2]<160)return 7;return b};
+    const isWhite=s=>{const c=hex(s);return !!c&&c[0]>240&&c[1]>240&&c[2]>240};
+    const inh=(el,n)=>{for(let e=el;e&&e.nodeType===1;e=e.parentNode){if(e.hasAttribute&&e.hasAttribute(n))return e.getAttribute(n)}return null};
+    const mul=(m,n)=>[m[0]*n[0]+m[2]*n[1],m[1]*n[0]+m[3]*n[1],m[0]*n[2]+m[2]*n[3],m[1]*n[2]+m[3]*n[3],m[0]*n[4]+m[2]*n[5]+m[4],m[1]*n[4]+m[3]*n[5]+m[5]];
+    const parseTr=s=>{let m=[1,0,0,1,0,0];if(!s)return m;const re=/(\w+)\(([^)]*)\)/g;let q;while((q=re.exec(s))){const a=q[2].split(/[\s,]+/).filter(x=>x!=='').map(Number),t=q[1];let n=null;
+      if(t==='translate')n=[1,0,0,1,a[0]||0,a[1]||0];else if(t==='scale')n=[a[0],0,0,a.length>1?a[1]:a[0],0,0];else if(t==='matrix')n=a.slice(0,6);
+      else if(t==='rotate'){const r=(a[0]||0)*Math.PI/180,c=Math.cos(r),s2=Math.sin(r);n=[c,s2,-s2,c,0,0];if(a.length>2){n=mul(mul([1,0,0,1,a[1],a[2]],n),[1,0,0,1,-a[1],-a[2]])}}
+      if(n)m=mul(m,n)}return m};
+    const ap=(m,x,y)=>[m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];
+    const clipSeg=(a,b,R)=>{let t0=0,t1=1;const dx=b[0]-a[0],dy=b[1]-a[1];const P=[-dx,dx,-dy,dy],Q=[a[0]-R[0],R[2]-a[0],a[1]-R[1],R[3]-a[1]];
+      for(let i=0;i<4;i++){if(P[i]===0){if(Q[i]<0)return null}else{const r=Q[i]/P[i];if(P[i]<0){if(r>t1)return null;if(r>t0)t0=r}else{if(r<t0)return null;if(r<t1)t1=r}}}
+      return[[a[0]+t0*dx,a[1]+t0*dy],[a[0]+t1*dx,a[1]+t1*dy]]};
+    const clipPoly=(P,R,closed)=>{if(!R)return[{closed:!!closed,p:P}];const out=[];let cur=[];const n=P.length,segs=closed?n:n-1;
+      for(let i=0;i<segs;i++){const a=P[i],b=P[(i+1)%n],c=clipSeg(a,b,R);if(!c){if(cur.length>1)out.push(cur);cur=[];continue}
+        if(!cur.length)cur.push(c[0]);else if(Math.hypot(cur[cur.length-1][0]-c[0][0],cur[cur.length-1][1]-c[0][1])>1e-6){if(cur.length>1)out.push(cur);cur=[c[0]]}
+        cur.push(c[1]);if(Math.hypot(c[1][0]-b[0],c[1][1]-b[1])>1e-6){out.push(cur);cur=[]}}
+      if(cur.length>1)out.push(cur);if(closed&&out.length===1&&out[0].length===n+1&&Math.hypot(out[0][0][0]-out[0][n][0],out[0][0][1]-out[0][n][1])<1e-6)return[out[0].slice(0,n)].map(x=>({closed:true,p:x}));
+      return out.map(x=>({closed:false,p:x}))};
+    const inRect=(p,R)=>!R||(p[0]>=R[0]-1e-6&&p[0]<=R[2]+1e-6&&p[1]>=R[1]-1e-6&&p[1]<=R[3]+1e-6);
+    const cnt={shapes:0,texts:0,skip:0};
+    const emitSheet=(sh,pre,X0,Y0)=>{const svg=sh.svg,W0=(x,y)=>[X0+x*k,Y0-y*k];
+      const lyr=(role,aci,dash)=>lay(pre+'_'+role+aci+(dash?(dash>1?'_DD':'_D'):''),aci,dash?(dash>1?'CENTER':'DASHED'):'CONTINUOUS');
+      const emitPoly=(P,m,clip,color,dash,closed)=>{const Pw=P.map(q=>ap(m,q[0],q[1]));const pieces=clipPoly(Pw,clip,closed);const L=lyr('L',aciOf(color),dash);pieces.forEach(pc=>{pl(L,pc.p.map(q=>W0(q[0],q[1])),pc.closed);cnt.shapes++})};
+      const walk=(el,m,clip)=>{const tag=(el.tagName||'').toLowerCase();if(!tag||['defs','clippath','pattern','style','title','desc','lineargradient','mask','marker','symbol'].includes(tag))return;
+        let mm=m;if(el.hasAttribute&&el.hasAttribute('transform'))mm=mul(m,parseTr(el.getAttribute('transform')));
+        let cl=clip;const cp=el.getAttribute&&el.getAttribute('clip-path');if(cp){const id=(cp.match(/#([^)\s'"]+)/)||[])[1];const ce=id&&svg.querySelector('[id="'+id+'"]');const r=ce&&ce.querySelector('rect');
+          if(r){const x=+r.getAttribute('x')||0,y=+r.getAttribute('y')||0,w=+r.getAttribute('width')||0,h=+r.getAttribute('height')||0,a=ap(mm,x,y),b=ap(mm,x+w,y+h);cl=[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])]}}
+        const st=inh(el,'stroke'),fl=inh(el,'fill'),da=(inh(el,'stroke-dasharray')||'').split(/[\s,]+/).filter(x=>x!=='').length;const dash=da>=4?2:da>=2?1:0;
+        const col=(st&&st!=='none'&&!isWhite(st))?st:((fl&&fl!=='none'&&!/^url/.test(fl)&&!isWhite(fl))?fl:null);
+        const num=n=>+el.getAttribute(n)||0;
+        if(tag==='g'||tag==='svg'){Array.from(el.children).forEach(c=>walk(c,mm,cl));return}
+        if(tag==='line'){if(col)emitPoly([[num('x1'),num('y1')],[num('x2'),num('y2')]],mm,cl,col,dash,false)}
+        else if(tag==='rect'){if(col){const x=num('x'),y=num('y'),w=num('width'),h=num('height');emitPoly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]],mm,cl,col,dash,true)}}
+        else if(tag==='polyline'||tag==='polygon'){if(col){const nums=(el.getAttribute('points')||'').trim().split(/[\s,]+/).map(Number);const P=[];for(let i=0;i+1<nums.length;i+=2)P.push([nums[i],nums[i+1]]);if(P.length>1)emitPoly(P,mm,cl,col,dash,tag==='polygon')}}
+        else if(tag==='circle'){if(col){const c=ap(mm,num('cx'),num('cy')),r=num('r')*Math.hypot(mm[0],mm[1]);if(inRect(c,cl)&&r>0){const q=W0(c[0],c[1]);ci(lyr('L',aciOf(col),dash),q,Math.max(r*k,k*.3));cnt.shapes++}}}
+        else if(tag==='path'){if(col){const toks=(el.getAttribute('d')||'').match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/gi)||[];let i=0,cmd='',cx=0,cy=0,sx=0,sy=0,cur=[];const flush=cz=>{if(cur.length>1)emitPoly(cur,mm,cl,col,dash,!!cz);cur=[]};const nx=()=>parseFloat(toks[i++]);
+          while(i<toks.length){if(/[A-Za-z]/.test(toks[i]))cmd=toks[i++];const rel=cmd===cmd.toLowerCase(),C=cmd.toUpperCase();
+            if(C==='Z'){flush(true);cx=sx;cy=sy;continue}
+            if(C==='M'){flush();const x=nx(),y=nx();cx=rel?cx+x:x;cy=rel?cy+y:y;sx=cx;sy=cy;cur=[[cx,cy]];cmd=rel?'l':'L'}
+            else if(C==='L'){const x=nx(),y=nx();cx=rel?cx+x:x;cy=rel?cy+y:y;cur.push([cx,cy])}
+            else if(C==='H'){const x=nx();cx=rel?cx+x:x;cur.push([cx,cy])}
+            else if(C==='V'){const y=nx();cy=rel?cy+y:y;cur.push([cx,cy])}
+            else{cnt.skip++;break}}
+          flush(false)}}
+        else if(tag==='text'){const s=(el.textContent||'').replace(/\s+/g,' ').trim();if(!s)return;const x=num('x'),y=num('y'),p=ap(mm,x,y);if(!inRect(p,cl))return;
+          const fs=parseFloat(inh(el,'font-size'))||10,sc=Math.hypot(mm[0],mm[1]),h=fs*sc*0.78*k,ang=-Math.atan2(mm[1],mm[0])*180/Math.PI,an=inh(el,'text-anchor')||'start',mid=inh(el,'dominant-baseline')==='middle';
+          const color=(fl&&fl!=='none'&&!/^url/.test(fl))?fl:'#000';if(isWhite(color))return;const L=lyr('T',aciOf(color),0),q=W0(p[0],p[1]),Q=wp(q[0],q[1]);
+          W(0,'TEXT');W(8,L);W(7,'THAI');W(10,f(Q[0]));W(20,f(Q[1]));W(30,0);W(40,f(h));W(1,dxfStr(s));if(Math.abs(ang)>.05)W(50,f((ang+360)%360));
+          const ha=an==='middle'?1:an==='end'?2:0;if(ha||mid){W(72,ha);W(11,f(Q[0]));W(21,f(Q[1]));W(31,0);W(73,mid?2:0)}else W(73,0);cnt.texts++}
+        else if(tag!=='image'&&tag!=='tspan')cnt.skip++};
+      walk(svg,[1,0,0,1,0,0],null);
+      const Lb=lay('SHEET_LABEL',2,'CONTINUOUS');const lq=wp(X0,Y0+H*1.2);W(0,'TEXT');W(8,Lb);W(7,'THAI');W(10,f(lq[0]));W(20,f(lq[1]));W(30,0);W(40,f(H*1.8));W(1,dxfStr(sh.n.replace('_',' ')));
+    };
+    const types=[['PLAN','PLAN_SHEET'],['PROFILE','PROFILE'],['SECTION','SECTION']];let rowY=bnd[1]-gap*2;
+    types.forEach(([tp,pre])=>{const L=op.sheets.filter(s=>s.n.indexOf(tp)===0);if(!L.length)return;const Y0=rowY;
+      L.forEach((sh,i)=>{const col=i%3,row=Math.floor(i/3);emitSheet(sh,pre,bnd[0]+col*(SW+gap),Y0-row*(SH+gap))});
+      rowY=Y0-Math.ceil(L.length/3)*(SH+gap)-gap});
+    shInfo={n:op.sheets.length,cnt};
+  }
   // ---- ประกอบไฟล์
   const o=[];const P=(c,v)=>o.push(c+'\n'+v);
   P(0,'SECTION');P(2,'HEADER');P(9,'$ACADVER');P(1,'AC1009');P(9,'$INSBASE');o.push('10\n0\n20\n0\n30\n0');P(0,'ENDSEC');
@@ -2731,7 +2799,7 @@ function dxfBuild(op){
   const names=Object.keys(layers);P(0,'TABLE');P(2,'LAYER');P(70,names.length);names.forEach(n=>o.push('0\nLAYER\n2\n'+n+'\n70\n0\n62\n'+layers[n].c+'\n6\n'+layers[n].lt));P(0,'ENDTAB');
   P(0,'TABLE');P(2,'STYLE');P(70,1);o.push('0\nSTYLE\n2\nTHAI\n70\n0\n40\n0\n41\n1\n50\n0\n71\n0\n42\n2.5\n3\ntahoma.ttf\n4\n');P(0,'ENDTAB');
   P(0,'ENDSEC');P(0,'SECTION');P(2,'ENTITIES');o.push(ents.join('\n'));P(0,'ENDSEC');P(0,'EOF');
-  return{text:o.join('\n')+'\n',layers:names,count:ents.filter((_,i)=>true).length,len,zone}}
+  return{text:o.join('\n')+'\n',layers:names,count:ents.filter((_,i)=>true).length,len,zone,shInfo}}
 // ---- dialog ----
 (function(){const d=document.createElement('div');d.id='dxfD';d.className='ov';
  d.innerHTML=`<div class="box" style="max-width:520px"><div style="font-size:17px;font-weight:700">📐 ส่งออก DXF (AutoCAD)</div>
@@ -3038,9 +3106,9 @@ function tbV(x,y,w,h,c){c=c||{};const d=tbD(),o=[],cols=c.cols||1,fs=cols===2?9:
   const lh=cols===2?(dense?34:42):56;tbLogo(o,x+4,cy+3,lh-6,lh-6,d);const ag=mmFit(d.agency||'หน่วยงาน',w-lh-8,12,8);o.push(`<text x="${x+lh}" y="${cy+lh/2-1}" font-size="${ag.f}" font-weight="700">${E(ag.t)}</text>`);
   if(d.route){const rt=mmFit(d.route,w-lh-8,9.5,7.5);o.push(`<text x="${x+lh}" y="${cy+lh/2+12}" font-size="${rt.f}" fill="#444">${E(rt.t)}</text>`)}cy+=lh;hr(cy);
   if(c.key){const kh=c.keyH||110;o.push(`<text x="${x+6}" y="${cy+9}" font-size="8" fill="#666">แผนที่สังเขปและที่ตั้ง</text>`);o.push(tbKey(x+4,cy+12,w-8,kh-16));cy+=kh;hr(cy)}
-  const wh=cols===2?(dense?32:36):(d.sheetName?60:46),mx=Math.floor((w-12)/(11*.5)),wl=tbWrap(d.work,mx);o.push(`<text x="${x+5}" y="${cy+9}" font-size="7.5" fill="#666">โครงการ / ชื่องาน</text>`);
-  wl.forEach((t,i)=>o.push(`<text x="${x+5}" y="${cy+22+i*13}" font-size="11" font-weight="700">${E(t)}</text>`));if(cols===1&&d.sheetName)o.push(`<text x="${x+5}" y="${cy+22+wl.length*13+4}" font-size="9.5" fill="#444">${E(mmFit(d.sheetName,w-10,9.5,7.5).t)}</text>`);cy+=wh;hr(cy);
-  const rows=Math.ceil(5/cols),cw=w/cols,rh=cols===2?Math.max(44,Math.min(66,(y+h-cy-28-24)/rows)):58;
+  const wh=cols===2?(dense?32:64):(d.sheetName?60:46),mx=Math.floor((w-12)/(cols===2?7.4:5.5)),wl=tbWrap(d.work,mx);o.push(`<text x="${x+5}" y="${cy+9}" font-size="7.5" fill="#666">โครงการ / ชื่องาน</text>`);
+  wl.forEach((t,i)=>o.push(`<text x="${x+5}" y="${cy+25+i*16}" font-size="${cols===2?12.5:11}" font-weight="700">${E(t)}</text>`));if(cols===1&&d.sheetName)o.push(`<text x="${x+5}" y="${cy+22+wl.length*13+4}" font-size="9.5" fill="#444">${E(mmFit(d.sheetName,w-10,9.5,7.5).t)}</text>`);cy+=wh;hr(cy);
+  const rows=Math.ceil(5/cols),cw=w/cols,rh=cols===2?Math.max(44,Math.min(84,(y+h-cy-28-24)/rows)):58;
   d.roles.forEach((r,i)=>{const cx=x+(i%cols)*cw,ry=cy+Math.floor(i/cols)*rh;o.push(tbCell(cx,ry,cw,rh,r,fs))});
   const n6=rows*cols-5;if(n6>0){const cx=x+(cols-1)*cw,ry=cy+(rows-1)*rh;o.push(`<text x="${cx+5}" y="${ry+12}" font-size="8" fill="#666">แผ่นที่ / ทั้งหมด</text><text x="${cx+5}" y="${ry+25}" font-size="11" font-weight="700">${E(c.sheet||d.sheetNo+' / '+d.sheetTot)}</text><text x="${cx+5}" y="${ry+rh-4}" font-size="8" fill="#666">วันที่ <tspan font-weight="700" fill="#000">${E(d.date)}</tspan></text>`)}
   for(let i=1;i<rows;i++)hr(cy+i*rh);if(cols===2)o.push(`<line x1="${x+cw}" y1="${cy}" x2="${x+cw}" y2="${cy+rows*rh}" stroke="#000"/>`);cy+=rows*rh;hr(cy);
@@ -3052,10 +3120,10 @@ function tbV(x,y,w,h,c){c=c||{};const d=tbD(),o=[],cols=c.cols||1,fs=cols===2?9:
   hr(by);tbLV(o,x,by,w,'แผ่นที่ / ทั้งหมด',c.sheet||d.sheetNo+' / '+d.sheetTot,11);hr(by+24);tbLV(o,x,by+24,w,'วันที่',d.date,11);hr(by+48);
   o.push(`<text x="${x+5}" y="${by+57}" font-size="7.5" fill="#666">Remark</text>`);tbWrap(d.remark,Math.floor((w-10)/5)).forEach((t,i)=>o.push(`<text x="${x+5}" y="${by+69+i*11}" font-size="9">${E(t)}</text>`));return o.join('')}
 // แนวนอน (แถบด้านล่างของแผ่น PROFILE / SECTION)
-function tbStrip(x,y,w,h,c){c=c||{};const d=tbD(),o=[],E=esc,lw=100,kw=150,ww=250,iw=250,rw=(w-lw-kw-ww-iw)/5;
+function tbStrip(x,y,w,h,c){c=c||{};const d=tbD(),o=[],E=esc,lw=100,kw=0,ww=340,iw=250,rw=(w-lw-kw-ww-iw)/5;
   o.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" stroke="#000" stroke-width="1.5"/>`);let cx=x;const vl=xx=>o.push(`<line x1="${xx.toFixed(1)}" y1="${y}" x2="${xx.toFixed(1)}" y2="${y+h}" stroke="#000"/>`);
   tbLogo(o,cx+4,y+4,lw-8,h-8,d);cx+=lw;vl(cx);
-  o.push(`<text x="${cx+4}" y="${y+9}" font-size="7.5" fill="#666">แผนที่สังเขปและที่ตั้ง</text>`);o.push(tbKey(cx+3,y+12,kw-6,h-15));cx+=kw;vl(cx);
+  
   o.push(`<text x="${cx+5}" y="${y+10}" font-size="7.5" fill="#666">โครงการ / ชื่องาน</text>`);tbWrap(d.work,Math.floor((ww-10)/6)).forEach((t,i)=>o.push(`<text x="${cx+5}" y="${y+25+i*15}" font-size="12.5" font-weight="700">${E(t)}</text>`));
   const ar=mmFit([d.agency,d.route].filter(Boolean).join(' · '),ww-10,10,7.5);o.push(`<text x="${cx+5}" y="${y+h-8}" font-size="${ar.f}" fill="#333">${E(ar.t)}</text>`);cx+=ww;vl(cx);
   d.roles.forEach(r=>{o.push(tbCell(cx,y,rw,h,r,10));cx+=rw;vl(cx)});
@@ -3065,7 +3133,7 @@ function tbStrip(x,y,w,h,c){c=c||{};const d=tbD(),o=[],E=esc,lw=100,kw=150,ww=25
 // ---- UI: แท็บ ① DATA PROJECT ----
 function tbFill(){document.querySelectorAll('#tbForm [data-tb]').forEach(i=>{if(document.activeElement===i)return;i.value=tbPath(i.dataset.tb)});
   const d=tbD(),im=$('tbLogoImg');if(im){im.style.display=d.logo?'':'none';im.src=d.logo||'';$('tbLogoNo').style.display=d.logo?'none':'';$('tbLogoDel').style.display=d.logo?'':'none'}tbPrev()}
-function tbPrev(){const b=$('tbPrev');if(!b)return;try{b.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 410" style="width:100%;max-width:420px;border:1px solid var(--line);background:#fff" font-family="Sarabun,Tahoma,sans-serif">${tbV(4,4,372,402,{cols:2,key:true,keyH:84,sheet:(tbD().sheetNo+' / '+tbD().sheetTot)})}</svg>`}catch(e){b.textContent=''}}
+function tbPrev(){const b=$('tbPrev');if(!b)return;try{b.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 410" style="width:100%;max-width:420px;border:1px solid var(--line);background:#fff" font-family="Sarabun,Tahoma,sans-serif">${tbV(4,4,372,402,{cols:2,sheet:(tbD().sheetNo+' / '+tbD().sheetTot)})}</svg>`}catch(e){b.textContent=''}}
 $('tbForm').addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.tb;if(!k)return;tbSetP(k,e.target.value);save();clearTimeout(window._tbT);window._tbT=setTimeout(()=>{tbPrev();try{mmDrawPanel()}catch(x){}},200)});
 $('tbLogoFile').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,420/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);
   let u=c.toDataURL('image/png');if(u.length>260000){x.globalCompositeOperation='destination-over';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);u=c.toDataURL('image/jpeg',.85)}
@@ -3078,7 +3146,7 @@ function xsSize(){const P=MM_PAPER.find(p=>p[0]===$('xsPaper').value)||MM_PAPER[
   if(slide){w=D[2];h=Math.round(w*P[3]/P[2])}else{w=Math.round(P[2]/25.4*D[0]);h=Math.round(P[3]/25.4*D[0])}
   let cap=false;if(w*h>30e6){const k=Math.sqrt(30e6/(w*h));w=Math.floor(w*k);h=Math.floor(h*k);cap=true}return{w,h,cap}}
 function xsInfo(){const s=xsSize(),n=xsSheets().length;$('xsInfo').textContent='ขนาดรูปต่อแผ่น: '+s.w+' × '+s.h+' พิกเซล (~'+(s.w*s.h/1e6).toFixed(1)+' ล้านพิกเซล)'+(s.cap?' · ลดอัตโนมัติ':'')+' · จะได้ '+n+' แผ่น'+(n>1?' (รวมเป็นไฟล์ ZIP)':'')}
-function xsSheets(){const want={plan:$('xsPlan').checked,prof:$('xsProf').checked,sec:$('xsSec').checked},out=[];let sv=[];try{renderPlan();sv=planSvgs()}catch(e){}
+function xsSheets(w){const want=w||{plan:$('xsPlan').checked,prof:$('xsProf').checked,sec:$('xsSec').checked},out=[];let sv=[];try{renderPlan();sv=planSvgs()}catch(e){}
   if(want.plan)sv.filter(s=>!s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'PLAN_'+(i+1),svg:s}));
   if(want.prof){try{profSvgs(G()).forEach((x,i)=>out.push({n:'PROFILE_'+(i+1),svg:new DOMParser().parseFromString(x,'image/svg+xml').documentElement}))}catch(e){}}
   if(want.sec)sv.filter(s=>s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'SECTION_'+(i+1),svg:s}));return out}
@@ -3102,8 +3170,8 @@ $('xsLL').addEventListener('change',e=>{const v=e.target.value.trim();if(!v){xsS
 $('xsLLSel').onchange=e=>{const v=e.target.value;if(!v)return;const m=maGet(),p=v==='a'?m:sitesGet()[+v.slice(1)];if(p)xsSetStart(p.lat,p.lon!=null?p.lon:p.lon);e.target.value=''};
 $('xsLLClr').onclick=()=>{xsSetStart(null);toast('ล้างพิกัดจุดเริ่มต้นสายทางแล้ว')};
 $('xsDxf').onclick=()=>{try{const N=Math.max(100,gnum($('xsN').value,1000)),utmOn=$('xsCoord').value==='utm';if(utmOn&&!G().mp){toast('ยังไม่มีพิกัดจุดเริ่มต้นสายทาง — กรอกช่อง "พิกัดจุดเริ่มต้นสายทาง" ก่อน หรือเลือกพิกัดท้องถิ่น',true);return}
-  const r=dxfBuild({th:N*0.0025,utm:utmOn,jobs:$('xsJobs').checked,osm:$('xsOsm').checked});if(!r){problem('PLAN_EMPTY');return}
-  dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_PLAN.dxf');toast('✔ ส่งออก DXF แล้ว · '+r.layers.length+' Layer · ยาว '+Math.round(r.len)+' ม.'+(r.zone?' · UTM '+r.zone:''))}catch(e){problem('EXPORT_FAIL',e&&e.message)}};
+  const want={plan:$('xdPlan').checked,prof:$('xdProf').checked,sec:$('xdSec').checked};const sheets=(want.plan||want.prof||want.sec)?xsSheets(want):[];const r=dxfBuild({th:N*0.0025,N,utm:utmOn,jobs:$('xsJobs').checked,osm:$('xsOsm').checked,sheets});if(!r){problem('PLAN_EMPTY');return}
+  dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_PLAN'+(sheets.length?'_SHEETS':'')+'.dxf');toast('✔ ส่งออก DXF แล้ว · '+r.layers.length+' Layer · ยาว '+Math.round(r.len)+' ม.'+(sheets.length?' · แผ่นแบบ '+sheets.length+' แผ่น':'')+(r.zone?' · UTM '+r.zone:''))}catch(e){problem('EXPORT_FAIL',e&&e.message)}};
 $('xsNext').onclick=()=>showTab('t1');
 xsInit();
 
