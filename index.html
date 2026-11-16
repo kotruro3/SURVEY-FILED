@@ -222,6 +222,12 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
 :root[data-theme=c] [style*="color:#0a5c2a"],:root[data-theme=c] [style*="color:#064a20"]{color:#7dffa6!important}
 :root[data-theme=c] summary{color:#ffc933}
 :root[data-theme=c] .sug{background:#0d2a4a;color:#fff;border:2px solid #ffc933}
+.rowtop .nm{font-size:19px!important;font-weight:700;color:var(--ink)!important;line-height:1.35;white-space:normal}
+.rowtop .nm .warn{font-size:16px}
+:root[data-theme=c] .rowtop .nm{color:#fff!important}
+:root[data-theme=c] .rowtop .n{color:#ffc933}
+.mjlg input{flex:1;min-width:0}
+.rg .pos{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;min-width:140px;padding-bottom:6px}
 </style>
 </head>
 <body>
@@ -251,10 +257,11 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
   <div class="bar">
     <button class="b amber" id="quick" title="บันทึกพิกัดตำแหน่งปัจจุบันเป็นรายการใหม่ทันที แล้วกรอกรายละเอียดทีหลัง">⚡ จุดด่วน (จับพิกัด)</button>
     <button class="b" id="add">＋ เพิ่มรายการ</button>
+    <button class="b red" id="clearJob" title="ล้างรายการงานทั้งหมดในแท็บ MAKE JOB">🧹 CLEAR JOB</button><button class="b ghost" id="clearUndo" hidden>↩ กู้คืน</button>
     <select id="flt" style="width:auto"><option value="all">แสดงทั้งหมด</option><option value="inc">เฉพาะที่ยังไม่ครบ</option><option value="flag">เฉพาะที่ติดธง ⚑</option><option value="ovr">เฉพาะที่แก้ต่างจากสำรวจ ✎</option></select>
     <select id="bgo" style="width:auto" title="ความชัดของรูปประกอบงานมุมขวาล่างของการ์ด"><option value="0">รูปประกอบงาน: ปิด</option><option value="0.4">รูปประกอบงาน: จาง</option><option value="0.7">รูปประกอบงาน: ปานกลาง</option><option value="1">รูปประกอบงาน: ชัด</option></select>
   </div>
-  <div class="mute" style="margin:0 2px 8px">STA กรอกเป็นเมตร (150 = 0+150) หรือ 0+150 · รหัสงานพิมพ์บางคำได้ เช่น <i>ท่อ 0.60</i> · ปริมาณ = กว้าง × ยาว/จำนวน × ลึก/หนา × ตัวคูณ (ไม่ใส่ "ยาว" = ใช้ระยะจาก STA) · ติดธง ⚑ ไว้ที่รายการที่ต้องกลับมาตรวจทีหลัง</div>
+  <div class="mute" style="margin:0 2px 8px">STA กรอกเป็นเมตร (150 = 0+150) หรือ 0+150 · รหัสงานพิมพ์บางคำได้ เช่น <i>ท่อ 0.60</i> · ปริมาณ = กว้าง × ยาว × ลึก/หนา × จำนวน (each) (ไม่ใส่ "ยาว" = ใช้ระยะจาก STA) · ติดธง ⚑ ไว้ที่รายการที่ต้องกลับมาตรวจทีหลัง</div>
   <div class="card" id="mjBase" style="margin-bottom:10px"></div>
   <div id="rows"></div>
   <div class="bar"><button class="b" id="add2">＋ เพิ่มรายการ</button><button class="b ghost" id="clearAll">ล้างรายการทั้งหมด</button><button class="b ghost" id="sample">ใส่ข้อมูลตัวอย่าง</button></div>
@@ -487,7 +494,7 @@ const KEY1='surveyfield.v1',KEY='surveyfield.lib.v2';
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const newProj=()=>({code:'',id:uid(),created:Date.now(),updated:Date.now(),proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)},rows:[newRow()],pts:[]});
-const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false,ph:[]});
+const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',qn:'',rk1:'',rk2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false,ph:[]});
 let LIB={cur:null,list:{},seq:0},S=null,FILTER='all';
 const UPKEY='surveyfield.uprefix';
 function getPre(){try{return (localStorage.getItem(UPKEY)||'A').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)||'A'}catch(e){return 'A'}}
@@ -548,9 +555,9 @@ const num=v=>{const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?nul
 function calc(r){const a=parseSta(r.sta1);let b=parseSta(r.sta2);const has2=String(r.sta2).trim()!=='';if(!has2)b=a;
   const dist=(a!=null&&b!=null&&has2)?b-a:null;
   if(!r.code)return{a,b,dist,qty:null};
-  const f=[];const w=num(r.w),l=num(r.l),d=num(r.d),m1=num(r.m1),m2=num(r.m2);
+  const f=[];const w=num(r.w),l=num(r.l),d=num(r.d),m1=num(r.m1),m2=num(r.m2),qn=num(r.qn);
   if(w!=null)f.push(w);if(l!=null)f.push(l);else if(dist!=null)f.push(dist);
-  if(d!=null)f.push(d);if(m1!=null)f.push(m1);if(m2!=null)f.push(m2);
+  if(d!=null)f.push(d);if(qn!=null)f.push(qn);if(m1!=null)f.push(m1);if(m2!=null)f.push(m2);
   return{a,b,dist,qty:f.length?f.reduce((x,y)=>x*y,1):0}}
 const nf=(n,d=2)=>n==null?'':n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -576,7 +583,7 @@ function utm(lat,lon){const a=6378137,f=1/298.257223563,k0=.9996,e2=f*(2-f),ep2=
 const utmTxt=ll=>{if(!ll)return'';const u=utm(ll.lat,ll.lon);return`UTM ${u.zone}N  E ${Math.round(u.e)}  N ${Math.round(u.n)}`};
 function getPos(){return new Promise((res,rej)=>{if(!navigator.geolocation)return rej(new Error('เครื่องนี้ไม่รองรับ GPS'));navigator.geolocation.getCurrentPosition(p=>res(p),e=>rej(new Error(e.code===1?'ไม่ได้รับอนุญาตใช้ตำแหน่ง — เปิดสิทธิ์ Location ให้เบราว์เซอร์':e.code===3?'หาตำแหน่งไม่ทัน ลองใหม่ในที่โล่ง':'หาตำแหน่งไม่ได้')),{enableHighAccuracy:true,timeout:25000,maximumAge:0})})}
 // ---- issues ----
-function isBlank(r){return!((r.ph&&r.ph.length)||r.sta1||r.sta2||r.code||r.w||r.l||r.d||r.m1||r.m2||r.L||r.C||r.R||r.note||r.g1||r.g2)}
+function isBlank(r){return!((r.ph&&r.ph.length)||r.sta1||r.sta2||r.code||r.w||r.l||r.d||r.m1||r.m2||r.qn||r.rk1||r.rk2||r.L||r.C||r.R||r.note||r.g1||r.g2)}
 function issues(r){if(isBlank(r))return[];const o=[],c=calc(r);
   if(!r.code)o.push('ยังไม่เลือกรหัสงาน');else if(!BYCODE[r.code.toUpperCase()])o.push('ไม่พบรหัสงาน');
   if(c.a==null)o.push('ไม่มี STA');
@@ -598,17 +605,15 @@ function renderRows(){
      <div><label>STA เริ่มต้น</label><input data-f="sta1" placeholder="0+000"></div>
      <div><label>STA สิ้นสุด</label><input data-f="sta2" placeholder="0+500"></div>
      <div><label>ระยะทาง (ม.)</label><div data-dist class="qty" style="font-size:15px;padding-top:6px"></div></div>
-     <div class="wide rel"><label>รหัสงาน / พิมพ์ค้นหา</label><input data-f="code" placeholder="พิมพ์รหัส หรือคำ เช่น ท่อ 0.60" autocomplete="off"><div class="sug" hidden></div></div>
+     <div class="full rel"><label>รหัสงาน / พิมพ์ค้นหา (เลือกแล้วชื่อรายการงานแสดงที่หัวการ์ด)</label><input data-f="code" placeholder="พิมพ์รหัส หรือคำ เช่น ท่อ 0.60" autocomplete="off"><div class="sug" hidden></div></div>
      <div><label>กว้าง (ม.)</label><input data-f="w" inputmode="decimal"></div>
-     <div><label>ยาว / จำนวน</label><input data-f="l" inputmode="decimal"></div>
+     <div><label>ยาว (ม.)</label><input data-f="l" inputmode="decimal"></div>
      <div><label>ลึก/หนา (ม.)</label><input data-f="d" inputmode="decimal"></div>
-     <div><label>ตัวคูณ 1</label><input data-f="m1" inputmode="decimal"></div>
-     <div><label>ตัวคูณ 2</label><input data-f="m2" inputmode="decimal"></div>
+     <div><label>จำนวน (each)</label><input data-f="qn" inputmode="decimal" placeholder="เช่น 4"></div>
+     <div class="wide mjlg" ${(String(r.m1||'').trim()||String(r.m2||'').trim())?'':'hidden'}><label>ตัวคูณเดิม 1 / 2 (ข้อมูลเก่า — ยังนำมาคูณปริมาณ)</label><div style="display:flex;gap:6px"><input data-f="m1" inputmode="decimal"><input data-f="m2" inputmode="decimal"></div></div>
      <div><label>ปริมาณงาน</label><div class="qty" data-qty></div></div>
      <div class="pos"><label><input type="checkbox" data-f="L">L</label><label><input type="checkbox" data-f="C">C</label><label><input type="checkbox" data-f="R">R</label></div>
      <div class="wide"><label>หมายเหตุ</label><input data-f="note"></div>
-     <div class="wide gps"><div><label>พิกัดจุดเริ่ม (lat, lon)</label><input data-f="g1" placeholder="13.7563, 100.5018" inputmode="decimal"></div><button class="b amber sm" data-gps="1" title="เปิดแผนที่เพื่อเลือก/ยืนยันตำแหน่ง">🗺 เลือก</button></div>
-     <div class="wide gps"><div><label>พิกัดจุดสิ้นสุด (lat, lon)</label><input data-f="g2" placeholder="ไม่บังคับ" inputmode="decimal"></div><button class="b amber sm" data-gps="2" title="เปิดแผนที่เพื่อเลือก/ยืนยันตำแหน่ง">🗺 เลือก</button></div>
      <div class="full mute" data-utm></div>
      <div class="full botrow"><div class="phwrap" data-ph></div><div class="illus"></div></div>
     </div>`;
@@ -876,9 +881,9 @@ async function makePdf(){
     secs.push(sh('ภาพรวมโครงการ')+`<div class="kpi"><div><b>${rows.length}</b><span>รายการสำรวจ</span></div><div><b>${s.length}</b><span>รหัสงานที่ใช้</span></div><div><b>${lo==null?'-':nf(hi-lo,0)+' ม.'}</b><span>ความยาวโครงการ</span></div><div><b>${S.pts.length}</b><span>จุดสำคัญ</span></div><div><b>${np}</b><span>รูปภาพ</span></div></div>`)}
   if(o.boq){const s=summary();secs.push(sh('สรุปปริมาณงาน (BOQ)')+`<table class="pt2"><thead><tr><th class="c">ลำดับ</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">ปริมาณงานรวม</th><th>หน่วย</th><th>หมวดงาน</th><th class="r">จำนวนที่สำรวจ</th><th>ช่วง STA</th></tr></thead><tbody>`+
     (s.map((x,i)=>`<tr><td class="c">${i+1}</td><td><b>${esc(x.code)}</b></td><td class="wrap">${esc(x.name)}</td><td class="r"><b>${nf(x.qty)}</b></td><td>${esc(x.unit)}</td><td>${x.cat?`<span class="sw2" style="background:${x.cat.color}"></span>${esc(x.cat.name)}`:''}</td><td class="r">${x.n}</td><td>${x.min==null?'-':fmtSta(x.min)+' – '+fmtSta(x.max)}</td></tr>`).join('')||'<tr><td colspan="8">ยังไม่มีรายการ</td></tr>')+'</tbody></table>')}
-  if(o.survey){secs.push(sh('ตารางบันทึกข้อมูลการสำรวจภาคสนาม')+`<table class="pt2"><thead><tr><th class="c">#</th><th>STA เริ่ม</th><th>STA สิ้นสุด</th><th class="r">ระยะ (ม.)</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">กว้าง</th><th class="r">ยาว/จำนวน</th><th class="r">ลึก/หนา</th><th class="c">ตัวคูณ</th><th class="r">ปริมาณ</th><th>หน่วย</th><th class="c">L C R</th>${o.coords?'<th>พิกัด</th>':''}<th class="wrap">หมายเหตุ</th></tr></thead><tbody>`+
-    rows.map(({r,i,c,it})=>{const lcr=['L','C','R'].map(k=>r[k]?k:'·').join(' ');const mm=[r.m1,r.m2].filter(x=>String(x).trim()!=='').join(' × ');
-      return`<tr><td class="c cb" style="--cc:${it?it.cat.color:'#999'}">${i+1}${r.flag?' ⚑':''}</td><td>${c.a==null?'':fmtSta(c.a)}</td><td>${String(r.sta2).trim()===''?'':fmtSta(c.b)}</td><td class="r">${dnum(c.dist)}</td><td><b>${esc(r.code||'')}</b></td><td class="wrap">${esc(it?it.name:(r.code?'! ไม่พบรหัสงาน':''))}</td><td class="r">${esc(r.w)}</td><td class="r">${esc(r.l)}</td><td class="r">${esc(r.d)}</td><td class="c">${esc(mm)}</td><td class="r"><b>${c.qty==null?'':nf(c.qty)}</b></td><td>${esc(it?it.unit:'')}</td><td class="c">${lcr}</td>${o.coords?`<td>${esc([r.g1,r.g2].filter(Boolean).join(' → '))}</td>`:''}<td class="wrap">${esc(r.note)}</td></tr>`}).join('')+'</tbody></table>')}
+  if(o.survey){secs.push(sh('ตารางบันทึกข้อมูลการสำรวจภาคสนาม')+`<table class="pt2"><thead><tr><th class="c">#</th><th>STA เริ่ม</th><th>STA สิ้นสุด</th><th class="r">ระยะ (ม.)</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">กว้าง</th><th class="r">ยาว/จำนวน</th><th class="r">ลึก/หนา</th><th class="c">จำนวน/ตัวคูณ</th><th class="r">ปริมาณ</th><th>หน่วย</th><th class="c">L C R</th>${o.coords?'<th>พิกัด</th>':''}<th class="wrap">หมายเหตุ</th></tr></thead><tbody>`+
+    rows.map(({r,i,c,it})=>{const lcr=['L','C','R'].map(k=>r[k]?k:'·').join(' ');const mm=[r.qn,r.m1,r.m2].filter(x=>String(x).trim()!=='').join(' × ');const rkt=[r.rk1,r.rk2].filter(x=>String(x||'').trim()!=='').join(' / ');
+      return`<tr><td class="c cb" style="--cc:${it?it.cat.color:'#999'}">${i+1}${r.flag?' ⚑':''}</td><td>${c.a==null?'':fmtSta(c.a)}</td><td>${String(r.sta2).trim()===''?'':fmtSta(c.b)}</td><td class="r">${dnum(c.dist)}</td><td><b>${esc(r.code||'')}</b></td><td class="wrap">${esc(it?it.name:(r.code?'! ไม่พบรหัสงาน':''))}</td><td class="r">${esc(r.w)}</td><td class="r">${esc(r.l)}</td><td class="r">${esc(r.d)}</td><td class="c">${esc([mm,rkt].filter(Boolean).join(' · '))}</td><td class="r"><b>${c.qty==null?'':nf(c.qty)}</b></td><td>${esc(it?it.unit:'')}</td><td class="c">${lcr}</td>${o.coords?`<td>${esc([r.g1,r.g2].filter(Boolean).join(' → '))}</td>`:''}<td class="wrap">${esc(r.note)}</td></tr>`}).join('')+'</tbody></table>')}
   if(o.plan){renderPlan();const svs=planSvgs(),strip=G().mode==='strip';
     if(!svs.length)secs.push(`<div class="brk"></div>`+sh('ภาพ PLAN')+'<div class="planw">ยังไม่มีข้อมูลสำหรับสร้างภาพ PLAN</div>');
     else svs.forEach((sv,i)=>secs.push(`<div class="brk"></div>`+(strip?sh('ภาพ PLAN (มองจาก STA เริ่มต้นขึ้นไป · ซ้าย | กลาง | ขวา)'):(i===0?sh('ภาพ PLAN (แปลนผัง) '+svs.length+' แผ่น'):''))+`<div class="planw${strip?'':' sheetw'}">${sv.outerHTML}</div>`))}
@@ -972,9 +977,9 @@ const fname=()=>folderName()+'_'+new Date().toISOString().slice(0,10);
 function buildXlsx(){
   const wb=XLSX.utils.book_new();
   const a=[['ตารางบันทึกข้อมูลการสำรวจภาคสนามและการคิดปริมาณงาน'],['รหัสโครงการ',S.code,'','โครงการ',S.proj.name,'สายทาง/ตอน',S.proj.route],['หน่วยงาน/สถานที่',S.proj.agency,'','ผู้สำรวจ',S.proj.who,'วันที่',S.proj.date],[],
-   ['ลำดับ','STA เริ่มต้น','STA สิ้นสุด','ระยะทาง (ม.)','รหัสงาน','ชื่อรายการงาน','กว้าง','ยาว/จำนวน','ลึก/หนา','ตัวคูณ 1','ตัวคูณ 2','ปริมาณงาน','หน่วย','LEFT','CENTER','RIGHT','หมายเหตุ','Lat เริ่ม','Lon เริ่ม','Lat สิ้นสุด','Lon สิ้นสุด','UTM โซน','E เริ่ม','N เริ่ม','ติดธงตรวจสอบ','จำนวนรูป']];
+   ['ลำดับ','STA เริ่มต้น','STA สิ้นสุด','ระยะทาง (ม.)','รหัสงาน','ชื่อรายการงาน','กว้าง','ยาว','ลึก/หนา','จำนวน (each) / ตัวคูณ 1','ตัวคูณ 2','ปริมาณงาน','หน่วย','LEFT','CENTER','RIGHT','หมายเหตุ','Lat เริ่ม','Lon เริ่ม','Lat สิ้นสุด','Lon สิ้นสุด','UTM โซน','E เริ่ม','N เริ่ม','ติดธงตรวจสอบ','จำนวนรูป']];
   S.rows.forEach((r,i)=>{if(isBlank(r))return;const c=calc(r),it=BYCODE[(r.code||'').toUpperCase()],g1=parseLL(r.g1),g2=parseLL(r.g2),u=g1?utm(g1.lat,g1.lon):null;
-    a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',num(r.m1)??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',r.note,g1?g1.lat:'',g1?g1.lon:'',g2?g2.lat:'',g2?g2.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',r.flag?'⚑':'',(r.ph||[]).length||''])});
+    a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',(num(r.qn)!=null?num(r.qn):num(r.m1))??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',[r.note,r.rk1,r.rk2].filter(x=>String(x||'').trim()!=='').join(' | '),g1?g1.lat:'',g1?g1.lon:'',g2?g2.lat:'',g2?g2.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',r.flag?'⚑':'',(r.ph||[]).length||''])});
   const ws1=XLSX.utils.aoa_to_sheet(a);ws1['!cols']=[6,11,11,11,9,50,8,10,8,8,8,12,9,6,8,7,24,11,11,11,11,8,10,11,8].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws1,'Survey Field');
   const s=summary();const b=[['สรุปปริมาณงานก่อสร้าง (BOQ Summary)'],[],['ลำดับ','รหัสงาน','ชื่อรายการงาน','ปริมาณงานรวม','หน่วย','หมวดงาน','จำนวนที่สำรวจ','ช่วง STA']];
   s.forEach((o,i)=>b.push([i+1,o.code,o.name,Math.round(o.qty*1e4)/1e4,o.unit,o.cat?o.cat.name:'',o.n,o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max)]));
@@ -1055,6 +1060,11 @@ $('p_code').oninput=()=>{S.code=$('p_code').value.trim().toUpperCase().replace(/
 $('p_code').onchange=()=>{if(!S.code){S.code=nextCode();$('p_code').value=S.code;save();curLabel()}else if(Object.values(LIB.list).some(x=>x.code===S.code&&x.id!==S.id)){problem('DUP_CODE','รหัส '+S.code+' ซ้ำกับโครงการอื่น');S.code=nextCode();$('p_code').value=S.code;save();curLabel()}};
 const addRow=()=>{S.rows.push(newRow());save();FILTER='all';$('flt').value='all';renderRows();refresh();const l=$('rows').lastElementChild;l&&l.querySelector('[data-f=sta1]').focus()};
 $('add').onclick=addRow;$('add2').onclick=addRow;
+let MJ_UNDO=null;
+function mjClear(){const n=S.rows.filter(r=>!isBlank(r)).length;if(!n){toast('ยังไม่มีรายการงานให้ล้าง');return}
+  if(!confirm('CLEAR JOB — ล้างรายการงานทั้งหมดในแท็บ MAKE JOB ('+n+' รายการ รวมรูปภาพที่แนบกับรายการ)?\n\nข้อมูลสำรวจในแท็บ ① ② ③ ไม่ถูกลบ · กด "↩ กู้คืน" ได้ทันทีหากล้างผิด'))return;
+  MJ_UNDO=JSON.stringify(S.rows);S.rows=[];save(true);renderRows();refresh();$('clearUndo').hidden=false;toast('✔ ล้างรายการงานแล้ว ('+n+' รายการ) · กด ↩ กู้คืน ได้')}
+$('clearJob').onclick=mjClear;$('clearUndo').onclick=()=>{if(!MJ_UNDO)return;S.rows=JSON.parse(MJ_UNDO);MJ_UNDO=null;$('clearUndo').hidden=true;save(true);renderRows();refresh();toast('↩ กู้คืนรายการงานแล้ว')};
 $('flt').onchange=()=>{FILTER=$('flt').value;renderRows()};
 $('quick').onclick=async()=>{const b=$('quick');b.disabled=true;const old=b.textContent;b.textContent='กำลังหาพิกัด…';
   try{const p=await getPos();const r=newRow();r.g1=fmtLL(p.coords.latitude,p.coords.longitude);r.a1=Math.round(p.coords.accuracy);r.flag=true;r.note='จุดด่วน '+new Date().toLocaleTimeString('th-TH')+' — กรอกรายละเอียดภายหลัง';
@@ -1231,7 +1241,7 @@ function relabel(str,C){const{g,P,wf,sta0,s0,s1,k,area}=C,RAD=Math.PI/180;
     out[it.idx]=`<g class="lbl"><line x1="${it.ax.toFixed(1)}" y1="${it.ay.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="#555" stroke-width=".7"/><circle cx="${it.ax.toFixed(1)}" cy="${it.ay.toFixed(1)}" r="1.8" fill="#555"/><text x="${best.cx.toFixed(1)}" y="${(best.cy+Hh*.3).toFixed(1)}" text-anchor="middle" fill="${fill}"${attrs}>${it.tx}</text></g>`});
   return str.replace(/\u0001(\d+)\u0001/g,(m,i)=>out[+i])}
 function sheetSvg(M,idx){
-  const{g,bars,sta0,pts,wf,area,N,chunks,hasSec}=M;const[s0,s1]=chunks[idx];const k=5000/N;
+  const sid=M.ov?'ov':idx;const{g,bars,sta0,pts,wf,area,N,chunks,hasSec}=M;const[s0,s1]=chunks[idx];const k=5000/N;
   const fr=chunkFrame(pts,s0,s1,M.lay,M.mg);
   const cxm=(fr.x0+fr.x1)/2,cym=(fr.y0+fr.y1)/2,acx=(area.x0+area.x1)/2,acy=(area.y0+area.y1)/2;
   const SX=(x,y)=>{const rx=fr.c*x-fr.sn*y,ry=fr.sn*x+fr.c*y;return[acx+(rx-cxm)*k,acy-(ry-cym)*k]};
@@ -1242,13 +1252,13 @@ function sheetSvg(M,idx){
   const sam=(a,b,st)=>{const o=[];const A=Math.max(a,s0),B=Math.min(b,s1);if(B<=A)return o;for(let t=A;t<B;t+=st)o.push(t);o.push(B);return o};
   const st=Math.max(.5,Math.min(2,3/k*5));
   const W=1485,H=1050;let o=[];
-  o.push(`<svg class="sheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Sarabun,Tahoma,sans-serif"><rect width="${W}" height="${H}" fill="#fff"/>
-<defs><clipPath id="clp${idx}"><rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}"/></clipPath>
-<pattern id="gr${idx}" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="#e8eef4"/></pattern>
-<pattern id="ea${idx}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#b9a37a" stroke-width="1.5"/></pattern></defs>
+  o.push(`<svg class="sheet"${M.ov?' data-ov="1"':''} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Sarabun,Tahoma,sans-serif"><rect width="${W}" height="${H}" fill="#fff"/>
+<defs><clipPath id="clp${sid}"><rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}"/></clipPath>
+<pattern id="gr${sid}" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="#e8eef4"/></pattern>
+<pattern id="ea${sid}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#b9a37a" stroke-width="1.5"/></pattern></defs>
 <rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="#111" stroke-width="3"/><rect x="20" y="20" width="${W-40}" height="${H-40}" fill="none" stroke="#111"/>
-<text x="32" y="50" font-size="22" font-weight="700" fill="#1f3a5f">แปลนแสดงที่ตั้งและรายการงาน (PLAN) · มาตราส่วน 1:${N}</text>
-<rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}" fill="url(#gr${idx})" stroke="#333"/><g clip-path="url(#clp${idx})">`);
+<text x="32" y="50" font-size="22" font-weight="700" fill="#1f3a5f">${M.ov?'ผังบริเวณดำเนินการ (OVERALL LAYOUT) · ตลอดโครงการ STA '+fmtSta(sta0)+' – '+fmtSta(sta0+M.total)+' · มาตราส่วน 1:'+N:'แปลนแสดงที่ตั้งและรายการงาน (PLAN) · มาตราส่วน 1:'+N}</text>
+<rect x="${area.x0}" y="${area.y0}" width="${area.x1-area.x0}" height="${area.y1-area.y0}" fill="url(#gr${sid})" stroke="#333"/><g clip-path="url(#clp${sid})">`);
   const gi0=o.length;
   // side strips (L/R) lane stacking
   const inR=bars.filter(b=>b.b>=s0+sta0&&b.a<=s1+sta0);
@@ -1275,7 +1285,7 @@ function sheetSvg(M,idx){
   (g.env||[]).forEach(e=>{const A=Math.max(e.a-sta0,s0),B=Math.min(e.b-sta0,s1);if(B-A<=.01)return;const sg=e.side==='L'?1:-1,T=sam(A,B,st);
     const e0=t=>{const w=wf(t+sta0),rw=rowAt(g,t+sta0);return(sg>0?Math.max(w[0],rw[0]):Math.max(w[1],rw[1]))+.3};
     const P1=T.map(t=>P(t,sg*e0(t))),P2=T.map(t=>P(t,sg*(e0(t)+e.w)));const water=/คลอง|แม่น้ำ|ร่อง|น้ำ/.test(e.t),home=envIsHome(e.t),agr=envIsAg(e.t);
-    const fill=water?'#cfe8f7':home?'#f8f4ea':agr?'#f6f9e6':'url(#ea'+idx+')',sk=water?'#3b82b8':agr?'#8a9b3f':'#9a8458';
+    const fill=water?'#cfe8f7':home?'#f8f4ea':agr?'#f6f9e6':'url(#ea'+sid+')',sk=water?'#3b82b8':agr?'#8a9b3f':'#9a8458';
     o.push(`<polygon points="${pstr(P1.concat(P2.slice().reverse()))}" fill="${fill}" stroke="${sk}" stroke-width="1"${(home||agr)?' stroke-dasharray="5 3"':''}><title>${esc(e.t)}</title></polygon>`);
     if(home||agr){const M=(ta,d)=>{const tr=ta-sta0;return P(tr,sg*(e0(tr)+d))},EDG=(a0,b0,d)=>{const r=[];for(let x=a0;x<b0;x+=8)r.push(M(x,d));r.push(M(b0,d));return r};
       envLay(e).forEach(it=>{const ta=it.k==='house'?it.p[0][0]:it.t!=null?it.t:it.a,tb=it.k==='house'?it.p[1][0]:it.t!=null?it.t:it.b;if(tb-sta0<A-1||ta-sta0>B+1)return;
@@ -1346,19 +1356,21 @@ function sheetSvg(M,idx){
   o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#c0392b" stroke-width="2"/><text x="${px+44}" y="${y}" font-size="13">ขีด STA</text>`);y+=22;
   if(secIn.length||hasSec){o.push(`<line x1="${px+12}" y1="${y-5}" x2="${px+34}" y2="${y-5}" stroke="#d35400" stroke-width="2" stroke-dasharray="8 3"/><text x="${px+44}" y="${y}" font-size="13">แนวตัดรูปตัด</text>`);y+=22}
   if(g.segs.some(s=>s.t!=='L')){o.push(`<circle cx="${px+23}" cy="${y-5}" r="4" fill="#8e44ad"/><text x="${px+44}" y="${y}" font-size="13">จุดต้น/ปลายโค้ง (PC/PT)</text>`);y+=22}
-  y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">รายการงานในแผ่นนี้</text>`);y+=30;
+  y=obLegend(g,o,px,y);y+=6;o.push(`<line x1="${px+10}" y1="${y-10}" x2="${px+pw-10}" y2="${y-10}" stroke="#bbb"/><text x="${px+12}" y="${y+8}" font-size="14" font-weight="700" fill="#1f3a5f">${M.ov?'ข้อมูลภาพรวมโครงการ':'รายการงานในแผ่นนี้'}</text>`);y+=30;
+  if(M.ov){ovPanel(M,o,px,pw,y,inR,secIn)}else{
   const seen=new Set(),list=[];inR.forEach(b=>{const key=b.code+'|'+b.i;if(seen.has(key))return;seen.add(key);list.push(b)});
   const maxRows=Math.floor((600-y)/21);
   list.slice(0,maxRows).forEach(b=>{o.push(`<rect x="${px+12}" y="${y-10}" width="10" height="10" fill="${b.it?b.it.cat.color:'#888'}"/><text x="${px+28}" y="${y}" font-size="12"><tspan font-weight="700">${esc(b.code)}</tspan> ${esc(cut(b.it?b.it.name:'ไม่พบรหัส',17))}</text><text x="${px+pw-10}" y="${y}" font-size="11" fill="#555" text-anchor="end">${fmtSta(b.a)}–${fmtSta(b.b)}</text>`);y+=21});
   if(list.length>maxRows)o.push(`<text x="${px+12}" y="${y}" font-size="12" fill="#777">… และอีก ${list.length-maxRows} รายการ (ดูในตารางสำรวจ)</text>`);
+  }
   // PROFILE บนแผ่น PLAN
   if(M.ps){const ps=M.ps,sa=s0+sta0,sb=s1+sta0,eN=elN(g);
     if(M.pfB){let X,hl=N;o.push(`<rect x="30" y="600" width="1080" height="420" fill="#fff" stroke="#333"/>`);
       if(M.pos==='p')X=s=>P(s-sta0,0)[0];else{const Lc=Math.max(1,sb-sa);hl=[100,200,250,500,1000,2000,2500,5000].find(n=>Lc*5000/n<=1080-100-40)||5000;X=s=>140+(s-sa)*5000/hl}
-      o.push(profH(g,{id:'p'+idx,x:30,y:600,w:1080,h:420,sa,sb,X,LW:100,ps,Nv:gnum(eN.vs,0),hl}))}
-    else if(M.pfV)o.push(profV(g,{id:'v'+idx,x:780,y:60,w:330,h:hasSec?640:960,sa,sb,ps}))}
+      o.push(profH(g,{id:'p'+sid,x:30,y:600,w:1080,h:420,sa,sb,X,LW:100,ps,Nv:gnum(eN.vs,0),hl}))}
+    else if(M.pfV)o.push(profV(g,{id:'v'+sid,x:780,y:60,w:330,h:hasSec?640:960,sa,sb,ps}))}
   // title block
-  const tbc={cols:2,sheet:`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`,scale:'1:'+N};
+  const tbc={cols:2,sheet:M.ov?'ผังบริเวณภาพรวม':`${idx+1} / ${chunks.length}  (STA ${fmtSta(s0+sta0)}–${fmtSta(s1+sta0)})`,scale:'1:'+N};
   o.push(tbV(px,620,pw,400,{...tbc,keyH:84}));
   // sections panel
   if(hasSec&&!M.pfB){o.push(`<rect x="30" y="710" width="1080" height="310" fill="#fff" stroke="#333"/>`);
@@ -1366,6 +1378,19 @@ function sheetSvg(M,idx){
     else{const n=Math.min(4,secIn.length),cw=1080/n;secIn.slice(0,n).forEach((q,j)=>o.push(secSvg(M,q,30+j*cw,710,cw,310)));
       if(secIn.length>4)o.push(`<text x="1100" y="1012" font-size="11" fill="#c0392b" text-anchor="end">มีรูปตัดอีก ${secIn.length-4} รูปในแผ่นนี้ (แสดงสูงสุด 4)</text>`)}}
   o.push('</svg>');return o.join('')}
+function ovPanel(M,o,px,pw,y,inR,secIn){const g=M.g,sta0=M.sta0,ln=[],T=(t,b,c)=>ln.push({t,b,c});
+  const f1=v=>(Math.round(v*10)/10).toString(),cv=curvesList(g,sta0);
+  let wmin=1e9,wmax=0;for(let t=0;t<=M.total;t+=Math.max(1,M.total/60)){const w=M.wf(t+sta0),s=w[0]+w[1];wmin=Math.min(wmin,s);wmax=Math.max(wmax,s)}
+  T('ความยาวทั้งโครงการ '+f1(M.total)+' ม.',1,'#1f3a5f');T('STA '+fmtSta(sta0)+' – '+fmtSta(sta0+M.total));
+  T('ผิวทางกว้าง '+(Math.abs(wmax-wmin)<.05?f1(wmax):f1(wmin)+'–'+f1(wmax))+' ม. · โค้ง '+cv.length+' แห่ง');T('รูปตัดขวาง '+(g.secs||[]).filter(x=>parseSta(x.sta)!=null).length+' รูป · ช่วงทาง '+(g.pl||[]).filter(p=>!p.lead).length+' ช่วง');
+  const rl=Math.max(gnum(g.rowl,0),...(g.rz||[]).map(z=>z.l)),rr=Math.max(gnum(g.rowr,0),...(g.rz||[]).map(z=>z.r));if(rl>0||rr>0)T('เขตทาง ซ้าย '+f1(rl)+' / ขวา '+f1(rr)+' ม.');
+  const pc=(g.pc||[]).filter(x=>x.type||x.cond);if(pc.length){T('ผิวทางเดิม:',1,'#7a4b00');pc.slice(0,3).forEach(x=>T(' · '+(x.a||'')+'–'+(x.b||'')+' '+(x.type||'')+(x.cond?' ('+x.cond+')':'')));if(pc.length>3)T(' … อีก '+(pc.length-3)+' ช่วง',0,'#777')}
+  const ev=(g.env||[]).filter(e=>e.t);if(ev.length){T('สภาพแวดล้อม:',1,'#2e6b2e');ev.slice(0,6).forEach(e=>T(' · '+(e.side==='L'?'ซ้าย':'ขวา')+' '+e.t+(e.name?' '+e.name:'')+' '+fmtSta(e.a)+'–'+fmtSta(e.b)));if(ev.length>6)T(' … อีก '+(ev.length-6)+' รายการ',0,'#777')}
+  const ob={};(g.ob||[]).forEach(q=>{if(OB[q.k])ob[OB[q.k].n]=(ob[OB[q.k].n]||0)+1});const ok=Object.keys(ob);if(ok.length)T('สิ่งก่อสร้าง/จุดสำรวจ: '+ok.map(k=>k+' '+ob[k]).join(', '),0,'#444');
+  const nj=new Set(inR.map(b=>b.code)).size;T('รายการงานทั้งหมด '+nj+' ชนิด · '+inR.length+' ช่วงงาน',0,'#444');
+  const maxY=598;let n=0;for(const l of ln){if(y>maxY-4)break;o.push('<text x="'+(px+12)+'" y="'+y+'" font-size="12" '+(l.b?'font-weight="700" ':'')+'fill="'+(l.c||'#222')+'">'+esc(cut(l.t,46))+'</text>');y+=17;n++}
+  if(n<ln.length)o.push('<text x="'+(px+12)+'" y="'+(maxY)+'" font-size="11" fill="#c0392b">… ข้อมูลเพิ่มเติมดูในแผ่นถัดไป/ตารางสำรวจ</text>')}
+function ovModel(M){const f=chunkFrame(M.pts,0,M.total,M.lay,M.mg);const need=Math.max(f.bw*5000/M.AW,f.bh*5000/M.AH);const N=Math.max(M.N>0&&M.chunks.length===1?M.N:0,Math.ceil(need/50)*50);return{...M,ov:true,chunks:[[0,M.total]],N,idx:0}}
 function secSvg(M,q,x0,y0,w,h){
   const{g,wf,sta0}=M,sc=q.sc,t=q.s+sta0,wDef=wf(t);
   const wl=gnum(sc.wl,0)>0?gnum(sc.wl):wDef[0],wr=gnum(sc.wr,0)>0?gnum(sc.wr):wDef[1];
@@ -1423,11 +1448,12 @@ function renderSheets(){
   const{bars}=geoBars();
   if(!bars.length&&!g.segs.length&&!g.ws.length&&!(g.secs||[]).length){box.innerHTML='<div class="mute" style="padding:30px">ยังไม่มีข้อมูลสำหรับสร้างแปลน — กรอก STA/ตำแหน่ง (L/C/R) ในตารางสำรวจ หรือกำหนดแนวทางด้านบน</div>';$('legend').innerHTML='';$('geoInfo')&&($('geoInfo').textContent='');window.PLANM=null;return}
   const M=planModel();window.PLANM=M;let h='';
-  M.chunks.forEach((c,i)=>{M.idx=i;h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นที่ ${i+1} / ${M.chunks.length} · STA ${fmtSta(c[0]+M.sta0)} – ${fmtSta(c[1]+M.sta0)} · มาตราส่วน 1:${M.N}</div>${sheetSvg(M,i)}</div>`});
+  {const OM=ovModel(M);h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px;font-weight:700;color:var(--brand)">🗺 แผ่นแรก: ผังบริเวณดำเนินการ (ภาพรวมทั้งโครงการ) · STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)} · มาตราส่วน 1:${OM.N}</div>${sheetSvg(OM,0)}</div>`}
+  M.chunks.forEach((c,i)=>{M.idx=i;h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นที่ ${i+1} / ${M.chunks.length} · STA ${fmtSta(c[0]+M.sta0)} – ${fmtSta(c[1]+M.sta0)} · มาตราส่วน 1:${M.N} · รวม ${(g.pl||[]).filter(p=>!p.lead&&p._b>p._a&&p._a<M.sta0+c[1]-1e-6&&p._b>M.sta0+c[0]+1e-6).length} ช่วงทางในแผ่นนี้ (จัดรวมอัตโนมัติตามมาตราส่วน)</div>${sheetSvg(M,i)}</div>`});
   {const ss=secSheets(M);if(ss.length){h+=`<div id="secSheets" class="mute" style="margin:14px 0 2px;font-weight:700;color:var(--brand)">▼ แผ่นรูปตัด SECTION (ต่อท้ายแผ่น PLAN / PROFILE) · ${ss.length} แผ่น</div>`+ss.map((x,i)=>`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นรูปตัดที่ ${i+1} / ${ss.length}</div>${x}</div>`).join('')}}
   box.innerHTML=h;
   $('legend').innerHTML=M.un?`<span class="warn">ไม่แสดงใน PLAN ${M.un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
-  const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>${M.chunks.length} แผ่น</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`}
+  const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>1 แผ่นผังบริเวณภาพรวม + ${M.chunks.length} แผ่นแยกช่วง</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`+(()=>{const pls=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);return `<div class="mute" style="margin-top:4px">แผ่นแยกช่วง (รวมหลายช่วง STA ไว้ในแผ่นเดียวอัตโนมัติตามมาตราส่วน): ${M.chunks.map((c,i)=>{const n=pls.filter(p=>p._a<M.sta0+c[1]-1e-6&&p._b>M.sta0+c[0]+1e-6).length;return `<b>แผ่น ${i+1}</b> STA ${fmtSta(M.sta0+c[0])}–${fmtSta(M.sta0+c[1])} (${n} ช่วงทาง)`}).join(' · ')}</div>`})()}
 function planSvgs(){return [...$('planbox').querySelectorAll('svg.sheet')]}
 
 // ===================== v12 UI: ตั้งค่าแปลน =====================
@@ -1931,7 +1957,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v47';
+const APPVER='v53';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -2889,7 +2915,7 @@ function profDefs(id){return`<defs><pattern id="pg${id}" width="8" height="8" pa
 // แนวนอน: X(s)=พิกัด x ของ STA s
 function profH(g,B){const{x,y,w,h,sa,sb,X,LW,ps,id}=B,e=elN(g),D=ps.D,o=[],T=(px,py,t,sz,ex)=>o.push(`<text x="${px}" y="${py}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
   const vs=ps.vals,inC=vs.filter(v=>v.s>=sa-1e-6&&v.s<=sb+1e-6);
-  let cw=1e9;for(let i=1;i<inC.length;i++)cw=Math.min(cw,Math.abs(X(inC[i].s)-X(inC[i-1].s)));if(cw>1e8)cw=100;const rot=cw<58;
+  let cw=1e9;for(let i=1;i<inC.length;i++)cw=Math.min(cw,Math.abs(X(inC[i].s)-X(inC[i-1].s)));if(cw>1e8)cw=100;const rot=cw<58;let lab=inC;if(cw<24){lab=[];let lx2=-1e9;inC.forEach((v,i)=>{const xx=X(v.s);if(i===0||xx-lx2>=24){lab.push(v);lx2=xx}})}const eS0=B.endS!=null?B.endS:(window.PLANM?PLANM.sta0+PLANM.total:null);if(eS0!=null&&eS0>=sa-1e-6&&eS0<=sb+1e-6){const xe0=X(eS0);if(xe0>=x+LW-1&&xe0<=x+w+1)lab=lab.filter(v=>Math.abs(X(v.s)-xe0)>=(rot?24:60))}
   const hh=26,rS=rot?48:24,rE=rot?58:28,rD=D?rE:0,band=16,ch=h-hh-rS-rE-rD-band,cx0=x+LW,cx1=x+w-6,cy0=y+hh,YB=cy0+ch;
   let Nv=B.Nv>0?B.Nv:0;const cands=[20,50,100,200,500,1000,2000,5000];if(!Nv||ps.rng*5000/Nv>ch)Nv=cands.find(n=>ps.rng*5000/n<=ch)||5000;const pv=5000/Nv,datum=ps.datum,topz=datum+ch/pv;
   const Y=z=>YB-(z-datum)*pv,gs=pv>=22?1:pv*2>=22?2:pv*5>=22?5:pv*10>=22?10:50;
@@ -2906,11 +2932,11 @@ function profH(g,B){const{x,y,w,h,sa,sb,X,LW,ps,id}=B,e=elN(g),D=ps.D,o=[],T=(px
   const edge=(s)=>{const z=elAt(vs,s);return z==null?null:{s,z,src:'int'}};
   let ln=inC.filter(v=>v.z!=null);if(ln.length&&ln[0].s>sa+1e-6){const q=edge(sa);if(q)ln=[q].concat(ln)}if(ln.length&&ln[ln.length-1].s<sb-1e-6){const q=edge(sb);if(q)ln=ln.concat([q])}
   o.push(`<g clip-path="url(#pc${id})">`);
-  inC.forEach(v=>{const xx=X(v.s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#9aa0a6" stroke-width=".8" stroke-dasharray="2 3"/>`)});
+  lab.forEach(v=>{const xx=X(v.s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#9aa0a6" stroke-width=".8" stroke-dasharray="2 3"/>`)});
   if(ln.length>1)o.push(`<polygon points="${ln.map(v=>X(v.s).toFixed(1)+','+Y(v.z).toFixed(1)).join(' ')} ${X(ln[ln.length-1].s).toFixed(1)},${YB} ${X(ln[0].s).toFixed(1)},${YB}" fill="url(#pe${id})" fill-opacity=".85"/>`);
   (g.jx||[]).forEach(j=>{const s=parseSta(j.sta);if(s==null||s<sa-1e-6||s>sb+1e-6)return;const xx=X(s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#8e44ad" stroke-width="1.5"/>`)});
   if(ln.length>1)o.push(`<polyline points="${ln.map(v=>X(v.s).toFixed(1)+','+Y(v.z).toFixed(1)).join(' ')}" fill="none" stroke="${EXC}" stroke-width="2" stroke-dasharray="9 4" stroke-linejoin="round"/>`);
-  inC.filter(v=>v.z!=null).forEach(v=>o.push(`<circle cx="${X(v.s).toFixed(1)}" cy="${Y(v.z).toFixed(1)}" r="4" fill="${v.src==='set'?EXC:'#fff'}" stroke="${EXC}" stroke-width="1.4"/>`));
+  lab.filter(v=>v.z!=null).forEach(v=>o.push(`<circle cx="${X(v.s).toFixed(1)}" cy="${Y(v.z).toFixed(1)}" r="4" fill="${v.src==='set'?EXC:'#fff'}" stroke="${EXC}" stroke-width="1.4"/>`));
   if(D){const a=Math.max(sa,D.a),b=Math.min(sb,D.b);if(b>a){const n=Math.max(8,Math.ceil((b-a)/2)),pts=[];for(let i=0;i<=n;i++){const s=a+(b-a)*i/n,z=D.f(s);if(z!=null)pts.push(X(s).toFixed(1)+','+Y(z).toFixed(1))}
       o.push(`<polyline points="${pts.join(' ')}" fill="none" stroke="${FNC}" stroke-width="2.6" stroke-linejoin="round"/>`)}
     D.pv.forEach(p=>{if(p.s<sa-1e-6||p.s>sb+1e-6)return;const xx=X(p.s),yy=Y(p.z);o.push(`<polygon points="${xx-5},${yy+9} ${xx+5},${yy+9} ${xx},${yy}" fill="${FNC}" fill-opacity=".25" stroke="${FNC}"/>`)});
@@ -2926,10 +2952,21 @@ function profH(g,B){const{x,y,w,h,sa,sb,X,LW,ps,id}=B,e=elN(g),D=ps.D,o=[],T=(px
   const r1=YB+band,r2=r1+rS,r3=r2+rE,r4=r3+rD;o.push(`<rect x="${x}" y="${r1}" width="${w}" height="${r4-r1}" fill="#fff" stroke="#000"/><line x1="${x}" y1="${r2}" x2="${x+w}" y2="${r2}" stroke="#000"/><line x1="${x}" y1="${r3}" x2="${x+w}" y2="${r3}" stroke="#000"/>${D?`<line x1="${x}" y1="${r3}" x2="${x+w}" y2="${r3}" stroke="#000"/>`:''}<line x1="${cx0}" y1="${r1}" x2="${cx0}" y2="${r4}" stroke="#000"/>`);
   T(x+8,r1+(rot?20:17),'STA',12,'font-weight="700"');T(x+8,r2+(rot?24:18),'EXISTING LEVEL',11,'font-weight="700"');if(D)T(x+8,r3+(rot?24:18),'DESIGN LEVEL',11,`font-weight="700" fill="${FNC}"`);
   const num=(xx,yy,t,b,col)=>rot?T(xx+4,yy,t,10.5,`transform="rotate(-90 ${xx+4} ${yy})" ${b?'font-weight="700"':''} fill="${col}"`):T(xx,yy,t,12,`text-anchor="middle" ${b?'font-weight="700"':''} fill="${col}"`);
-  inC.forEach(v=>{const xx=X(v.s);if(xx<cx0-1||xx>cx1+1)return;
+  lab.forEach(v=>{const xx=X(v.s);if(xx<cx0-1||xx>cx1+1)return;
     if(rot)T(xx+4,r1+44,fmtSta(v.s),10.5,`transform="rotate(-90 ${xx+4} ${r1+44})" font-weight="700"`);else T(xx,r1+17,fmtSta(v.s),12,'text-anchor="middle" font-weight="700"');
     if(v.z!=null)num(xx,rot?r2+54:r2+19,elF(v.z),v.src==='set','#222');
     if(D){const z=D.f(v.s);if(z!=null)num(xx,rot?r3+54:r3+19,elF(z),true,FNC)}});
+  {const eS=B.endS!=null?B.endS:(window.PLANM?PLANM.sta0+PLANM.total:null);
+    if(eS!=null&&eS>=sa-1e-6&&eS<=sb+1e-6){const xe=X(eS),zE=elAt(vs,eS),zD=D?D.f(eS):null;
+      if(xe>=cx0-1&&xe<=cx1+1){
+        // ถ้าป้าย STA ของตารางใกล้จุดสิ้นสุดเกินไป ให้บังด้วยกรอบขาวแล้วเขียนค่าปลายทางใหม่ด้วยป้ายชี้
+        const near=lab.filter(v=>Math.abs(X(v.s)-xe)<(rot?24:60)&&Math.abs(v.s-eS)>1e-6);
+        o.push(`<line x1="${xe.toFixed(1)}" y1="${cy0}" x2="${xe.toFixed(1)}" y2="${r4}" stroke="#c0392b" stroke-width="2.2"/><polygon points="${xe},${cy0} ${xe-7},${cy0-1} ${xe},${cy0+12}" fill="#c0392b"/>`);
+        const left=(xe-cx0)>250,tx=left?xe-8:xe+8,an=left?'end':'start',ty=cy0+18;
+        const t1='จุดสิ้นสุดโครงการ  STA '+fmtSta(eS),t2=(zE!=null?'ระดับดินเดิม '+elF(zE):'')+(zD!=null?'  ออกแบบ '+elF(zD):'');
+        o.push(`<g paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round"><text x="${tx}" y="${ty}" font-size="13" font-weight="700" fill="#c0392b" text-anchor="${an}">${esc(t1)}</text>${t2?`<text x="${tx}" y="${ty+16}" font-size="11.5" fill="#222" text-anchor="${an}">${esc(t2)}</text>`:''}</g>`);
+        const ET=(yy,t,bold)=>rot?`<text x="${(xe-4).toFixed(1)}" y="${yy}" font-size="10.5" ${bold?'font-weight="700" ':''}fill="#c0392b" transform="rotate(-90 ${(xe-4).toFixed(1)} ${yy})">${esc(t)}</text>`:`<text x="${xe.toFixed(1)}" y="${yy}" font-size="12" ${bold?'font-weight="700" ':''}fill="#c0392b" text-anchor="middle">${esc(t)}</text>`;
+        o.push(ET(rot?r1+44:r1+17,fmtSta(eS),1));if(zE!=null)o.push(ET(rot?r2+54:r2+19,elF(zE),0));if(zD!=null)o.push(ET(rot?r3+54:r3+19,elF(zD),1))}}}
   return o.join('')}
 // แนวตั้ง: STA เรียงลงมา
 function profV(g,B){const{x,y,w,h,sa,sb,ps,id}=B,D=ps.D,o=[],T=(px,py,t,sz,ex)=>o.push(`<text x="${px}" y="${py}" font-size="${sz||11}" ${ex||''}>${esc(t)}</text>`);
@@ -3147,7 +3184,7 @@ function xsSize(){const P=MM_PAPER.find(p=>p[0]===$('xsPaper').value)||MM_PAPER[
   let cap=false;if(w*h>30e6){const k=Math.sqrt(30e6/(w*h));w=Math.floor(w*k);h=Math.floor(h*k);cap=true}return{w,h,cap}}
 function xsInfo(){const s=xsSize(),n=xsSheets().length;$('xsInfo').textContent='ขนาดรูปต่อแผ่น: '+s.w+' × '+s.h+' พิกเซล (~'+(s.w*s.h/1e6).toFixed(1)+' ล้านพิกเซล)'+(s.cap?' · ลดอัตโนมัติ':'')+' · จะได้ '+n+' แผ่น'+(n>1?' (รวมเป็นไฟล์ ZIP)':'')}
 function xsSheets(w){const want=w||{plan:$('xsPlan').checked,prof:$('xsProf').checked,sec:$('xsSec').checked},out=[];let sv=[];try{renderPlan();sv=planSvgs()}catch(e){}
-  if(want.plan)sv.filter(s=>!s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'PLAN_'+(i+1),svg:s}));
+  if(want.plan){let pn=0;sv.filter(s=>!s.classList.contains('secsheet')).forEach(s=>out.push({n:s.dataset.ov?'PLAN_OVERVIEW':'PLAN_'+(++pn),svg:s}))};
   if(want.prof){try{profSvgs(G()).forEach((x,i)=>out.push({n:'PROFILE_'+(i+1),svg:new DOMParser().parseFromString(x,'image/svg+xml').documentElement}))}catch(e){}}
   if(want.sec)sv.filter(s=>s.classList.contains('secsheet')).forEach((s,i)=>out.push({n:'SECTION_'+(i+1),svg:s}));return out}
 async function xsRaster(svg,z,type){const c=svg.cloneNode(true),vb=c.viewBox.baseVal,k=Math.min(z.w/vb.width,z.h/vb.height),dw=Math.round(vb.width*k),dh=Math.round(vb.height*k);c.setAttribute('width',dw);c.setAttribute('height',dh);c.removeAttribute('style');c.setAttribute('xmlns','http://www.w3.org/2000/svg');
@@ -3176,7 +3213,7 @@ $('xsNext').onclick=()=>showTab('t1');
 xsInit();
 
 // ===== v44 MAKE JOB : ฐานจากการสำรวจ STA + ค่าที่ใช้ออกแบบแทนค่าสำรวจ =====
-const MJ_F=[['w','กว้าง','ม.'],['l','ยาว/จำนวน','ม.'],['d','ลึก/หนา','ม.'],['m1','ตัวคูณ 1',''],['m2','ตัวคูณ 2','']];
+const MJ_F=[['w','กว้าง','ม.'],['l','ยาว','ม.'],['d','ลึก/หนา','ม.'],['qn','จำนวน','each'],['m1','ตัวคูณเดิม 1',''],['m2','ตัวคูณเดิม 2','']];
 const mjR2=v=>String(Math.round(v*1000)/1000);
 function mjSame(a,b){const x=num(a),y=num(b);return x==null&&y==null?true:(x!=null&&y!=null&&Math.abs(x-y)<1e-9)}
 const mjOv=(r,f)=>!!(r.sv&&(f in r.sv)&&!mjSame(r[f],r.sv[f]));
@@ -3192,9 +3229,9 @@ function mjTargets(g,only){const T=[];compilePL(g);
   return T}
 function mjPull(only){const g=G();const T=mjTargets(g,only);if(!T.length){toast('ยังไม่มีข้อมูลให้ดึง — ไปแท็บ ③ STA สร้างผังช่วงและรูปตัด (พร้อมชั้นทาง) ก่อน');return 0}
   let made=0,upd=0,kept=0;
-  T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{
+  T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{if(l.k==='old')return; // ชั้นทาง/ผิวทางเดิม ไม่สร้างเป็นรายการงาน (แสดงเป็นข้อมูลประกอบ)
     const src=t.src+':'+j;let r=S.rows.find(x=>x.src===src);
-    const sv={code:l.code||'',w:mjR2(mjSecW(t.s,t.seg)||0).replace(/^0$/,''),l:'',d:mjR2(gnum(l.t,0)/100),m1:'',m2:''};
+    const sv={code:l.code||'',w:mjR2(mjSecW(t.s,t.seg)||0).replace(/^0$/,''),l:'',d:mjR2(gnum(l.t,0)/100),m1:'',m2:'',qn:''};
     const info=(l.k==='old'?'[เดิม] ':'')+(l.n||'ชั้นทาง')+' หนา '+gnum(l.t,0)+' ซม. · รูปตัด '+(t.s.lbl||'')+' STA '+(t.s.sta||'');
     if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:sv.code,w:sv.w,d:sv.d,sta1:fmtSta(t.a),sta2:fmtSta(t.b),sg:t.ranged?undefined:t.seg.id,fx:t.ranged?1:0});S.rows.push(r);made++}
     else{const old=r.sv||{};MJ_F.forEach(([f])=>{if(!(f in sv))return;const wasOv=r.sv?!mjSame(r[f],old[f]):false;if(!wasOv)r[f]=sv[f];else kept++});if(!(r.sv&&r.code!==old.code))r.code=sv.code||r.code;r.sv={...sv};r.svn=info;upd++}
@@ -3206,24 +3243,25 @@ function mjResetRow(r){if(!r.sv)return;MJ_F.forEach(([f])=>{if(f in r.sv)r[f]=r.
 function mjSegCard(g,p,i){
   const a=p._a,b=p._b,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'}[p.t]||p.t;
   const pc=(g.pc||[]).filter(x=>{const A=parseSta(x.a),B=parseSta(x.b);return A!=null&&B!=null&&A<b-1e-6&&B>a+1e-6}).map(x=>(x.type||'ผิวทาง')+(x.cond?' ('+x.cond+')':'')+(x.dmg?' '+x.dmg:''));
-  const s=mjSegSec(g,p),lay=s?(s.layers||[]).map(l=>(l.k==='old'?'เดิม ':'')+(l.n||'?')+' '+gnum(l.t,0)+'ซม.').join(' / '):'';
+  const s=mjSegSec(g,p),LY=s?(s.layers||[]):[];
+  const oldL=LY.filter(l=>l.k==='old').map(l=>(l.n||'?')+' '+gnum(l.t,0)+' ซม.'),newL=LY.filter(l=>l.k!=='old').map(l=>(l.n||'?')+' '+gnum(l.t,0)+' ซม.');
   const ob={};(g.ob||[]).forEach(o=>{const t=parseSta(o.sta);if(t!=null&&t>=a-1e-6&&t<b+1e-6&&OB[o.k])ob[OB[o.k].n]=(ob[OB[o.k].n]||0)+1});
+  const ex=[].concat(pc.map(x=>'ผิวทาง: '+x),oldL.map(x=>'ชั้นเดิม: '+x),Object.keys(ob).map(k=>k+' ×'+ob[k]));
   const rows=S.rows.filter(r=>r.sg===p.id||(r.src&&r.src.indexOf('@'+p.id+':')>0));const nov=rows.filter(r=>mjOvList(r).length).length;
   return `<tr><td><b>${i+1}</b></td><td>${esc(fmtSta(a))} – ${esc(fmtSta(b))}<br><span class="mute">${tn} · ยาว ${nf(b-a)} ม.</span></td><td class="r">${nf((p._wl||0)+(p._wr||0))}<br><span class="mute">ซ้าย ${nf(p._wl||0)} / ขวา ${nf(p._wr||0)}</span></td>
-   <td>${pc.length?esc(pc.join(' · ')):'<span class="mute">-</span>'}</td><td>${lay?esc(lay)+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีรูปตัด</span>'}</td>
-   <td>${Object.keys(ob).length?esc(Object.keys(ob).map(k=>k+' ×'+ob[k]).join(', ')):'<span class="mute">-</span>'}</td><td class="r">${rows.length}${nov?`<br><span class="mjov">แก้ ${nov}</span>`:''}</td></tr>`}
+   <td class="mjex">${ex.length?ex.map(esc).join('<br>'):'<span class="mute">- ไม่มีบันทึก -</span>'}</td><td>${newL.length?esc(newL.join(' / '))+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีชั้นทางใหม่</span>'}</td><td class="r">${rows.length}${nov?`<br><span class="mjov">แก้ ${nov}</span>`:''}</td></tr>`}
 function mjBaseRender(){const box=$('mjBase');if(!box||!S)return;const g=G();
   try{compilePL(g)}catch(e){}
   const segs=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);
   const nr=S.rows.filter(r=>r.sv).length,nov=S.rows.filter(r=>mjOvList(r).length).length,nf2=S.rows.filter(r=>mjOvList(r).length).reduce((a,r)=>a+mjOvList(r).length,0);
   box.innerHTML=`<details ${segs.length?'open':''}><summary style="font-weight:700;color:var(--brand);cursor:pointer">📐 ฐานข้อมูลจากการสำรวจ ③ STA (${segs.length} ช่วง)</summary>
-   <div class="mute" style="margin:6px 0">ข้อมูลที่สำรวจไว้ในแท็บ ③ STA ทุกช่วง (ความกว้าง สภาพผิวทางเดิม ชั้นทางจากรูปตัด สิ่งก่อสร้าง) ใช้เป็น <b>ค่าเริ่มต้น</b> ของรายการงานด้านล่าง · แต่ละรายการแก้ <b>กว้าง / ยาว / ลึก-หนา / ตัวคูณ</b> ให้ต่างจากค่าสำรวจได้ — ช่องที่แก้จะเป็นสีส้ม มีปุ่ม ↺ คืนค่าสำรวจ</div>
-   ${segs.length?`<div style="overflow:auto"><table class="mjT"><tr><th>#</th><th>ช่วง STA</th><th class="r">กว้างรวม (ม.)</th><th>ผิวทางเดิม</th><th>ชั้นทาง (รูปตัด)</th><th>สิ่งที่สำรวจพบ</th><th class="r">รายการ</th></tr>${segs.map((p,i)=>mjSegCard(g,p,i)).join('')}</table></div>`:'<div class="mute" style="padding:8px">ยังไม่มีผังช่วงในแท็บ ③ STA</div>'}
-   <div class="bar" style="margin-top:8px"><button class="b" id="mjPull" ${segs.length?'':'disabled'}>⤓ ดึงข้อมูลสำรวจทุกช่วงมาเป็นฐาน / อัปเดต</button><span class="mute" id="mjSt">${nr?`มี ${nr} รายการผูกกับค่าสำรวจ · แก้ต่างจากสำรวจ ${nov} รายการ (${nf2} ช่อง) · กดอัปเดตซ้ำได้ ระบบ<b>ไม่ทับค่าที่คุณแก้ไว้</b>`:'ยังไม่ได้ดึง — ระบบจะสร้างรายการงานตามชั้นทางของแต่ละช่วงให้'}</span></div></details>`;
+   <div class="mute" style="margin:6px 0">ข้อมูลจากแท็บ ③ STA ทุกช่วง: <b>ชั้นทางใหม่</b> + ความกว้าง ใช้เป็น <b>ค่าเริ่มต้น</b> ของรายการงานด้านล่าง · ส่วน <b>รายการเดิม</b> (ผิวทาง/ชั้นทางเดิม/สิ่งก่อสร้างที่สำรวจพบ) แสดงให้ดูประกอบการตัดสินใจเท่านั้น ระบบ<b>ไม่สร้างรายการงานให้</b> — เพิ่มรายการใหม่เองเมื่อจำเป็น · แต่ละรายการแก้ <b>กว้าง / ยาว / ลึก-หนา / ตัวคูณ</b> ให้ต่างจากค่าสำรวจได้ — ช่องที่แก้จะเป็นสีส้ม มีปุ่ม ↺ คืนค่าสำรวจ</div>
+   ${segs.length?`<div style="overflow:auto"><table class="mjT"><tr><th>#</th><th>ช่วง STA</th><th class="r">กว้างรวม (ม.)</th><th>รายการเดิมที่พบ (ข้อมูลประกอบ — ไม่สร้างรายการ)</th><th>ชั้นทางใหม่ (ฐานรายการงาน)</th><th class="r">รายการงาน</th></tr>${segs.map((p,i)=>mjSegCard(g,p,i)).join('')}</table></div>`:'<div class="mute" style="padding:8px">ยังไม่มีผังช่วงในแท็บ ③ STA</div>'}
+   <div class="bar" style="margin-top:8px"><button class="b" id="mjPull" ${segs.length?'':'disabled'}>⤓ ดึงข้อมูลสำรวจทุกช่วงมาเป็นฐาน / อัปเดต</button><span class="mute" id="mjSt">${nr?`มี ${nr} รายการผูกกับค่าสำรวจ · แก้ต่างจากสำรวจ ${nov} รายการ (${nf2} ช่อง) · กดอัปเดตซ้ำได้ ระบบ<b>ไม่ทับค่าที่คุณแก้ไว้</b>`:'ยังไม่ได้ดึง — ระบบจะสร้างรายการงานตามชั้นทางใหม่ของแต่ละช่วงให้ (ไม่รวมชั้นเดิม)'}</span></div></details>`;
   const b=$('mjPull');if(b)b.onclick=()=>mjPull()}
 function mjMark(el,r){
   MJ_F.forEach(([f,lab,u])=>{const inp=el.querySelector('[data-f='+f+']');if(!inp)return;const wrap=inp.parentNode;let h=wrap.querySelector('.svh');
-    if(!r.sv||!(f in r.sv)||((f==='m1'||f==='m2')&&r.sv[f]===''&&!mjOv(r,f))){if(h)h.remove();inp.classList.remove('ovr');return}
+    if(!r.sv||!(f in r.sv)||((f==='m1'||f==='m2'||f==='qn')&&r.sv[f]===''&&!mjOv(r,f))){if(h)h.remove();inp.classList.remove('ovr');return}
     if(!h){h=document.createElement('div');h.className='svh';wrap.appendChild(h)}
     const ov=mjOv(r,f);inp.classList.toggle('ovr',ov);
     let sv=r.sv[f];if(f==='l'&&sv==='')sv='';const c=calc(r);
