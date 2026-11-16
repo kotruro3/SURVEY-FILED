@@ -222,6 +222,11 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
 :root[data-theme=c] [style*="color:#0a5c2a"],:root[data-theme=c] [style*="color:#064a20"]{color:#7dffa6!important}
 :root[data-theme=c] summary{color:#ffc933}
 :root[data-theme=c] .sug{background:#0d2a4a;color:#fff;border:2px solid #ffc933}
+.rowtop .nm{font-size:19px!important;font-weight:700;color:var(--ink)!important;line-height:1.35;white-space:normal}
+.rowtop .nm .warn{font-size:16px}
+:root[data-theme=c] .rowtop .nm{color:#fff!important}
+:root[data-theme=c] .rowtop .n{color:#ffc933}
+.mjlg input{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -254,7 +259,7 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
     <select id="flt" style="width:auto"><option value="all">แสดงทั้งหมด</option><option value="inc">เฉพาะที่ยังไม่ครบ</option><option value="flag">เฉพาะที่ติดธง ⚑</option><option value="ovr">เฉพาะที่แก้ต่างจากสำรวจ ✎</option></select>
     <select id="bgo" style="width:auto" title="ความชัดของรูปประกอบงานมุมขวาล่างของการ์ด"><option value="0">รูปประกอบงาน: ปิด</option><option value="0.4">รูปประกอบงาน: จาง</option><option value="0.7">รูปประกอบงาน: ปานกลาง</option><option value="1">รูปประกอบงาน: ชัด</option></select>
   </div>
-  <div class="mute" style="margin:0 2px 8px">STA กรอกเป็นเมตร (150 = 0+150) หรือ 0+150 · รหัสงานพิมพ์บางคำได้ เช่น <i>ท่อ 0.60</i> · ปริมาณ = กว้าง × ยาว/จำนวน × ลึก/หนา × ตัวคูณ (ไม่ใส่ "ยาว" = ใช้ระยะจาก STA) · ติดธง ⚑ ไว้ที่รายการที่ต้องกลับมาตรวจทีหลัง</div>
+  <div class="mute" style="margin:0 2px 8px">STA กรอกเป็นเมตร (150 = 0+150) หรือ 0+150 · รหัสงานพิมพ์บางคำได้ เช่น <i>ท่อ 0.60</i> · ปริมาณ = กว้าง × ยาว/จำนวน × ลึก/หนา (ช่อง Remark 1-2 ใช้จดข้อความเท่านั้น ไม่นำมาคิดปริมาณ) (ไม่ใส่ "ยาว" = ใช้ระยะจาก STA) · ติดธง ⚑ ไว้ที่รายการที่ต้องกลับมาตรวจทีหลัง</div>
   <div class="card" id="mjBase" style="margin-bottom:10px"></div>
   <div id="rows"></div>
   <div class="bar"><button class="b" id="add2">＋ เพิ่มรายการ</button><button class="b ghost" id="clearAll">ล้างรายการทั้งหมด</button><button class="b ghost" id="sample">ใส่ข้อมูลตัวอย่าง</button></div>
@@ -487,7 +492,7 @@ const KEY1='surveyfield.v1',KEY='surveyfield.lib.v2';
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const newProj=()=>({code:'',id:uid(),created:Date.now(),updated:Date.now(),proj:{name:'',agency:'',route:'',who:'',date:new Date().toISOString().slice(0,10)},rows:[newRow()],pts:[]});
-const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false,ph:[]});
+const newRow=()=>({sta1:'',sta2:'',code:'',w:'',l:'',d:'',m1:'',m2:'',rk1:'',rk2:'',L:false,C:false,R:false,note:'',g1:'',g2:'',a1:'',a2:'',flag:false,ph:[]});
 let LIB={cur:null,list:{},seq:0},S=null,FILTER='all';
 const UPKEY='surveyfield.uprefix';
 function getPre(){try{return (localStorage.getItem(UPKEY)||'A').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)||'A'}catch(e){return 'A'}}
@@ -576,7 +581,7 @@ function utm(lat,lon){const a=6378137,f=1/298.257223563,k0=.9996,e2=f*(2-f),ep2=
 const utmTxt=ll=>{if(!ll)return'';const u=utm(ll.lat,ll.lon);return`UTM ${u.zone}N  E ${Math.round(u.e)}  N ${Math.round(u.n)}`};
 function getPos(){return new Promise((res,rej)=>{if(!navigator.geolocation)return rej(new Error('เครื่องนี้ไม่รองรับ GPS'));navigator.geolocation.getCurrentPosition(p=>res(p),e=>rej(new Error(e.code===1?'ไม่ได้รับอนุญาตใช้ตำแหน่ง — เปิดสิทธิ์ Location ให้เบราว์เซอร์':e.code===3?'หาตำแหน่งไม่ทัน ลองใหม่ในที่โล่ง':'หาตำแหน่งไม่ได้')),{enableHighAccuracy:true,timeout:25000,maximumAge:0})})}
 // ---- issues ----
-function isBlank(r){return!((r.ph&&r.ph.length)||r.sta1||r.sta2||r.code||r.w||r.l||r.d||r.m1||r.m2||r.L||r.C||r.R||r.note||r.g1||r.g2)}
+function isBlank(r){return!((r.ph&&r.ph.length)||r.sta1||r.sta2||r.code||r.w||r.l||r.d||r.m1||r.m2||r.rk1||r.rk2||r.L||r.C||r.R||r.note||r.g1||r.g2)}
 function issues(r){if(isBlank(r))return[];const o=[],c=calc(r);
   if(!r.code)o.push('ยังไม่เลือกรหัสงาน');else if(!BYCODE[r.code.toUpperCase()])o.push('ไม่พบรหัสงาน');
   if(c.a==null)o.push('ไม่มี STA');
@@ -602,13 +607,12 @@ function renderRows(){
      <div><label>กว้าง (ม.)</label><input data-f="w" inputmode="decimal"></div>
      <div><label>ยาว / จำนวน</label><input data-f="l" inputmode="decimal"></div>
      <div><label>ลึก/หนา (ม.)</label><input data-f="d" inputmode="decimal"></div>
-     <div><label>ตัวคูณ 1</label><input data-f="m1" inputmode="decimal"></div>
-     <div><label>ตัวคูณ 2</label><input data-f="m2" inputmode="decimal"></div>
+     <div class="wide"><label>Remark 1</label><input data-f="rk1" placeholder="ข้อความบันทึก"></div>
+     <div class="wide"><label>Remark 2</label><input data-f="rk2" placeholder="ข้อความบันทึก"></div>
+     <div class="wide mjlg" ${(String(r.m1||'').trim()||String(r.m2||'').trim())?'':'hidden'}><label>ตัวคูณเดิม 1 / 2 (ข้อมูลเก่า — ยังนำมาคูณปริมาณ)</label><div style="display:flex;gap:6px"><input data-f="m1" inputmode="decimal"><input data-f="m2" inputmode="decimal"></div></div>
      <div><label>ปริมาณงาน</label><div class="qty" data-qty></div></div>
      <div class="pos"><label><input type="checkbox" data-f="L">L</label><label><input type="checkbox" data-f="C">C</label><label><input type="checkbox" data-f="R">R</label></div>
      <div class="wide"><label>หมายเหตุ</label><input data-f="note"></div>
-     <div class="wide gps"><div><label>พิกัดจุดเริ่ม (lat, lon)</label><input data-f="g1" placeholder="13.7563, 100.5018" inputmode="decimal"></div><button class="b amber sm" data-gps="1" title="เปิดแผนที่เพื่อเลือก/ยืนยันตำแหน่ง">🗺 เลือก</button></div>
-     <div class="wide gps"><div><label>พิกัดจุดสิ้นสุด (lat, lon)</label><input data-f="g2" placeholder="ไม่บังคับ" inputmode="decimal"></div><button class="b amber sm" data-gps="2" title="เปิดแผนที่เพื่อเลือก/ยืนยันตำแหน่ง">🗺 เลือก</button></div>
      <div class="full mute" data-utm></div>
      <div class="full botrow"><div class="phwrap" data-ph></div><div class="illus"></div></div>
     </div>`;
@@ -876,9 +880,9 @@ async function makePdf(){
     secs.push(sh('ภาพรวมโครงการ')+`<div class="kpi"><div><b>${rows.length}</b><span>รายการสำรวจ</span></div><div><b>${s.length}</b><span>รหัสงานที่ใช้</span></div><div><b>${lo==null?'-':nf(hi-lo,0)+' ม.'}</b><span>ความยาวโครงการ</span></div><div><b>${S.pts.length}</b><span>จุดสำคัญ</span></div><div><b>${np}</b><span>รูปภาพ</span></div></div>`)}
   if(o.boq){const s=summary();secs.push(sh('สรุปปริมาณงาน (BOQ)')+`<table class="pt2"><thead><tr><th class="c">ลำดับ</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">ปริมาณงานรวม</th><th>หน่วย</th><th>หมวดงาน</th><th class="r">จำนวนที่สำรวจ</th><th>ช่วง STA</th></tr></thead><tbody>`+
     (s.map((x,i)=>`<tr><td class="c">${i+1}</td><td><b>${esc(x.code)}</b></td><td class="wrap">${esc(x.name)}</td><td class="r"><b>${nf(x.qty)}</b></td><td>${esc(x.unit)}</td><td>${x.cat?`<span class="sw2" style="background:${x.cat.color}"></span>${esc(x.cat.name)}`:''}</td><td class="r">${x.n}</td><td>${x.min==null?'-':fmtSta(x.min)+' – '+fmtSta(x.max)}</td></tr>`).join('')||'<tr><td colspan="8">ยังไม่มีรายการ</td></tr>')+'</tbody></table>')}
-  if(o.survey){secs.push(sh('ตารางบันทึกข้อมูลการสำรวจภาคสนาม')+`<table class="pt2"><thead><tr><th class="c">#</th><th>STA เริ่ม</th><th>STA สิ้นสุด</th><th class="r">ระยะ (ม.)</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">กว้าง</th><th class="r">ยาว/จำนวน</th><th class="r">ลึก/หนา</th><th class="c">ตัวคูณ</th><th class="r">ปริมาณ</th><th>หน่วย</th><th class="c">L C R</th>${o.coords?'<th>พิกัด</th>':''}<th class="wrap">หมายเหตุ</th></tr></thead><tbody>`+
-    rows.map(({r,i,c,it})=>{const lcr=['L','C','R'].map(k=>r[k]?k:'·').join(' ');const mm=[r.m1,r.m2].filter(x=>String(x).trim()!=='').join(' × ');
-      return`<tr><td class="c cb" style="--cc:${it?it.cat.color:'#999'}">${i+1}${r.flag?' ⚑':''}</td><td>${c.a==null?'':fmtSta(c.a)}</td><td>${String(r.sta2).trim()===''?'':fmtSta(c.b)}</td><td class="r">${dnum(c.dist)}</td><td><b>${esc(r.code||'')}</b></td><td class="wrap">${esc(it?it.name:(r.code?'! ไม่พบรหัสงาน':''))}</td><td class="r">${esc(r.w)}</td><td class="r">${esc(r.l)}</td><td class="r">${esc(r.d)}</td><td class="c">${esc(mm)}</td><td class="r"><b>${c.qty==null?'':nf(c.qty)}</b></td><td>${esc(it?it.unit:'')}</td><td class="c">${lcr}</td>${o.coords?`<td>${esc([r.g1,r.g2].filter(Boolean).join(' → '))}</td>`:''}<td class="wrap">${esc(r.note)}</td></tr>`}).join('')+'</tbody></table>')}
+  if(o.survey){secs.push(sh('ตารางบันทึกข้อมูลการสำรวจภาคสนาม')+`<table class="pt2"><thead><tr><th class="c">#</th><th>STA เริ่ม</th><th>STA สิ้นสุด</th><th class="r">ระยะ (ม.)</th><th>รหัส</th><th class="wrap">ชื่อรายการงาน</th><th class="r">กว้าง</th><th class="r">ยาว/จำนวน</th><th class="r">ลึก/หนา</th><th class="c">Remark</th><th class="r">ปริมาณ</th><th>หน่วย</th><th class="c">L C R</th>${o.coords?'<th>พิกัด</th>':''}<th class="wrap">หมายเหตุ</th></tr></thead><tbody>`+
+    rows.map(({r,i,c,it})=>{const lcr=['L','C','R'].map(k=>r[k]?k:'·').join(' ');const mm=[r.m1,r.m2].filter(x=>String(x).trim()!=='').join(' × ');const rkt=[r.rk1,r.rk2].filter(x=>String(x||'').trim()!=='').join(' / ');
+      return`<tr><td class="c cb" style="--cc:${it?it.cat.color:'#999'}">${i+1}${r.flag?' ⚑':''}</td><td>${c.a==null?'':fmtSta(c.a)}</td><td>${String(r.sta2).trim()===''?'':fmtSta(c.b)}</td><td class="r">${dnum(c.dist)}</td><td><b>${esc(r.code||'')}</b></td><td class="wrap">${esc(it?it.name:(r.code?'! ไม่พบรหัสงาน':''))}</td><td class="r">${esc(r.w)}</td><td class="r">${esc(r.l)}</td><td class="r">${esc(r.d)}</td><td class="c">${esc([mm,rkt].filter(Boolean).join(' · '))}</td><td class="r"><b>${c.qty==null?'':nf(c.qty)}</b></td><td>${esc(it?it.unit:'')}</td><td class="c">${lcr}</td>${o.coords?`<td>${esc([r.g1,r.g2].filter(Boolean).join(' → '))}</td>`:''}<td class="wrap">${esc(r.note)}</td></tr>`}).join('')+'</tbody></table>')}
   if(o.plan){renderPlan();const svs=planSvgs(),strip=G().mode==='strip';
     if(!svs.length)secs.push(`<div class="brk"></div>`+sh('ภาพ PLAN')+'<div class="planw">ยังไม่มีข้อมูลสำหรับสร้างภาพ PLAN</div>');
     else svs.forEach((sv,i)=>secs.push(`<div class="brk"></div>`+(strip?sh('ภาพ PLAN (มองจาก STA เริ่มต้นขึ้นไป · ซ้าย | กลาง | ขวา)'):(i===0?sh('ภาพ PLAN (แปลนผัง) '+svs.length+' แผ่น'):''))+`<div class="planw${strip?'':' sheetw'}">${sv.outerHTML}</div>`))}
@@ -974,7 +978,7 @@ function buildXlsx(){
   const a=[['ตารางบันทึกข้อมูลการสำรวจภาคสนามและการคิดปริมาณงาน'],['รหัสโครงการ',S.code,'','โครงการ',S.proj.name,'สายทาง/ตอน',S.proj.route],['หน่วยงาน/สถานที่',S.proj.agency,'','ผู้สำรวจ',S.proj.who,'วันที่',S.proj.date],[],
    ['ลำดับ','STA เริ่มต้น','STA สิ้นสุด','ระยะทาง (ม.)','รหัสงาน','ชื่อรายการงาน','กว้าง','ยาว/จำนวน','ลึก/หนา','ตัวคูณ 1','ตัวคูณ 2','ปริมาณงาน','หน่วย','LEFT','CENTER','RIGHT','หมายเหตุ','Lat เริ่ม','Lon เริ่ม','Lat สิ้นสุด','Lon สิ้นสุด','UTM โซน','E เริ่ม','N เริ่ม','ติดธงตรวจสอบ','จำนวนรูป']];
   S.rows.forEach((r,i)=>{if(isBlank(r))return;const c=calc(r),it=BYCODE[(r.code||'').toUpperCase()],g1=parseLL(r.g1),g2=parseLL(r.g2),u=g1?utm(g1.lat,g1.lon):null;
-    a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',num(r.m1)??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',r.note,g1?g1.lat:'',g1?g1.lon:'',g2?g2.lat:'',g2?g2.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',r.flag?'⚑':'',(r.ph||[]).length||''])});
+    a.push([i+1,c.a==null?'':fmtSta(c.a),String(r.sta2).trim()===''?'':fmtSta(c.b),c.dist==null?'':c.dist,r.code,it?it.name:'',num(r.w)??'',num(r.l)??'',num(r.d)??'',num(r.m1)??'',num(r.m2)??'',c.qty==null?'':c.qty,it?it.unit:'',r.L?'●':'',r.C?'●':'',r.R?'●':'',[r.note,r.rk1,r.rk2].filter(x=>String(x||'').trim()!=='').join(' | '),g1?g1.lat:'',g1?g1.lon:'',g2?g2.lat:'',g2?g2.lon:'',u?u.zone+'N':'',u?Math.round(u.e):'',u?Math.round(u.n):'',r.flag?'⚑':'',(r.ph||[]).length||''])});
   const ws1=XLSX.utils.aoa_to_sheet(a);ws1['!cols']=[6,11,11,11,9,50,8,10,8,8,8,12,9,6,8,7,24,11,11,11,11,8,10,11,8].map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws1,'Survey Field');
   const s=summary();const b=[['สรุปปริมาณงานก่อสร้าง (BOQ Summary)'],[],['ลำดับ','รหัสงาน','ชื่อรายการงาน','ปริมาณงานรวม','หน่วย','หมวดงาน','จำนวนที่สำรวจ','ช่วง STA']];
   s.forEach((o,i)=>b.push([i+1,o.code,o.name,Math.round(o.qty*1e4)/1e4,o.unit,o.cat?o.cat.name:'',o.n,o.min==null?'-':fmtSta(o.min)+' – '+fmtSta(o.max)]));
@@ -1931,7 +1935,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v47';
+const APPVER='v48';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -3176,7 +3180,7 @@ $('xsNext').onclick=()=>showTab('t1');
 xsInit();
 
 // ===== v44 MAKE JOB : ฐานจากการสำรวจ STA + ค่าที่ใช้ออกแบบแทนค่าสำรวจ =====
-const MJ_F=[['w','กว้าง','ม.'],['l','ยาว/จำนวน','ม.'],['d','ลึก/หนา','ม.'],['m1','ตัวคูณ 1',''],['m2','ตัวคูณ 2','']];
+const MJ_F=[['w','กว้าง','ม.'],['l','ยาว/จำนวน','ม.'],['d','ลึก/หนา','ม.'],['m1','ตัวคูณเดิม 1',''],['m2','ตัวคูณเดิม 2','']];
 const mjR2=v=>String(Math.round(v*1000)/1000);
 function mjSame(a,b){const x=num(a),y=num(b);return x==null&&y==null?true:(x!=null&&y!=null&&Math.abs(x-y)<1e-9)}
 const mjOv=(r,f)=>!!(r.sv&&(f in r.sv)&&!mjSame(r[f],r.sv[f]));
