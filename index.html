@@ -1385,7 +1385,6 @@ function ovPanel(M,o,px,pw,y,inR,secIn){const g=M.g,sta0=M.sta0,ln=[],T=(t,b,c)=
   T('ผิวทางกว้าง '+(Math.abs(wmax-wmin)<.05?f1(wmax):f1(wmin)+'–'+f1(wmax))+' ม. · โค้ง '+cv.length+' แห่ง');T('รูปตัดขวาง '+(g.secs||[]).filter(x=>parseSta(x.sta)!=null).length+' รูป · ช่วงทาง '+(g.pl||[]).filter(p=>!p.lead).length+' ช่วง');
   const rl=Math.max(gnum(g.rowl,0),...(g.rz||[]).map(z=>z.l)),rr=Math.max(gnum(g.rowr,0),...(g.rz||[]).map(z=>z.r));if(rl>0||rr>0)T('เขตทาง ซ้าย '+f1(rl)+' / ขวา '+f1(rr)+' ม.');
   const pc=(g.pc||[]).filter(x=>x.type||x.cond);if(pc.length){T('ผิวทางเดิม:',1,'#7a4b00');pc.slice(0,3).forEach(x=>T(' · '+(x.a||'')+'–'+(x.b||'')+' '+(x.type||'')+(x.cond?' ('+x.cond+')':'')));if(pc.length>3)T(' … อีก '+(pc.length-3)+' ช่วง',0,'#777')}
-  const ev=(g.env||[]).filter(e=>e.t);if(ev.length){T('สภาพแวดล้อม:',1,'#2e6b2e');ev.slice(0,6).forEach(e=>T(' · '+(e.side==='L'?'ซ้าย':'ขวา')+' '+e.t+(e.name?' '+e.name:'')+' '+fmtSta(e.a)+'–'+fmtSta(e.b)));if(ev.length>6)T(' … อีก '+(ev.length-6)+' รายการ',0,'#777')}
   const ob={};(g.ob||[]).forEach(q=>{if(OB[q.k])ob[OB[q.k].n]=(ob[OB[q.k].n]||0)+1});const ok=Object.keys(ob);if(ok.length)T('สิ่งก่อสร้าง/จุดสำรวจ: '+ok.map(k=>k+' '+ob[k]).join(', '),0,'#444');
   const nj=new Set(inR.map(b=>b.code)).size;T('รายการงานทั้งหมด '+nj+' ชนิด · '+inR.length+' ช่วงงาน',0,'#444');
   const maxY=598;let n=0;for(const l of ln){if(y>maxY-4)break;o.push('<text x="'+(px+12)+'" y="'+y+'" font-size="12" '+(l.b?'font-weight="700" ':'')+'fill="'+(l.c||'#222')+'">'+esc(cut(l.t,46))+'</text>');y+=17;n++}
@@ -1957,7 +1956,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v53';
+const APPVER='v54';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
