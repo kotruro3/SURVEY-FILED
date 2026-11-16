@@ -190,6 +190,38 @@ button.b.mv.del{background:var(--warn);border-color:var(--warn);color:#fff}
 .mjT{border-collapse:collapse;width:100%;font-size:13px}.mjT th,.mjT td{border:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:left}.mjT th{background:#eef3f0}.mjT .r{text-align:right}
 .svh{font-size:11px;margin-top:2px;line-height:1.35}.mjov{color:#b45f00;font-weight:700}.mjrs{border:1px solid #e08a00;background:#fff3dc;color:#b45f00;border-radius:6px;padding:0 6px;font-size:13px;cursor:pointer}
 input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{margin:4px 0;font-size:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.mjbase{background:#e8f1ff;color:#1b4d8f;border-radius:99px;padding:1px 9px}
+/* v44: โหมดโทนดำ (theme c) — แก้พื้นอ่อนที่ฝังไว้ให้อ่านออก */
+:root[data-theme=c] .lk-new{background:#10301c;border:2px solid #4cd07a;border-left:8px solid #4cd07a;border-radius:10px}
+:root[data-theme=c] .lk-old{background:#3a2410;border:2px solid #ffa94d;border-left:8px solid #ffa94d;border-radius:10px}
+:root[data-theme=c] .layr{color:#fff}
+:root[data-theme=c] .layr .mute,:root[data-theme=c] .layr .jr1 .mute{color:#ffe9a8}
+:root[data-theme=c] .jname,:root[data-theme=c] .jname b,:root[data-theme=c] .jcode{color:#7dffa6}
+:root[data-theme=c] .chip{background:#4a1712;color:#ffb4a8;border-color:#ff7a6b}
+:root[data-theme=c] .chip.fl{background:#4a3300;color:#ffd978;border-color:#ffc933}
+:root[data-theme=c] .envb{background:#1d2a38;border:1px solid #6fb3ff}
+:root[data-theme=c] .plseg{background:#222831;border:1px solid #8a929b;border-left:6px solid #ffc933;color:#fff}
+:root[data-theme=c] .plseg.ob{border-left-color:#6fb3ff}
+:root[data-theme=c] .gsecbox{background:#222831;border:1px solid #6fb3ff}
+:root[data-theme=c] .sh{background:#16283d;color:#9fd0ff;border-left-color:#6fb3ff}
+:root[data-theme=c] .kpi div{background:#222831;color:#fff;border-color:#6fb3ff}
+:root[data-theme=c] .kpi b,:root[data-theme=c] .pc b{color:#9fd0ff}
+:root[data-theme=c] .pt2 tr:nth-child(even) td{background:#242a31}
+:root[data-theme=c] .sv20{background:#3a1a18;border-color:#ff7a6b}
+:root[data-theme=c] .mch{background:#2a2f36;color:#fff;border-color:#ffc933}
+:root[data-theme=c] .mjT th{background:#33291a;color:#ffc933}
+:root[data-theme=c] .mjT td{border-color:#8a929b}
+:root[data-theme=c] .mjrs{background:#4a3300;color:#ffd978;border-color:#ffc933}
+:root[data-theme=c] input.ovr{background:#4a3300!important;border-color:#ffc933!important;color:#fff}
+:root[data-theme=c] .mjbase{background:#16283d;color:#9fd0ff;border:1px solid #6fb3ff}
+:root[data-theme=c] .mjov{color:#ffc933}
+:root[data-theme=c] label{color:#ffe08a;font-weight:600}
+:root[data-theme=c] input,:root[data-theme=c] select,:root[data-theme=c] textarea{border:2px solid #8a929b;background:#101214;color:#fff}
+:root[data-theme=c] input:focus,:root[data-theme=c] select:focus,:root[data-theme=c] textarea:focus{border-color:#ffc933;box-shadow:0 0 0 3px rgba(255,201,51,.45)}
+:root[data-theme=c] input::placeholder,:root[data-theme=c] textarea::placeholder{color:#aab2bb}
+:root[data-theme=c] [style*="#b3261e"]{color:#ff9a8d!important}
+:root[data-theme=c] [style*="color:#0a5c2a"],:root[data-theme=c] [style*="color:#064a20"]{color:#7dffa6!important}
+:root[data-theme=c] summary{color:#ffc933}
+:root[data-theme=c] .sug{background:#0d2a4a;color:#fff;border:2px solid #ffc933}
 </style>
 </head>
 <body>
@@ -1896,7 +1928,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v44';
+const APPVER='v45';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
