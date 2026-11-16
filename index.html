@@ -1957,7 +1957,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v51';
+const APPVER='v52';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -2915,7 +2915,7 @@ function profDefs(id){return`<defs><pattern id="pg${id}" width="8" height="8" pa
 // แนวนอน: X(s)=พิกัด x ของ STA s
 function profH(g,B){const{x,y,w,h,sa,sb,X,LW,ps,id}=B,e=elN(g),D=ps.D,o=[],T=(px,py,t,sz,ex)=>o.push(`<text x="${px}" y="${py}" font-size="${sz||12}" ${ex||''}>${esc(t)}</text>`);
   const vs=ps.vals,inC=vs.filter(v=>v.s>=sa-1e-6&&v.s<=sb+1e-6);
-  let cw=1e9;for(let i=1;i<inC.length;i++)cw=Math.min(cw,Math.abs(X(inC[i].s)-X(inC[i-1].s)));if(cw>1e8)cw=100;const rot=cw<58;
+  let cw=1e9;for(let i=1;i<inC.length;i++)cw=Math.min(cw,Math.abs(X(inC[i].s)-X(inC[i-1].s)));if(cw>1e8)cw=100;const rot=cw<58;let lab=inC;if(cw<24){lab=[];let lx2=-1e9;inC.forEach((v,i)=>{const xx=X(v.s);if(i===0||xx-lx2>=24){lab.push(v);lx2=xx}})}const eS0=B.endS!=null?B.endS:(window.PLANM?PLANM.sta0+PLANM.total:null);if(eS0!=null&&eS0>=sa-1e-6&&eS0<=sb+1e-6){const xe0=X(eS0);if(xe0>=x+LW-1&&xe0<=x+w+1)lab=lab.filter(v=>Math.abs(X(v.s)-xe0)>=(rot?24:60))}
   const hh=26,rS=rot?48:24,rE=rot?58:28,rD=D?rE:0,band=16,ch=h-hh-rS-rE-rD-band,cx0=x+LW,cx1=x+w-6,cy0=y+hh,YB=cy0+ch;
   let Nv=B.Nv>0?B.Nv:0;const cands=[20,50,100,200,500,1000,2000,5000];if(!Nv||ps.rng*5000/Nv>ch)Nv=cands.find(n=>ps.rng*5000/n<=ch)||5000;const pv=5000/Nv,datum=ps.datum,topz=datum+ch/pv;
   const Y=z=>YB-(z-datum)*pv,gs=pv>=22?1:pv*2>=22?2:pv*5>=22?5:pv*10>=22?10:50;
@@ -2932,11 +2932,11 @@ function profH(g,B){const{x,y,w,h,sa,sb,X,LW,ps,id}=B,e=elN(g),D=ps.D,o=[],T=(px
   const edge=(s)=>{const z=elAt(vs,s);return z==null?null:{s,z,src:'int'}};
   let ln=inC.filter(v=>v.z!=null);if(ln.length&&ln[0].s>sa+1e-6){const q=edge(sa);if(q)ln=[q].concat(ln)}if(ln.length&&ln[ln.length-1].s<sb-1e-6){const q=edge(sb);if(q)ln=ln.concat([q])}
   o.push(`<g clip-path="url(#pc${id})">`);
-  inC.forEach(v=>{const xx=X(v.s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#9aa0a6" stroke-width=".8" stroke-dasharray="2 3"/>`)});
+  lab.forEach(v=>{const xx=X(v.s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#9aa0a6" stroke-width=".8" stroke-dasharray="2 3"/>`)});
   if(ln.length>1)o.push(`<polygon points="${ln.map(v=>X(v.s).toFixed(1)+','+Y(v.z).toFixed(1)).join(' ')} ${X(ln[ln.length-1].s).toFixed(1)},${YB} ${X(ln[0].s).toFixed(1)},${YB}" fill="url(#pe${id})" fill-opacity=".85"/>`);
   (g.jx||[]).forEach(j=>{const s=parseSta(j.sta);if(s==null||s<sa-1e-6||s>sb+1e-6)return;const xx=X(s);o.push(`<line x1="${xx.toFixed(1)}" y1="${cy0}" x2="${xx.toFixed(1)}" y2="${YB}" stroke="#8e44ad" stroke-width="1.5"/>`)});
   if(ln.length>1)o.push(`<polyline points="${ln.map(v=>X(v.s).toFixed(1)+','+Y(v.z).toFixed(1)).join(' ')}" fill="none" stroke="${EXC}" stroke-width="2" stroke-dasharray="9 4" stroke-linejoin="round"/>`);
-  inC.filter(v=>v.z!=null).forEach(v=>o.push(`<circle cx="${X(v.s).toFixed(1)}" cy="${Y(v.z).toFixed(1)}" r="4" fill="${v.src==='set'?EXC:'#fff'}" stroke="${EXC}" stroke-width="1.4"/>`));
+  lab.filter(v=>v.z!=null).forEach(v=>o.push(`<circle cx="${X(v.s).toFixed(1)}" cy="${Y(v.z).toFixed(1)}" r="4" fill="${v.src==='set'?EXC:'#fff'}" stroke="${EXC}" stroke-width="1.4"/>`));
   if(D){const a=Math.max(sa,D.a),b=Math.min(sb,D.b);if(b>a){const n=Math.max(8,Math.ceil((b-a)/2)),pts=[];for(let i=0;i<=n;i++){const s=a+(b-a)*i/n,z=D.f(s);if(z!=null)pts.push(X(s).toFixed(1)+','+Y(z).toFixed(1))}
       o.push(`<polyline points="${pts.join(' ')}" fill="none" stroke="${FNC}" stroke-width="2.6" stroke-linejoin="round"/>`)}
     D.pv.forEach(p=>{if(p.s<sa-1e-6||p.s>sb+1e-6)return;const xx=X(p.s),yy=Y(p.z);o.push(`<polygon points="${xx-5},${yy+9} ${xx+5},${yy+9} ${xx},${yy}" fill="${FNC}" fill-opacity=".25" stroke="${FNC}"/>`)});
@@ -2952,10 +2952,21 @@ function profH(g,B){const{x,y,w,h,sa,sb,X,LW,ps,id}=B,e=elN(g),D=ps.D,o=[],T=(px
   const r1=YB+band,r2=r1+rS,r3=r2+rE,r4=r3+rD;o.push(`<rect x="${x}" y="${r1}" width="${w}" height="${r4-r1}" fill="#fff" stroke="#000"/><line x1="${x}" y1="${r2}" x2="${x+w}" y2="${r2}" stroke="#000"/><line x1="${x}" y1="${r3}" x2="${x+w}" y2="${r3}" stroke="#000"/>${D?`<line x1="${x}" y1="${r3}" x2="${x+w}" y2="${r3}" stroke="#000"/>`:''}<line x1="${cx0}" y1="${r1}" x2="${cx0}" y2="${r4}" stroke="#000"/>`);
   T(x+8,r1+(rot?20:17),'STA',12,'font-weight="700"');T(x+8,r2+(rot?24:18),'EXISTING LEVEL',11,'font-weight="700"');if(D)T(x+8,r3+(rot?24:18),'DESIGN LEVEL',11,`font-weight="700" fill="${FNC}"`);
   const num=(xx,yy,t,b,col)=>rot?T(xx+4,yy,t,10.5,`transform="rotate(-90 ${xx+4} ${yy})" ${b?'font-weight="700"':''} fill="${col}"`):T(xx,yy,t,12,`text-anchor="middle" ${b?'font-weight="700"':''} fill="${col}"`);
-  inC.forEach(v=>{const xx=X(v.s);if(xx<cx0-1||xx>cx1+1)return;
+  lab.forEach(v=>{const xx=X(v.s);if(xx<cx0-1||xx>cx1+1)return;
     if(rot)T(xx+4,r1+44,fmtSta(v.s),10.5,`transform="rotate(-90 ${xx+4} ${r1+44})" font-weight="700"`);else T(xx,r1+17,fmtSta(v.s),12,'text-anchor="middle" font-weight="700"');
     if(v.z!=null)num(xx,rot?r2+54:r2+19,elF(v.z),v.src==='set','#222');
     if(D){const z=D.f(v.s);if(z!=null)num(xx,rot?r3+54:r3+19,elF(z),true,FNC)}});
+  {const eS=B.endS!=null?B.endS:(window.PLANM?PLANM.sta0+PLANM.total:null);
+    if(eS!=null&&eS>=sa-1e-6&&eS<=sb+1e-6){const xe=X(eS),zE=elAt(vs,eS),zD=D?D.f(eS):null;
+      if(xe>=cx0-1&&xe<=cx1+1){
+        // ถ้าป้าย STA ของตารางใกล้จุดสิ้นสุดเกินไป ให้บังด้วยกรอบขาวแล้วเขียนค่าปลายทางใหม่ด้วยป้ายชี้
+        const near=lab.filter(v=>Math.abs(X(v.s)-xe)<(rot?24:60)&&Math.abs(v.s-eS)>1e-6);
+        o.push(`<line x1="${xe.toFixed(1)}" y1="${cy0}" x2="${xe.toFixed(1)}" y2="${r4}" stroke="#c0392b" stroke-width="2.2"/><polygon points="${xe},${cy0} ${xe-7},${cy0-1} ${xe},${cy0+12}" fill="#c0392b"/>`);
+        const left=(xe-cx0)>250,tx=left?xe-8:xe+8,an=left?'end':'start',ty=cy0+18;
+        const t1='จุดสิ้นสุดโครงการ  STA '+fmtSta(eS),t2=(zE!=null?'ระดับดินเดิม '+elF(zE):'')+(zD!=null?'  ออกแบบ '+elF(zD):'');
+        o.push(`<g paint-order="stroke" stroke="#fff" stroke-width="4" stroke-linejoin="round"><text x="${tx}" y="${ty}" font-size="13" font-weight="700" fill="#c0392b" text-anchor="${an}">${esc(t1)}</text>${t2?`<text x="${tx}" y="${ty+16}" font-size="11.5" fill="#222" text-anchor="${an}">${esc(t2)}</text>`:''}</g>`);
+        const ET=(yy,t,bold)=>rot?`<text x="${(xe-4).toFixed(1)}" y="${yy}" font-size="10.5" ${bold?'font-weight="700" ':''}fill="#c0392b" transform="rotate(-90 ${(xe-4).toFixed(1)} ${yy})">${esc(t)}</text>`:`<text x="${xe.toFixed(1)}" y="${yy}" font-size="12" ${bold?'font-weight="700" ':''}fill="#c0392b" text-anchor="middle">${esc(t)}</text>`;
+        o.push(ET(rot?r1+44:r1+17,fmtSta(eS),1));if(zE!=null)o.push(ET(rot?r2+54:r2+19,elF(zE),0));if(zD!=null)o.push(ET(rot?r3+54:r3+19,elF(zD),1))}}}
   return o.join('')}
 // แนวตั้ง: STA เรียงลงมา
 function profV(g,B){const{x,y,w,h,sa,sb,ps,id}=B,D=ps.D,o=[],T=(px,py,t,sz,ex)=>o.push(`<text x="${px}" y="${py}" font-size="${sz||11}" ${ex||''}>${esc(t)}</text>`);
