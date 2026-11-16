@@ -1308,7 +1308,7 @@ function sheetSvg(M,idx){
       const w=wf(t),a=P(s,w[0]+(major?1.2:.6)),b=P(s,-w[1]-(major?1.2:.6));
       o.push(`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="#c0392b" stroke-width="${major?1.2:.7}"/>`);
       if(major){const e=sideLab>0?w[0]:w[1],p0=P(s,sideLab*(e+(sideLab>0?stackM[1]:stackM[-1])+1.2)),p1=P(s,sideLab*(e+(sideLab>0?stackM[1]:stackM[-1])+2.2));let dx=p1[0]-p0[0],dy=p1[1]-p0[1];const dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;
-        const lx=p0[0]+dx*16,ly=p0[1]+dy*16,rot=ang(s);o.push(`<text transform="translate(${lx.toFixed(1)},${ly.toFixed(1)}) rotate(${rot.toFixed(1)})" font-size="13" fill="#c0392b" font-weight="700" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${fmtSta(t)}</text>`)}}};
+        let lx=p0[0]+dx*16,ly=p0[1]+dy*16,rot=ang(s),anc='middle';if(M.ov){let th=Math.atan2(dy,dx)*180/Math.PI;anc='start';lx=p0[0]+dx*4;ly=p0[1]+dy*4;if(th>90||th<=-90){th+=180;anc='end'}rot=th}o.push(`<text transform="translate(${lx.toFixed(1)},${ly.toFixed(1)}) rotate(${rot.toFixed(1)})" font-size="13" fill="#c0392b" font-weight="700" text-anchor="${anc}" dominant-baseline="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${fmtSta(t)}</text>`)}}};
   if(ts.minor)tk(ts.minor,false);tk(ts.major,true);
   // item labels on strips/centre
   inR.forEach(b=>{const A=Math.max(b.a-sta0,s0),B=Math.min(b.b-sta0,s1);if((B-A)*k<26)return;const m=(A+B)/2;let off=0;
@@ -1389,7 +1389,7 @@ function ovPanel(M,o,px,pw,y,inR,secIn){const g=M.g,sta0=M.sta0,ln=[],T=(t,b,c)=
   const nj=new Set(inR.map(b=>b.code)).size;T('รายการงานทั้งหมด '+nj+' ชนิด · '+inR.length+' ช่วงงาน',0,'#444');
   const maxY=598;let n=0;for(const l of ln){if(y>maxY-4)break;o.push('<text x="'+(px+12)+'" y="'+y+'" font-size="12" '+(l.b?'font-weight="700" ':'')+'fill="'+(l.c||'#222')+'">'+esc(cut(l.t,46))+'</text>');y+=17;n++}
   if(n<ln.length)o.push('<text x="'+(px+12)+'" y="'+(maxY)+'" font-size="11" fill="#c0392b">… ข้อมูลเพิ่มเติมดูในแผ่นถัดไป/ตารางสำรวจ</text>')}
-function ovModel(M){const f=chunkFrame(M.pts,0,M.total,M.lay,M.mg);const need=Math.max(f.bw*5000/M.AW,f.bh*5000/M.AH);const N=Math.max(M.N>0&&M.chunks.length===1?M.N:0,Math.ceil(need/50)*50);return{...M,ov:true,chunks:[[0,M.total]],N,idx:0}}
+function ovModel(M){const f=chunkFrame(M.pts,0,M.total,M.lay,M.mg);const need=Math.max(f.bw*5000/M.AW,f.bh*5000/M.AH);const N=Math.max(M.N>0&&M.chunks.length===1?M.N:0,Math.ceil(need/50)*50);return{...M,g:M.g.ovEnv?M.g:{...M.g,env:[]},ov:true,chunks:[[0,M.total]],N,idx:0}}
 function secSvg(M,q,x0,y0,w,h){
   const{g,wf,sta0}=M,sc=q.sc,t=q.s+sta0,wDef=wf(t);
   const wl=gnum(sc.wl,0)>0?gnum(sc.wl):wDef[0],wr=gnum(sc.wr,0)>0?gnum(sc.wr):wDef[1];
@@ -1447,10 +1447,10 @@ function renderSheets(){
   const{bars}=geoBars();
   if(!bars.length&&!g.segs.length&&!g.ws.length&&!(g.secs||[]).length){box.innerHTML='<div class="mute" style="padding:30px">ยังไม่มีข้อมูลสำหรับสร้างแปลน — กรอก STA/ตำแหน่ง (L/C/R) ในตารางสำรวจ หรือกำหนดแนวทางด้านบน</div>';$('legend').innerHTML='';$('geoInfo')&&($('geoInfo').textContent='');window.PLANM=null;return}
   const M=planModel();window.PLANM=M;let h='';
-  {const OM=ovModel(M);h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px;font-weight:700;color:var(--brand)">🗺 แผ่นแรก: ผังบริเวณดำเนินการ (ภาพรวมทั้งโครงการ) · STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)} · มาตราส่วน 1:${OM.N}</div>${sheetSvg(OM,0)}</div>`}
+  {const OM=ovModel(M);h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px;font-weight:700;color:var(--brand)">🗺 แผ่นแรก: ผังบริเวณดำเนินการ (ภาพรวมทั้งโครงการ) · STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)} · มาตราส่วน 1:${OM.N} <label class="mck" style="margin-left:10px"><input type="checkbox" id="ovEnvT" ${g.ovEnv?'checked':''}><span>แสดงสภาพแวดล้อมซ้าย/ขวาในผังบริเวณ</span></label></div>${sheetSvg(OM,0)}</div>`}
   M.chunks.forEach((c,i)=>{M.idx=i;h+=`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นที่ ${i+1} / ${M.chunks.length} · STA ${fmtSta(c[0]+M.sta0)} – ${fmtSta(c[1]+M.sta0)} · มาตราส่วน 1:${M.N} · รวม ${(g.pl||[]).filter(p=>!p.lead&&p._b>p._a&&p._a<M.sta0+c[1]-1e-6&&p._b>M.sta0+c[0]+1e-6).length} ช่วงทางในแผ่นนี้ (จัดรวมอัตโนมัติตามมาตราส่วน)</div>${sheetSvg(M,i)}</div>`});
   {const ss=secSheets(M);if(ss.length){h+=`<div id="secSheets" class="mute" style="margin:14px 0 2px;font-weight:700;color:var(--brand)">▼ แผ่นรูปตัด SECTION (ต่อท้ายแผ่น PLAN / PROFILE) · ${ss.length} แผ่น</div>`+ss.map((x,i)=>`<div class="shw"><div class="mute" style="margin:6px 0 2px">แผ่นรูปตัดที่ ${i+1} / ${ss.length}</div>${x}</div>`).join('')}}
-  box.innerHTML=h;
+  box.innerHTML=h;{const ce=$('ovEnvT');if(ce)ce.onchange=()=>{G().ovEnv=ce.checked;save(true);renderPlan()}}
   $('legend').innerHTML=M.un?`<span class="warn">ไม่แสดงใน PLAN ${M.un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
   const gi=$('geoInfo');if(gi)gi.innerHTML=`ได้ <b>1 แผ่นผังบริเวณภาพรวม + ${M.chunks.length} แผ่นแยกช่วง</b> · มาตราส่วน <b>1:${M.N}</b> (${g.scale?'กำหนดเอง':'อัตโนมัติ'}) · ความยาวแนวทาง ${Math.round(M.total*10)/10} ม. (STA ${fmtSta(M.sta0)} – ${fmtSta(M.sta0+M.total)})`+(()=>{const pls=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);return `<div class="mute" style="margin-top:4px">แผ่นแยกช่วง (รวมหลายช่วง STA ไว้ในแผ่นเดียวอัตโนมัติตามมาตราส่วน): ${M.chunks.map((c,i)=>{const n=pls.filter(p=>p._a<M.sta0+c[1]-1e-6&&p._b>M.sta0+c[0]+1e-6).length;return `<b>แผ่น ${i+1}</b> STA ${fmtSta(M.sta0+c[0])}–${fmtSta(M.sta0+c[1])} (${n} ช่วงทาง)`}).join(' · ')}</div>`})()}
 function planSvgs(){return [...$('planbox').querySelectorAll('svg.sheet')]}
@@ -1956,7 +1956,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v54';
+const APPVER='v55';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
