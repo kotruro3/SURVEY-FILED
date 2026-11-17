@@ -1968,7 +1968,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v57';
+const APPVER='v58';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -3239,17 +3239,32 @@ function mjTargets(g,only){const T=[];compilePL(g);
   g.pl.forEach(p=>{if(p.lead||!(p._b>p._a))return;const s=mjSegSec(g,p);if(!s||(only&&s!==only))return;if(!s.id)s.id=uid();T.push({s,a:p._a,b:p._b,seg:p,ranged:false,src:s.id+'@'+p.id})});
   return T}
 function mjPull(only){const g=G();const T=mjTargets(g,only);if(!T.length){toast('ยังไม่มีข้อมูลให้ดึง — ไปแท็บ ③ STA สร้างผังช่วงและรูปตัด (พร้อมชั้นทาง) ก่อน');return 0}
-  let made=0,upd=0,kept=0;
-  T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{if(l.k==='old')return; // ชั้นทาง/ผิวทางเดิม ไม่สร้างเป็นรายการงาน (แสดงเป็นข้อมูลประกอบ)
-    const src=t.src+':'+j;let r=S.rows.find(x=>x.src===src);
-    const sv={code:l.code||'',w:mjR2(mjSecW(t.s,t.seg)||0).replace(/^0$/,''),l:'',d:mjR2(gnum(l.t,0)/100),m1:'',m2:'',qn:''};
-    const info=(l.k==='old'?'[เดิม] ':'')+(l.n||'ชั้นทาง')+' หนา '+gnum(l.t,0)+' ซม. · รูปตัด '+(t.s.lbl||'')+' STA '+(t.s.sta||'');
-    if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:sv.code,w:sv.w,d:sv.d,sta1:fmtSta(t.a),sta2:fmtSta(t.b),sg:t.ranged?undefined:t.seg.id,fx:t.ranged?1:0});S.rows.push(r);made++}
-    else{const old=r.sv||{};MJ_F.forEach(([f])=>{if(!(f in sv))return;const wasOv=r.sv?!mjSame(r[f],old[f]):false;if(!wasOv)r[f]=sv[f];else kept++});if(!(r.sv&&r.code!==old.code))r.code=sv.code||r.code;r.sv={...sv};r.svn=info;upd++}
-    });});
-  S.rows.forEach(r=>{if(r.sv&&r.sv.code!==undefined&&r.code===r.sv.code){}});
+  let made=0,upd=0,kept=0,del=0;
+  // รวมชั้นทางเดียวกัน (ชื่อ+รหัส+ความหนา) ของช่วงที่ต่อเนื่องกัน เป็น 1 รายการงาน
+  const items=[];T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{if(l.k==='old')return;items.push({t,l,j,key:(l.code||'')+'|'+(l.n||'')+'|'+gnum(l.t,0)})})});
+  const groups=[],open={};
+  items.slice().sort((x,y)=>x.t.a-y.t.a||x.j-y.j).forEach(it=>{
+    const gp=open[it.key];
+    if(!it.t.ranged&&gp&&!gp.ranged&&Math.abs(gp.b-it.t.a)<1e-6){gp.b=it.t.b;gp.mem.push(it)}
+    else{const n={key:it.key,a:it.t.a,b:it.t.b,ranged:it.t.ranged,mem:[it]};groups.push(n);open[it.key]=n}});
+  const keep=new Set();
+  groups.forEach(G_=>{const f=G_.mem[0],t=f.t,l=f.l,single=G_.mem.length===1&&!G_.ranged&&false;
+    const src=(G_.ranged?t.src:'G:'+t.src)+':'+f.j;keep.add(src);
+    let tl=0,tw=0;G_.mem.forEach(m=>{const L=m.t.b-m.t.a;tl+=L;tw+=L*(mjSecW(m.t.s,m.t.seg)||0)});
+    const wv=tl>0?tw/tl:0,ws=(Math.abs(wv-Math.round(wv*100)/100)<1e-9?mjR2(wv):String(Math.round(wv*1000)/1000)).replace(/^0$/,'');
+    const sv={code:l.code||'',w:ws,l:'',d:mjR2(gnum(l.t,0)/100),m1:'',m2:'',qn:''};
+    const n=G_.mem.length,info=(l.n||'ชั้นทาง')+' หนา '+gnum(l.t,0)+' ซม. · รูปตัด '+(t.s.lbl||'')+' STA '+fmtSta(G_.a)+'–'+fmtSta(G_.b)+(n>1?' · รวม '+n+' ช่วงต่อเนื่อง (กว้างเฉลี่ยถ่วงน้ำหนัก)':'');
+    const mem=G_.mem.filter(m=>m.t.seg).map(m=>m.t.seg.id);
+    let r=S.rows.find(x=>x.src===src);
+    if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:sv.code,w:sv.w,d:sv.d,sta1:fmtSta(G_.a),sta2:fmtSta(G_.b),sg:undefined,fx:1,mem,s1:fmtSta(G_.a),s2:fmtSta(G_.b)});S.rows.push(r);made++}
+    else{const old=r.sv||{};MJ_F.forEach(([f])=>{if(!(f in sv))return;const wasOv=r.sv?!mjSame(r[f],old[f]):false;if(!wasOv)r[f]=sv[f];else kept++});if(!(r.sv&&r.code!==old.code))r.code=sv.code||r.code;r.sv={...sv};r.svn=info;r.mem=mem;
+      if(r.s1===undefined||r.sta1===r.s1){r.sta1=fmtSta(G_.a);r.sta2=fmtSta(G_.b)}r.s1=fmtSta(G_.a);r.s2=fmtSta(G_.b);r.fx=1;r.sg=undefined;upd++}});
+  // ลบรายการที่ดึงอัตโนมัติจากรุ่นก่อน (รายการต่อช่วง) ที่ถูกรวมแล้ว
+  const secIds=only?[only.id]:null;
+  S.rows=S.rows.filter(r=>{if(!r.src||!r.sv||keep.has(r.src))return true;if(!/^(G:)?[^:@]+(@[^:]+)?:\d+$/.test(r.src))return true;
+    const sid=r.src.replace(/^G:/,'').split(/[@:]/)[0];if(secIds&&secIds.indexOf(sid)<0)return true;del++;return false});
   save(true);renderRows();refresh();
-  toast('✔ ดึงจากสำรวจ: เพิ่มใหม่ '+made+' · อัปเดต '+upd+' รายการ'+(kept?' (คงค่าที่คุณแก้ไว้ '+kept+' ช่อง)':''));return made+upd}
+  toast('✔ ดึงจากสำรวจ: เพิ่มใหม่ '+made+' · อัปเดต '+upd+' รายการ (รวมชั้นเดียวกันที่ต่อเนื่อง)'+(del?' · ลบรายการต่อช่วงเก่าที่ถูกรวม '+del:'')+(kept?' · คงค่าที่คุณแก้ไว้ '+kept+' ช่อง':''));return made+upd}
 function mjResetRow(r){if(!r.sv)return;MJ_F.forEach(([f])=>{if(f in r.sv)r[f]=r.sv[f]});if(r.sv.code)r.code=r.sv.code}
 function mjSegCard(g,p,i){
   const a=p._a,b=p._b,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'}[p.t]||p.t;
@@ -3258,7 +3273,7 @@ function mjSegCard(g,p,i){
   const oldL=LY.filter(l=>l.k==='old').map(l=>(l.n||'?')+' '+gnum(l.t,0)+' ซม.'),newL=LY.filter(l=>l.k!=='old').map(l=>(l.n||'?')+' '+gnum(l.t,0)+' ซม.');
   const ob={};(g.ob||[]).forEach(o=>{const t=parseSta(o.sta);if(t!=null&&t>=a-1e-6&&t<b+1e-6&&OB[o.k])ob[OB[o.k].n]=(ob[OB[o.k].n]||0)+1});
   const ex=[].concat(pc.map(x=>'ผิวทางเดิม: '+x),oldL.map(x=>'รองพื้นทางเดิม: '+x));
-  const rows=S.rows.filter(r=>r.sg===p.id||(r.src&&r.src.indexOf('@'+p.id+':')>0));const nov=rows.filter(r=>mjOvList(r).length).length;
+  const rows=S.rows.filter(r=>r.sg===p.id||(r.src&&r.src.indexOf('@'+p.id+':')>0)||(r.mem&&r.mem.indexOf(p.id)>=0));const nov=rows.filter(r=>mjOvList(r).length).length;
   return `<tr><td><b>${i+1}</b></td><td>${esc(fmtSta(a))} – ${esc(fmtSta(b))}<br><span class="mute">${tn} · ยาว ${nf(b-a)} ม.</span></td><td class="r">${nf((p._wl||0)+(p._wr||0))}<br><span class="mute">ซ้าย ${nf(p._wl||0)} / ขวา ${nf(p._wr||0)}</span></td>
    <td class="mjex">${ex.length?ex.map(esc).join('<br>'):'<span class="mute">ไม่ระบุ</span>'}</td><td>${newL.length?esc(newL.join(' / '))+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีชั้นทางใหม่</span>'}</td><td class="r">${rows.length}${nov?`<br><span class="mjov">แก้ ${nov}</span>`:''}</td></tr>`}
 function mjBaseRender(){const box=$('mjBase');if(!box||!S)return;const g=G();
