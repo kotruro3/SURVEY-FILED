@@ -1968,7 +1968,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v60';
+const APPVER='v61';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -3238,33 +3238,21 @@ function mjTargets(g,only){const T=[];compilePL(g);
   (g.secs||[]).forEach(s=>{if(only&&s!==only)return;const ra=parseSta(s.a),rb=parseSta(s.b);if(ra!=null&&rb!=null){if(!s.id)s.id=uid();const seg=g.pl.find(p=>ra>=p._a-1e-6&&ra<=p._b+1e-6);T.push({s,a:ra,b:rb,seg:seg||null,ranged:true,src:s.id})}});
   g.pl.forEach(p=>{if(p.lead||!(p._b>p._a))return;const s=mjSegSec(g,p);if(!s||(only&&s!==only))return;if(!s.id)s.id=uid();T.push({s,a:p._a,b:p._b,seg:p,ranged:false,src:s.id+'@'+p.id})});
   return T}
-function mjPull(only){const g=G();const T=mjTargets(g,only);if(!T.length){toast('ยังไม่มีข้อมูลให้ดึง — ไปแท็บ ③ STA สร้างผังช่วงและรูปตัด (พร้อมชั้นทาง) ก่อน');return 0}
-  let made=0,upd=0,kept=0,del=0;
-  // รวมชั้นทางเดียวกัน (ชื่อ+รหัส+ความหนา) ของช่วงที่ต่อเนื่องกัน เป็น 1 รายการงาน
-  const items=[];T.forEach(t=>{(t.s.layers||[]).forEach((l,j)=>{if(l.k==='old')return;items.push({t,l,j,key:(l.code||'')+'|'+(l.n||'')+'|'+gnum(l.t,0)})})});
-  const groups=[],open={};
-  items.slice().sort((x,y)=>x.t.a-y.t.a||x.j-y.j).forEach(it=>{
-    const gp=open[it.key];
-    if(!it.t.ranged&&gp&&!gp.ranged&&Math.abs(gp.b-it.t.a)<1e-6){gp.b=it.t.b;gp.mem.push(it)}
-    else{const n={key:it.key,a:it.t.a,b:it.t.b,ranged:it.t.ranged,mem:[it]};groups.push(n);open[it.key]=n}});
-  const keep=new Set();
-  groups.forEach(G_=>{const f=G_.mem[0],t=f.t,l=f.l,single=G_.mem.length===1&&!G_.ranged&&false;
-    const src=(G_.ranged?t.src:'G:'+t.src)+':'+f.j;keep.add(src);
-    let tl=0,tw=0;G_.mem.forEach(m=>{const L=m.t.b-m.t.a;tl+=L;tw+=L*(mjSecW(m.t.s,m.t.seg)||0)});
-    const wv=tl>0?tw/tl:0,ws=(Math.abs(wv-Math.round(wv*100)/100)<1e-9?mjR2(wv):String(Math.round(wv*1000)/1000)).replace(/^0$/,'');
-    const sv={code:l.code||'',w:ws,l:'',d:mjR2(gnum(l.t,0)/100),m1:'',m2:'',qn:''};
-    const n=G_.mem.length,info=(l.n||'ชั้นทาง')+' หนา '+gnum(l.t,0)+' ซม. · รูปตัด '+(t.s.lbl||'')+' STA '+fmtSta(G_.a)+'–'+fmtSta(G_.b)+(n>1?' · รวม '+n+' ช่วงต่อเนื่อง (กว้างเฉลี่ยถ่วงน้ำหนัก)':'');
-    const mem=G_.mem.filter(m=>m.t.seg).map(m=>m.t.seg.id);
+function mjPull(only){const g=G();compilePL(g);
+  const segs=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);
+  if(!segs.length){toast('ยังไม่มีผังช่วง — ไปแท็บ ③ STA ขั้น ① สร้างผังช่วงก่อน');return 0}
+  // 1 ช่วง STA ในตารางด้านบน = 1 แถวว่างให้ผู้ใช้ระบุรายการงานเอง (ไม่ใช้ข้อมูลรูปตัด SECTION)
+  let made=0,upd=0,del=0;const keep=new Set();
+  segs.forEach((p,i)=>{const src='S:'+p.id;keep.add(src);
+    const w=mjR2((p._wl||0)+(p._wr||0)).replace(/^0$/,''),info='ช่วงที่ '+(i+1)+' · STA '+fmtSta(p._a)+'–'+fmtSta(p._b);
+    const sv={code:'',w,l:'',d:'',m1:'',m2:'',qn:''};
     let r=S.rows.find(x=>x.src===src);
-    if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:sv.code,w:sv.w,d:sv.d,sta1:fmtSta(G_.a),sta2:fmtSta(G_.b),sg:undefined,fx:1,mem,s1:fmtSta(G_.a),s2:fmtSta(G_.b)});S.rows.push(r);made++}
-    else{const old=r.sv||{};MJ_F.forEach(([f])=>{if(!(f in sv))return;const wasOv=r.sv?!mjSame(r[f],old[f]):false;if(!wasOv)r[f]=sv[f];else kept++});if(!(r.sv&&r.code!==old.code))r.code=sv.code||r.code;r.sv={...sv};r.svn=info;r.mem=mem;
-      if(r.s1===undefined||r.sta1===r.s1){r.sta1=fmtSta(G_.a);r.sta2=fmtSta(G_.b)}r.s1=fmtSta(G_.a);r.s2=fmtSta(G_.b);r.fx=1;r.sg=undefined;upd++}});
-  // ลบรายการที่ดึงอัตโนมัติจากรุ่นก่อน (รายการต่อช่วง) ที่ถูกรวมแล้ว
-  const secIds=only?[only.id]:null;
-  S.rows=S.rows.filter(r=>{if(!r.src||!r.sv||keep.has(r.src))return true;if(!/^(G:)?[^:@]+(@[^:]+)?:\d+$/.test(r.src))return true;
-    const sid=r.src.replace(/^G:/,'').split(/[@:]/)[0];if(secIds&&secIds.indexOf(sid)<0)return true;del++;return false});
+    if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:'',w,sta1:fmtSta(p._a),sta2:fmtSta(p._b),sg:p.id,fx:0});S.rows.push(r);made++}
+    else{const old=r.sv||{};if(!mjSame(r.w,old.w))void 0;else r.w=w;r.sv={...sv};r.svn=info;r.sg=p.id;if(!r.fx){r.sta1=fmtSta(p._a);r.sta2=fmtSta(p._b)}upd++}});
+  // ลบแถวที่เคยดึงจากรูปตัด SECTION ในรุ่นก่อนๆ
+  S.rows=S.rows.filter(r=>{if(!r.src||!r.sv||keep.has(r.src))return true;if(!/^(G:|S:)?[^:@]+(@[^:]+)?:\d+$/.test(r.src))return true;del++;return false});
   save(true);renderRows();refresh();
-  toast('✔ ดึงจากสำรวจ: เพิ่มใหม่ '+made+' · อัปเดต '+upd+' รายการ (รวมชั้นเดียวกันที่ต่อเนื่อง)'+(del?' · ลบรายการต่อช่วงเก่าที่ถูกรวม '+del:'')+(kept?' · คงค่าที่คุณแก้ไว้ '+kept+' ช่อง':''));return made+upd}
+  toast('✔ ดึงข้อมูลสำรวจ: '+segs.length+' ช่วง (เพิ่มใหม่ '+made+' · คงเดิม '+upd+')'+(del?' · ลบแถวเก่าที่มาจากรูปตัด '+del:'')+' — ไประบุรายการงานของแต่ละช่วงในตารางด้านล่าง');return made+upd}
 function mjResetRow(r){if(!r.sv)return;MJ_F.forEach(([f])=>{if(f in r.sv)r[f]=r.sv[f]});if(r.sv.code)r.code=r.sv.code}
 function mjSegCard(g,p,i){
   const a=p._a,b=p._b,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'}[p.t]||p.t;
@@ -3281,9 +3269,9 @@ function mjBaseRender(){const box=$('mjBase');if(!box||!S)return;const g=G();
   const segs=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);
   const nr=S.rows.filter(r=>r.sv).length,nov=S.rows.filter(r=>mjOvList(r).length).length,nf2=S.rows.filter(r=>mjOvList(r).length).reduce((a,r)=>a+mjOvList(r).length,0);
   const _d=box.querySelector('details'),_op=_d?_d.open:!!segs.length;box.innerHTML=`<details ${_op?'open':''}><summary style="font-weight:700;color:var(--brand);cursor:pointer">📐 ฐานข้อมูลจากการสำรวจ ③ STA (${segs.length} ช่วง)</summary>
-   <div class="mute" style="margin:6px 0">ข้อมูลจากแท็บ ③ STA ทุกช่วง: <b>ชั้นทางใหม่</b> + ความกว้าง ใช้เป็น <b>ค่าเริ่มต้น</b> ของรายการงานด้านล่าง · ส่วน <b>รายการเดิม</b> (ผิวทาง/ชั้นทางเดิม/สิ่งก่อสร้างที่สำรวจพบ) แสดงให้ดูประกอบการตัดสินใจเท่านั้น ระบบ<b>ไม่สร้างรายการงานให้</b> — เพิ่มรายการใหม่เองเมื่อจำเป็น · แต่ละรายการแก้ <b>กว้าง / ยาว / ลึก-หนา / ตัวคูณ</b> ให้ต่างจากค่าสำรวจได้ — ช่องที่แก้จะเป็นสีส้ม มีปุ่ม ↺ คืนค่าสำรวจ</div>
+   <div class="mute" style="margin:6px 0">ตารางนี้ดึงจากผังช่วง STA ของแท็บ ③ และข้อมูลสำรวจสภาพเดิม · กดปุ่ม <b>ดึงข้อมูลสำรวจ</b> ด้านล่าง เพื่อสร้าง <b>1 แถวต่อ 1 ช่วง STA</b> ในตารางรายการงาน แล้วให้ผู้ใช้<b>ระบุรหัสรายการงานเอง</b> (ระบบไม่สร้างรายการงานจากรูปตัด SECTION) · ต้องการหลายรายการในช่วงเดียว ให้เพิ่มแถวเองพร้อมระบุ STA</div>
    ${segs.length?`<div style="overflow:auto"><table class="mjT"><tr><th>#</th><th>ช่วง STA</th><th class="r">กว้างรวม (ม.)</th><th>ผิวทางเดิม / รองพื้นทางเดิม (ไม่สร้างรายการ)</th><th>ชั้นทางใหม่ (ฐานรายการงาน)</th><th>รายการงาน (สร้างใหม่ / เลือก)</th></tr>${segs.map((p,i)=>mjSegCard(g,p,i)).join('')}</table></div>`:'<div class="mute" style="padding:8px">ยังไม่มีผังช่วงในแท็บ ③ STA</div>'}
-   <div class="bar" style="margin-top:8px"><button class="b" id="mjPull" ${segs.length?'':'disabled'}>⤓ ดึงข้อมูลสำรวจทุกช่วงมาเป็นฐาน / อัปเดต</button><span class="mute" id="mjSt">${nr?`มี ${nr} รายการผูกกับค่าสำรวจ · แก้ต่างจากสำรวจ ${nov} รายการ (${nf2} ช่อง) · กดอัปเดตซ้ำได้ ระบบ<b>ไม่ทับค่าที่คุณแก้ไว้</b>`:'ยังไม่ได้ดึง — ระบบจะสร้างรายการงานตามชั้นทางใหม่ของแต่ละช่วงให้ (ไม่รวมชั้นเดิม)'}</span></div></details>`;
+   <div class="bar" style="margin-top:8px"><button class="b" id="mjPull" ${segs.length?'':'disabled'}>⤓ ดึงข้อมูลสำรวจทุกช่วง (1 ช่วง = 1 แถว) / อัปเดต</button><span class="mute" id="mjSt">${nr?`มี ${nr} รายการผูกกับค่าสำรวจ · แก้ต่างจากสำรวจ ${nov} รายการ (${nf2} ช่อง) · กดอัปเดตซ้ำได้ ระบบ<b>ไม่ทับค่าที่คุณแก้ไว้</b>`:'ยังไม่ได้ดึง — กดเพื่อสร้างแถวว่าง 1 แถวต่อ 1 ช่วง STA'}</span></div></details>`;
   const dl=document.createElement('datalist');dl.id='dlJobMJ';dl.innerHTML=ITEMS.map(it=>`<option value="${esc(it.code)}" label="${esc(it.code+' — '+it.name)}">${esc(it.name)}</option>`).join('');box.appendChild(dl);
   box.querySelectorAll('[data-mjc]').forEach(el=>el.onchange=()=>{const r=S.rows[+el.dataset.mjc];if(!r)return;r.code=el.value.trim().toUpperCase();save(true);renderRows();refresh()});
   box.querySelectorAll('[data-mjdel]').forEach(el=>el.onclick=()=>{S.rows.splice(+el.dataset.mjdel,1);save(true);renderRows();refresh()});
