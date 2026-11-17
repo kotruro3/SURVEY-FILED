@@ -1968,7 +1968,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v62';
+const APPVER='v63';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
@@ -3254,6 +3254,10 @@ function mjPull(only){const g=G();compilePL(g);
   save(true);renderRows();refresh();
   toast('✔ ดึงข้อมูลสำรวจ: '+segs.length+' ช่วง (เพิ่มใหม่ '+made+' · คงเดิม '+upd+')'+(del?' · ลบแถวเก่าที่มาจากรูปตัด '+del:'')+' — ไประบุรายการงานของแต่ละช่วงในตารางด้านล่าง');return made+upd}
 function mjResetRow(r){if(!r.sv)return;MJ_F.forEach(([f])=>{if(f in r.sv)r[f]=r.sv[f]});if(r.sv.code)r.code=r.sv.code}
+function mjQty(r,it){const c=calc(r),n=v=>{const x=num(v);return x==null?null:nf(x)},P=[];
+  const w=n(r.w),l=n(r.l),d=n(r.d),q=n(r.qn);
+  P.push('กว้าง '+(w==null?'–':w));P.push('ยาว '+(l!=null?l:(c.dist!=null?nf(c.dist)+' (STA)':'–')));P.push('หนา '+(d==null?'–':d));P.push('จำนวน '+(q==null?'–':q));
+  return esc(P.join(' · '))+'<br>ปริมาณรวม <b>'+nf(c.qty||0)+'</b> '+esc((it&&it.unit)||'')}
 function mjSegCard(g,p,i){
   const a=p._a,b=p._b,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'}[p.t]||p.t;
   const pcs=(g.pc||[]).filter(x=>{const A=parseSta(x.a),B=parseSta(x.b);return A!=null&&B!=null&&A<b-1e-6&&B>a+1e-6});const pc=pcs.filter(x=>x.type||x.cond||x.dmg).map(x=>(x.type||'ผิวทาง')+(x.cond?' ('+x.cond+')':'')+(x.dmg?' '+x.dmg:'')),pb=pcs.filter(x=>x.base).map(x=>x.base);
@@ -3263,7 +3267,7 @@ function mjSegCard(g,p,i){
   const ex=[].concat(pc.map(x=>'ผิวทางเดิม: '+x),pb.map(x=>'รองพื้นทางเดิม: '+x),oldL.map(x=>'รองพื้นทางเดิม: '+x));
   const rows=S.rows.filter(r=>{if(!String(r.code||'').trim())return false;if(r.sg===p.id||(r.mem&&r.mem.indexOf(p.id)>=0))return true;const A=parseSta(r.sta1),B=parseSta(r.sta2);return A!=null&&B!=null&&A<b-1e-6&&B>a+1e-6});const nov=rows.filter(r=>mjOvList(r).length).length;
   return `<tr><td><b>${i+1}</b></td><td>${esc(fmtSta(a))} – ${esc(fmtSta(b))}<br><span class="mute">${tn} · ยาว ${nf(b-a)} ม.</span></td><td class="r">${nf((p._wl||0)+(p._wr||0))}<br><span class="mute">ซ้าย ${nf(p._wl||0)} / ขวา ${nf(p._wr||0)}</span></td>
-   <td class="mjex">${ex.length?ex.map(esc).join('<br>'):'<span class="mute">ไม่ระบุ</span>'}</td><td>${newL.length?esc(newL.join(' / '))+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีชั้นทางใหม่</span>'}</td><td class="mjjb">${rows.length?rows.map(r=>{const it=BYCODE[String(r.code||'').toUpperCase()];return `<div class="mjjr"><b>${esc(r.code)}</b> <span>${it?esc(it.name):'<span class="warn">! ไม่พบรหัส</span>'}</span><br><span class="mute">STA ${esc(r.sta1)}–${esc(r.sta2)}${mjOvList(r).length?' · <span class="mjov">แก้จากสำรวจ</span>':''}</span> <button class="b red sm" data-mjdel="${S.rows.indexOf(r)}" title="ลบรายการงานนี้ออกจากช่วง">✕</button></div>`}).join(''):'<span class="mute">รอระบุรายการงาน</span>'}<div class="mjadd" style="margin-top:6px"><input data-mjm="${p.id}" list="dlJobMJ" placeholder="พิมพ์รหัสได้หลายตัว เช่น A01 A03 A05 C01" autocomplete="off" style="width:100%"><button class="b sm" data-mjadd="${p.id}" style="margin-top:4px">＋ เพิ่มรายการงานในช่วงนี้</button></div></td></tr>`}
+   <td class="mjex">${ex.length?ex.map(esc).join('<br>'):'<span class="mute">ไม่ระบุ</span>'}</td><td>${newL.length?esc(newL.join(' / '))+'<br><span class="mute">รูปตัด '+esc(s.lbl||'')+'</span>':'<span class="mute">ยังไม่มีชั้นทางใหม่</span>'}</td><td class="mjjb">${rows.length?rows.map(r=>{const it=BYCODE[String(r.code||'').toUpperCase()];return `<div class="mjjr"><b>${esc(r.code)}</b> <span>${it?esc(it.name):'<span class="warn">! ไม่พบรหัส</span>'}</span><br><span class="mjq">${mjQty(r,it)}</span><br><span class="mute">STA ${esc(r.sta1)}–${esc(r.sta2)}${mjOvList(r).length?' · <span class="mjov">แก้จากสำรวจ</span>':''}</span> <button class="b red sm" data-mjdel="${S.rows.indexOf(r)}" title="ลบรายการงานนี้ออกจากช่วง">✕</button></div>`}).join(''):'<span class="mute">รอระบุรายการงาน</span>'}<div class="mjadd" style="margin-top:6px"><input data-mjm="${p.id}" list="dlJobMJ" placeholder="พิมพ์รหัสได้หลายตัว เช่น A01 A03 A05 C01" autocomplete="off" style="width:100%"><button class="b sm" data-mjadd="${p.id}" style="margin-top:4px">＋ เพิ่มรายการงานในช่วงนี้</button></div></td></tr>`}
 function mjBaseRender(){const box=$('mjBase');if(!box||!S)return;const g=G();
   try{compilePL(g)}catch(e){}
   const segs=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a);
