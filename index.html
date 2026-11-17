@@ -1580,6 +1580,7 @@ function pvSvg(c){const{g,P,k,s0,s1,sta0,ang,wf}=c;const o=[];(g.pv||[]).forEach
 function segIcon(t){const bg='<rect x="9" y="9" width="42" height="42" rx="4" transform="rotate(45 30 30)" fill="#f6c90e" stroke="#222" stroke-width="1.5"/>';
   const hd=(m,x)=>m?x:60-x;let body;
   if(t==='L')body='<line x1="30" y1="50" x2="30" y2="26" stroke="#111" stroke-width="5"/><polygon points="30,10 20,27 40,27" fill="#111"/>';
+  else if(t==='TL'||t==='TR'){const X=x=>t==='TL'?x:60-x;body=`<path d="M${X(41)} 51 V31 Q${X(41)} 24 ${X(34)} 24 H${X(24)}" fill="none" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="${X(8)},24 ${X(25)},11 ${X(25)},37" fill="#111" stroke="#111" stroke-width="2" stroke-linejoin="round"/>`}
   else{const m=t==='CL',X=x=>m?x:60-x;body=`<path d="M${X(36)} 50 V38 Q${X(36)} 28 ${X(25)} 23" fill="none" stroke="#111" stroke-width="5"/><polygon points="${X(15)},15 ${X(30)},15 ${X(22)},30" fill="#111" transform="rotate(${m?-8:8} 30 22)"/>`}
   return `<svg viewBox="0 0 60 60" width="52" height="52">${bg}${body}</svg>`}
 function envSplit(g){const out=[];(g.env||[]).forEach(e=>{let gaps=[];(g.jx||[]).forEach(j=>{const ts=parseSta(j.sta);if(ts==null)return;
@@ -1761,7 +1762,7 @@ function compilePL(g){
 const WZ_STEPS=[['1','① ผังช่วง (STA)'],['s','② สำรวจสภาพเดิม'],['p','③ ระดับ PROFILE'],['3','④ รูปตัด SECTION (สร้างแผ่น)']];
 function plMarks(g,p){const a=p._a,b=p._b;if(a==null||b==null)return'';const last=g.pl[g.pl.length-1]===p;const inR=s=>s!=null&&s>=a-1e-6&&(last?s<=b+1e-6:s<b-1e-9);
   const sm=(svg,w)=>svg.replace(/width="\d+" height="\d+"/,`width="${w}" height="${w}"`);
-  let o=`<span class="plic" title="${p.t==='L'?'ทางตรง':p.t==='CL'?'ทางโค้งซ้าย':'ทางโค้งขวา'}">${sm(segIcon(p.t),42)}</span>`;
+  let o=`<span class="plic" title="${p.t==='L'?'ทางตรง':p.turn?(p.t==='CL'?'เลี้ยวซ้าย':'เลี้ยวขวา'):p.t==='CL'?'ทางโค้งซ้าย':'ทางโค้งขวา'}">${sm(segIcon(p.turn&&p.t!=='L'?(p.t==='CL'?'TL':'TR'):p.t),42)}</span>`;
   const ms=[];(g.jx||[]).forEach(j=>{const s=parseSta(j.sta);if(inR(s))ms.push(`<span class="plmk" title="${esc((typeof JX_T!=='undefined'&&JX_T[j.type])||j.type)} STA ${fmtSta(s)}">${sm(jxIcon(j.type),36)}<small>${fmtSta(s)}</small></span>`)});
   const cnt={};(g.ob||[]).forEach(ob=>{const s=parseSta(ob.sta);if(inR(s)&&OB[ob.k])cnt[ob.k]=(cnt[ob.k]||0)+1});
   Object.keys(cnt).slice(0,6).forEach(k=>ms.push(`<span class="plmk" title="${esc(OB[k].n)} ×${cnt[k]}">${sm(objIcon(k),38)}${cnt[k]>1?'<small>×'+cnt[k]+'</small>':''}</span>`));
@@ -1824,7 +1825,7 @@ function geoUI(){
     if(!pl.length)h.push(`<div class="mute" style="padding:10px">ยังไม่มีช่วง — กดปุ่มด้านล่างเพื่อเริ่มบันทึกช่วงแรกของโครงการ</div>`);
     h.push(`<datalist id="dlPv">${PV_OPT.map(v=>`<option value="${v}">`).join('')}</datalist><datalist id="dlSta">${pl.map(p=>`<option value="${fmtSta(p._a)}">`).join('')}${pl.length?`<option value="${fmtSta(pl[pl.length-1]._b)}">`:''}</datalist>`);
     const tot=pl.reduce((a,p)=>a+(p._b-p._a||0),0);
-    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (มุม 90° รัศมี 12 ม. แก้ได้)"],["CR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (มุม 90° รัศมี 12 ม. แก้ได้)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
+    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["TL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (มุม 90° รัศมี 12 ม. แก้ได้)"],["TR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (มุม 90° รัศมี 12 ม. แก้ได้)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
   }else if(step==='s'){h.push(surveyUI(g))}else if(step==='p'){h.push(profileUI(g));setTimeout(profPrev,30)}else if(step==='2'){
     h.push(`<div class="mute" style="margin:6px 0">กำหนดรายการงาน (JOB LIST) ตามแต่ละช่วง — แปลนจะอัปเดตภาพตามรายการงานที่เลือก (ช่วง STA ตามผังที่บันทึกไว้ในขั้นที่ ①)</div>`);
     if(!pl.length)h.push(`<div class="gsec">ยังไม่มีช่วงในผัง — กลับไปบันทึกผังในขั้นที่ ① ก่อน<div class="bar"><button class="b" data-act="step" data-v="1">← ไปขั้นที่ ①</button></div></div>`);
@@ -1975,7 +1976,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v64';
+const APPVER='v65';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
