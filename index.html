@@ -1754,8 +1754,8 @@ function compilePL(g){
     acc+=L});
   // จุดตัด/สามแยกที่ผูกกับช่วงเลี้ยว: สร้าง/ย้าย STA ตามต้นช่วงอัตโนมัติ
   {g.jx=g.jx||[];const byId={};pl.forEach(p=>byId[p.id]=p);
-   g.jx=g.jx.filter(x=>!x.src||(byId[x.src]&&byId[x.src].tj&&byId[x.src].t!=='L'));
-   pl.forEach(p=>{if(!p.tj||p.t==='L')return;const ty=p.tj==='X'?'X':(p.t==='CR'?'TR':'TL');let x=g.jx.find(q=>q.src===p.id);
+   g.jx=g.jx.filter(x=>!x.src||(byId[x.src]&&byId[x.src].tj&&byId[x.src].t!=='L'&&!byId[x.src].turn));
+   pl.forEach(p=>{if(!p.tj||p.t==='L'||p.turn)return;const ty=p.tj==='X'?'X':(p.t==='CR'?'TR':'TL');let x=g.jx.find(q=>q.src===p.id);
      if(!x){x=newJx(ty);x.src=p.id;x.at=ty;g.jx.push(x)}else if(x.at&&x.type===x.at&&x.at!==ty){x.type=ty;x.legs=jxLegDef(ty);x.at=ty}
      x.sta=fmtSta(p._a)})}
   g.env=cutEnv(g.env,jxCuts(g));g._end=acc}
@@ -1816,7 +1816,7 @@ function geoUI(){
       const eh=(sd,e)=>`<div class="envb"><label>สภาพแวดล้อม${sd==='L'?'ซ้าย':'ขวา'}</label><select data-pl="${i}" data-env="${sd}" data-f="t">${ENV_T.map(x=>`<option value="${x}"${((e.t||'')===x||(x==='บ้านเรือน/ชุมชน'&&e.t==='บ้านเรือน/อาคาร'))?' selected':''}>${x||'ไม่มี'}</option>`).join('')}</select>${e.t?(envAuto(e.t)?'<div class="mute">วาดผังจำลองกระจายตามแนวถนนให้อัตโนมัติ — ไม่ต้องกรอกความกว้าง</div>':`<input data-pl="${i}" data-env="${sd}" data-f="w" type="number" step="any" value="${esc(e.w)}" placeholder="กว้าง ม.">`)+`<input data-pl="${i}" data-env="${sd}" data-f="n" value="${esc(e.n||'')}" placeholder="ชื่อ/หมายเหตุ">`:''}</div>`;
       h.push(`<div class="plseg" data-pi="${i}"><div class="plh">${(()=>{const m=plMarks(g,p);return m.ic})()}<b>ช่วงที่ ${i+1}</b> <span class="mute plsta">${plSta(p)}</span>${plMarks(g,p).mk}<span class="sp"></span></div><div class="plact">${i>0?`<button class="b ghost mv" data-act="up" data-i="${i}" title="ย้ายช่วงนี้ขึ้นก่อนช่วงข้างบน">▲ ย้ายขึ้น</button>`:''}${i<pl.length-1?`<button class="b ghost mv" data-act="dn" data-i="${i}" title="ย้ายช่วงนี้ลงหลังช่วงข้างล่าง">▼ ย้ายลง</button>`:''}<span class="sp"></span><button class="b mv del" data-act="delPl" data-i="${i}" title="ลบช่วงนี้">✕ ลบช่วง</button></div>
       <div class="grid g4"><div><label>ลักษณะช่วง</label><select data-pl="${i}" data-f="t" data-re="1"><option value="L"${t==='L'?' selected':''}>ตรง</option><option value="CL"${t==='CL'?' selected':''}>${p.turn?'เลี้ยวซ้าย':'โค้งซ้าย'}</option><option value="CR"${t==='CR'?' selected':''}>${p.turn?'เลี้ยวขวา':'โค้งขวา'}</option></select></div>
-      ${t==='L'?`<div><label>ความยาว (ม.)</label>${d('len',p.len,'type="number" step="any" inputmode="decimal"')}</div>`:`<div><label>มุมเลี้ยว Δ (°)</label>${d('ang',p.ang,'type="number" step="any"')}</div><div><label>รัศมี R (ม.)</label>${d('R',p.R,'type="number" step="any"')}</div><div><label>เลี้ยวที่จุดตัด/สามแยก</label><select data-pl="${i}" data-f="tj" data-re="1"><option value="">ไม่มี (โค้งปกติ)</option><option value="T"${p.tj==='T'?' selected':''}>สามแยก (ตัว T) ที่ต้นช่วง</option><option value="X"${p.tj==='X'?' selected':''}>สี่แยก ที่ต้นช่วง</option></select></div>`}
+      ${t==='L'?`<div><label>ความยาว (ม.)</label>${d('len',p.len,'type="number" step="any" inputmode="decimal"')}</div>`:`<div><label>มุมเลี้ยว Δ (°)</label>${d('ang',p.ang,'type="number" step="any"')}</div><div><label>รัศมี R (ม.)</label>${d('R',p.R,'type="number" step="any"')}</div>`}
       ${i>0?`<div><label>ทิศการไป</label><select data-pl="${i}" data-f="hd"><option value="">ต่อเนื่องจากช่วงก่อน</option>${[['N',0],['NE',45],['E',90],['SE',135],['S',180],['SW',225],['W',270],['NW',315]].map(([n,v])=>`<option value="${v}"${String(p.hd)===String(v)?' selected':''}>หักไปทาง ${n}</option>`).join('')}</select></div>`:''}</div>
       <div class="grid g4"><div><label>ผิวทางกว้างซ้าย (ม.)</label>${d('wl',p.wl,`type="number" step="any" placeholder="${i?'เท่าช่วงก่อน':'2.5'}"`)}</div><div><label>ผิวทางกว้างขวา (ม.)</label>${d('wr',p.wr,`type="number" step="any" placeholder="${i?'เท่าช่วงก่อน':'2.5'}"`)}</div>
       <div><label>เขตทางซ้าย (ม.)</label>${d('rowl',p.rowl,`type="number" step="any" placeholder="${i?'เท่าช่วงก่อน':'จากกึ่งกลาง'}"`)}</div><div><label>เขตทางขวา (ม.)</label>${d('rowr',p.rowr,`type="number" step="any" placeholder="${i?'เท่าช่วงก่อน':'จากกึ่งกลาง'}"`)}</div></div>
@@ -1825,7 +1825,7 @@ function geoUI(){
     if(!pl.length)h.push(`<div class="mute" style="padding:10px">ยังไม่มีช่วง — กดปุ่มด้านล่างเพื่อเริ่มบันทึกช่วงแรกของโครงการ</div>`);
     h.push(`<datalist id="dlPv">${PV_OPT.map(v=>`<option value="${v}">`).join('')}</datalist><datalist id="dlSta">${pl.map(p=>`<option value="${fmtSta(p._a)}">`).join('')}${pl.length?`<option value="${fmtSta(pl[pl.length-1]._b)}">`:''}</datalist>`);
     const tot=pl.reduce((a,p)=>a+(p._b-p._a||0),0);
-    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["TL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (มุม 90° รัศมี 12 ม. แก้ได้)"],["TR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (มุม 90° รัศมี 12 ม. แก้ได้)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
+    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["TL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (หักมุม 90° แก้มุม/รัศมีได้ ไม่สร้างทางแยก)"],["TR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (หักมุม 90° แก้มุม/รัศมีได้ ไม่สร้างทางแยก)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
   }else if(step==='s'){h.push(surveyUI(g))}else if(step==='p'){h.push(profileUI(g));setTimeout(profPrev,30)}else if(step==='2'){
     h.push(`<div class="mute" style="margin:6px 0">กำหนดรายการงาน (JOB LIST) ตามแต่ละช่วง — แปลนจะอัปเดตภาพตามรายการงานที่เลือก (ช่วง STA ตามผังที่บันทึกไว้ในขั้นที่ ①)</div>`);
     if(!pl.length)h.push(`<div class="gsec">ยังไม่มีช่วงในผัง — กลับไปบันทึกผังในขั้นที่ ① ก่อน<div class="bar"><button class="b" data-act="step" data-v="1">← ไปขั้นที่ ①</button></div></div>`);
@@ -1862,7 +1862,7 @@ function geoUI(){
       save();if(el.tagName==='SELECT'){geoUI()}else plLabels();renderPlan();if(el.dataset.rw!==undefined){renderRows();refresh()}}});
   gc.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;e.preventDefault();const g=G(),d=a.dataset,act=d.act;const i=+d.i,ri=+d.ri;
     if(act==='step'){g.step=d.v}
-    else if(act==='addTL'||act==='addTR'){if(!g.pl.length&&parseSta(g.sta0)==null)g.sta0='0+000';g.plm=1;const ns=newSeg(act==='addTL'?'CL':'CR');ns.ang=90;ns.R=12;ns.turn=1;ns.tj='T';g.pl.push(ns)}
+    else if(act==='addTL'||act==='addTR'){if(!g.pl.length&&parseSta(g.sta0)==null)g.sta0='0+000';g.plm=1;const ns=newSeg(act==='addTL'?'CL':'CR');ns.ang=90;ns.R=8;ns.turn=1;g.pl.push(ns)}
     else if(act==='addL'||act==='addCL'||act==='addCR'){if(!g.pl.length&&parseSta(g.sta0)==null)g.sta0='0+000';g.plm=1;g.pl.push(newSeg(act==='addL'?'L':act==='addCL'?'CL':'CR'))}
     else if(act==='delPl'){const rowsOf=S.rows.filter(r=>r.sg===g.pl[i].id);if(!confirm('ลบช่วงที่ '+(i+1)+'?'+(rowsOf.length?'\n\nจะลบรายการงานที่ผูกกับช่วงนี้อีก '+rowsOf.length+' รายการด้วย':'')+'\n\n(ลบแล้วกด "↶ เอาช่วงที่ลบกลับคืน" ได้ทันที)'))return;const seg=g.pl[i];window._undoPl={i,seg,rows:rowsOf,pid:S.id};g.pl.splice(i,1);S.rows=S.rows.filter(r=>r.sg!==seg.id);if(!S.rows.length)S.rows=[newRow()];renderRows();refresh()}
     else if(act==='undoPl'){const u=window._undoPl;if(u&&u.pid===S.id){g.pl.splice(Math.min(u.i,g.pl.length),0,u.seg);if(S.rows.length===1&&!S.rows[0].code&&!S.rows[0].sta1)S.rows=[];S.rows=S.rows.concat(u.rows);if(!S.rows.length)S.rows=[newRow()];window._undoPl=null;renderRows();refresh();toast('✔ เอาช่วงที่ลบกลับคืนแล้ว')}}
@@ -1976,7 +1976,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v65';
+const APPVER='v66';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
