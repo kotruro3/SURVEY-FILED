@@ -1273,7 +1273,13 @@ function sheetSvg(M,idx){
     const col=b.it?b.it.cat.color:'#8e8e8e';
     o.push(`<polygon points="${pstr(A.concat(B.reverse()))}" fill="${col}" fill-opacity=".85" stroke="${col}" stroke-width=".8"><title>${esc(b.code)} ${esc(b.it?b.it.name:'')}</title></polygon>`)});
   // road
-  const T0=sam(s0,s1,st),L=[],R=[];T0.forEach(t=>{const w=wf(t+sta0);L.push(P(t,w[0]));R.push(P(t,-w[1]))});
+  const T0=sam(s0,s1,st);
+  // มุมหักฉาก (R=0): ต่อขอบถนนเป็นมุมแหลมตั้งฉาก (mitre) ทั้งขอบนอกและขอบใน
+  const crn=(g.pl||[]).filter(p=>!p.lead&&p.t!=='L'&&p._b>p._a&&(p._b-p._a)<0.2).map(p=>[p._a-sta0,p._b-sta0]).filter(c=>c[1]>s0-2&&c[0]<s1+2);
+  const edgeM=fn=>{const out=[],used=crn.map(()=>false);
+    const mit=c=>{const a0=fn(c[0]-1),a1=fn(c[0]),b0=fn(c[1]),b1=fn(c[1]+1),d1x=a1[0]-a0[0],d1y=a1[1]-a0[1],d2x=b1[0]-b0[0],d2y=b1[1]-b0[1],den=d1x*d2y-d1y*d2x;if(Math.abs(den)<1e-9)return a1;const u=((b0[0]-a1[0])*d2y-(b0[1]-a1[1])*d2x)/den;return[a1[0]+u*d1x,a1[1]+u*d1y]};
+    T0.forEach(t=>{let skip=false;crn.forEach((c,i)=>{if(t>c[0]-1e-9&&t<c[1]+1e-9)skip=true;else if(t>=c[1]&&!used[i]){used[i]=true;out.push(mit(c))}});if(!skip)out.push(fn(t))});return out};
+  const L=edgeM(t=>{const w=wf(t+sta0);return P(t,w[0])}),R=edgeM(t=>{const w=wf(t+sta0);return P(t,-w[1])});
   o.push(`<polygon points="${pstr(L.concat(R.slice().reverse()))}" fill="#a9b1ba" stroke="none"/><polyline points="${pstr(L)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/><polyline points="${pstr(R)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/>`);
   o.push(pcSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang}));o.push(jxSvg({g,wf,sta0,P,k,s0,s1,pstr,f1}));o.push(pvSvg({g,P,k,s0,s1,sta0,ang,wf}));
   // ROW lines
@@ -2030,7 +2036,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v69';
+const APPVER='v70';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
