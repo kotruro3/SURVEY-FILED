@@ -1810,7 +1810,7 @@ function secEditor(g){const h=[];h.push(`<datalist id="dlJob2"></datalist>`);
 const STB_SHAPES=[['X','สี่แยก',[0,90,180,270]],['T1','สามแยก ⊤',[90,180,270]],['T2','สามแยก ⊣',[0,180,270]],['T3','สามแยก ⊢',[0,90,180]],['T4','สามแยก ⊥',[0,90,270]],['YR','สามแยก Y เฉียงขวา',[0,45,180]],['YL','สามแยก Y เฉียงซ้าย',[0,315,180]],['YE','สามแยก Y เท่ากัน',[0,120,240]]];
 function stbNrm(x){let v=(((x%360)+540)%360)-180;if(v===-180)v=180;return v}
 function stbSign(rot,sz){return `<svg viewBox="0 0 60 60" width="${sz||46}" height="${sz||46}"><rect x="9" y="9" width="42" height="42" rx="4" transform="rotate(45 30 30)" fill="#f6c90e" stroke="#222" stroke-width="1.5"/><g transform="rotate(${rot} 30 30)"><line x1="30" y1="46" x2="30" y2="24" stroke="#111" stroke-width="5"/><polygon points="30,10 19,27 41,27" fill="#111"/></g></svg>`}
-function stbState(g){g.stb=Object.assign({m:'1',dir:0,rot:0,shape:'X',entry:null,exit:null,rotJ:0,entryLen:20,exitLen:50,legLen:40},g.stb||{});return g.stb}
+function stbState(g){g.stb=Object.assign({m:'1',dir:0,rot:0,shape:'X',entry:null,exit:null,rotJ:0,entryLen:20,exitLen:50,legLen:40,ref:'end',crossW:5},g.stb||{});return g.stb}
 function stbArms(s){const sh=STB_SHAPES.find(x=>x[0]===s.shape)||STB_SHAPES[0];return sh[2].map(b=>((b+gnum(s.rotJ,0))%360+360)%360)}
 function stbTurn(arms,s){const hd=(arms[s.entry]+180)%360;return{hd,d:s.exit==null?null:stbNrm(arms[s.exit]-hd)}}
 function stbTurnTxt(d){const a=Math.abs(Math.round(d));return a<1?'ตรงไป':a>=165?'ย้อนกลับ':(d>0?(a===90?'เลี้ยวขวา':'เฉียงขวา '+a+'°'):(a===90?'เลี้ยวซ้าย':'เฉียงซ้าย '+a+'°'))}
@@ -1836,7 +1836,8 @@ function stbUI(g){const s=stbState(g);let h=`<div class="gsec stb"><b>🚩 ส�
     if(s.entry==null)h+=`<div class="mute">ยังไม่ได้เลือกแขนเริ่มต้น — กดหมายเลขที่แขนทางแยกในภาพ</div>`;
     else{const t=stbTurn(arms,s);h+=`<div><b>เริ่มจากแขนที่ ${s.entry+1}</b> (เดินเข้าหากลางแยก ทิศ ${Math.round(t.hd)}°)</div><div class="mute" style="margin:6px 0">③ เลือกเส้นทางผ่านกลางแยก — ตัวเลข = แขนปลายทาง</div><div class="bar" style="gap:8px;flex-wrap:wrap">`;
       arms.forEach((B,j)=>{if(j===s.entry)return;const d=stbNrm(B-t.hd);h+=`<button class="b ${s.exit===j?'':'ghost'}" data-act="stbExit" data-v="${j}" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px">${stbSign(d,50)}<span><b>${j+1}</b> · ${stbTurnTxt(d)}</span></button>`});h+='</div>'}
-    h+=`</div></div><div class="grid">${num('entryLen','ความยาวเส้นทางจากจุดเริ่มต้น (STA 0+000 ที่ปลายแขน) ถึงกลางแยก (ม.)','20')}${num('exitLen','ความยาวเส้นทางหลังผ่านแยก (ม.)','50')}${num('legLen','ความยาวแขนอื่นที่แสดงในแปลน (ม.)','40')}</div>
+    h+=`</div></div><div class="mute" style="margin-top:4px"><b>④ STA 0+000 อยู่ที่ขอบทางแยก</b> ด้านแขนที่เลือกเริ่มต้น แล้วไปตามเส้นทางที่เลือก (ขอบทางแยก = ก่อนถึงกลางแยกเท่ากับครึ่งหนึ่งของความกว้างถนนที่ตัด)</div>
+    <div class="grid">${num('crossW','ความกว้างถนนที่ตัด / แขนทางแยก (ม.)','5')}${num('exitLen','ความยาวเส้นทางหลังผ่านแยก (ม.)','50')}${num('legLen','ความยาวแขนอื่นที่แสดงในแปลน (ม.)','40')}</div>
     <div class="bar"><button class="b amber" data-act="stbApply2"${s.entry==null||s.exit==null?' disabled':''}>✔ สร้างจุดเริ่มต้นที่ทางแยกตามที่เลือก</button><span class="mute">${s.entry==null||s.exit==null?'เลือกแขนเริ่มต้นและเส้นทางผ่านแยกให้ครบก่อน':'จะแทนที่ผังช่วงและทางแยกปัจจุบัน'}</span></div>`}
   return h+'</div>'}
 function stbAct(g,act,d){const s=stbState(g);
@@ -1844,19 +1845,20 @@ function stbAct(g,act,d){const s=stbState(g);
   else if(act==='stbDir')s.dir=+d.v;
   else if(act==='stbShape'){s.shape=d.v;s.entry=null;s.exit=null}
   else if(act==='stbEntry'){s.entry=+d.v;s.exit=null}
+  
   else if(act==='stbExit')s.exit=+d.v;
   else if(act==='stbApply1'){const hd=(((gnum(s.dir,0)+gnum(s.rot,0))%360)+360)%360;if(g.pl.length&&!confirm('ตั้งทิศเริ่มต้นเป็น '+Math.round(hd)+'° — ผังช่วงเดิมคงไว้ แต่แนวทั้งหมดจะหมุนตามทิศใหม่ ดำเนินการต่อ?'))return;
     g.hd=Math.round(hd*10)/10;if(parseSta(g.sta0)==null)g.sta0='0+000';if(!g.pl.length){g.plm=1;const ns=newSeg('L');ns.len=100;g.pl.push(ns)}toast('✔ ตั้งจุดเริ่มต้นกลางช่วงทาง ทิศ '+g.hd+'°')}
   else if(act==='stbApply2'){if(s.entry==null||s.exit==null)return;if((g.pl.length||(g.jx||[]).length)&&!confirm('สร้างจุดเริ่มต้นที่ทางแยกใหม่ จะแทนที่ผังช่วงและทางแยกที่มีอยู่ — ดำเนินการต่อ?'))return;
-    const arms=stbArms(s),t=stbTurn(arms,s),el=Math.max(2,gnum(s.entryLen,20)),xl=Math.max(1,gnum(s.exitLen,50)),ll=Math.max(5,gnum(s.legLen,40));
+    const arms=stbArms(s),t=stbTurn(arms,s),el=Math.max(.5,gnum(s.crossW,5)/2),xl=Math.max(1,gnum(s.exitLen,50)),ll=Math.max(5,gnum(s.legLen,40));
     if(parseSta(g.sta0)==null)g.sta0='0+000';g.hd=Math.round(t.hd*10)/10;g.plm=1;g.pl=[];
     {const a=newSeg('L');a.len=el;g.pl.push(a)}
     if(Math.abs(t.d)>=0.5){const tr=newSeg(t.d>0?'CR':'CL');tr.ang=Math.round(Math.abs(t.d)*10)/10;tr.R='0';tr.turn=1;g.pl.push(tr)}
     const b=newSeg('L');b.len=xl;g.pl.push(b);
     const sh=STB_SHAPES.find(x=>x[0]===s.shape)||STB_SHAPES[0],jt=arms.length===4?'X':(s.shape[0]==='Y'?'Y':'T');
     const j=newJx(jt);j.pre=1;j.sta=fmtSta((parseSta(g.sta0)||0)+el);j.legs=[];
-    arms.forEach((B,i)=>{if(i===s.exit||i===s.entry)return;j.legs.push({a:Math.round(stbNrm(t.hd-B)*10)/10,w:5,len:ll,off:0})});
-    g.jx=[j];g.sv='';toast('✔ สร้างจุดเริ่มต้นที่ทางแยก ('+sh[1]+') เริ่มแขน '+(s.entry+1)+' → '+stbTurnTxt(t.d))}}
+    arms.forEach((B,i)=>{if(i===s.exit||i===s.entry)return;j.legs.push({a:Math.round(stbNrm(t.hd-B)*10)/10,w:Math.max(1,gnum(s.crossW,5)),len:ll,off:0})});
+    g.jx=[j];g.sv='';toast('✔ สร้างจุดเริ่มต้นที่ทางแยก ('+sh[1]+') STA 0+000 ที่'+(s.ref==='edge'?'ขอบทางแยก (ก่อนกลางแยก '+el+' ม.)':'ขอบทางแยก')+' เริ่มแขน '+(s.entry+1)+' → '+stbTurnTxt(t.d))}}
 
 function geoUI(){
   const g=G();if(String(g.step)==='2')g.step='3';const step=String(g.step||'1');
@@ -2038,7 +2040,7 @@ $('trOk').onclick=()=>{if(trPts.length<2){problem('TR_FEW');return}
   g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=R;$('tr').classList.remove('on');save();geoUI();renderPlan()};
 
 // ===== v16: help & troubleshooting =====
-const APPVER='v70';
+const APPVER='v72';
 const ERRLOG=[];
 function logErr(code,detail){ERRLOG.push(new Date().toLocaleTimeString('th-TH')+' ['+code+'] '+String(detail||'').slice(0,200));if(ERRLOG.length>20)ERRLOG.shift()}
 const NET='ต้องต่ออินเทอร์เน็ตอย่างน้อย 1 ครั้งตอนเปิดแอป เพื่อโหลดตัวช่วย';
