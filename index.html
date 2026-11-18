@@ -1139,6 +1139,10 @@ function buildAlign(g,maxLen){
       const ae=a0+sgn*D;x=cx+R*Math.cos(ae);y=cy+R*Math.sin(ae);a+=sgn*D;s+=arc}}
   if(s<maxLen-1e-9)straight(maxLen-s);
   emit();return pts}
+function cornersOf(pts){if(pts._cor)return pts._cor;const C=[],nm=x=>{x=((x%(2*Math.PI))+3*Math.PI)%(2*Math.PI)-Math.PI;return x};
+  for(let i=0;i<pts.length-1;i++){if(pts[i+1].s-pts[i].s<.06){let k=i+1;while(k<pts.length-1&&pts[k+1].s-pts[k].s<.06)k++;const d=nm(pts[k].a-pts[i].a);
+    if(Math.abs(d)>3*DEG)C.push({s:pts[i].s,arc:pts[k].s-pts[i].s,x:pts[i].x,y:pts[i].y,a0:pts[i].a,d});i=k}}
+  pts._cor=C;return C}
 function ptAt(pts,s){let lo=0,hi=pts.length-1;if(s<=pts[0].s)return pts[0];if(s>=pts[hi].s)return pts[hi];
   while(hi-lo>1){const m=(lo+hi)>>1;if(pts[m].s<=s)lo=m;else hi=m}
   const A=pts[lo],B=pts[hi],f=(s-A.s)/((B.s-A.s)||1);return{s,x:A.x+(B.x-A.x)*f,y:A.y+(B.y-A.y)*f,a:A.a+(B.a-A.a)*f}}
@@ -1273,18 +1277,16 @@ function sheetSvg(M,idx){
     const col=b.it?b.it.cat.color:'#8e8e8e';
     o.push(`<polygon points="${pstr(A.concat(B.reverse()))}" fill="${col}" fill-opacity=".85" stroke="${col}" stroke-width=".8"><title>${esc(b.code)} ${esc(b.it?b.it.name:'')}</title></polygon>`)});
   // road
-  const T0=sam(s0,s1,st);
-  // มุมหักฉาก (R=0): ต่อขอบถนนเป็นมุมแหลมตั้งฉาก (mitre) ทั้งขอบนอกและขอบใน
-  const crn=(g.pl||[]).filter(p=>!p.lead&&p.t!=='L'&&p._b>p._a&&(p._b-p._a)<0.2).map(p=>[p._a-sta0,p._b-sta0]).filter(c=>c[1]>s0-2&&c[0]<s1+2);
-  const edgeM=fn=>{const out=[],used=crn.map(()=>false);
-    const mit=c=>{const a0=fn(c[0]-1),a1=fn(c[0]),b0=fn(c[1]),b1=fn(c[1]+1),d1x=a1[0]-a0[0],d1y=a1[1]-a0[1],d2x=b1[0]-b0[0],d2y=b1[1]-b0[1],den=d1x*d2y-d1y*d2x;if(Math.abs(den)<1e-9)return a1;const u=((b0[0]-a1[0])*d2y-(b0[1]-a1[1])*d2x)/den;return[a1[0]+u*d1x,a1[1]+u*d1y]};
-    T0.forEach(t=>{let skip=false;crn.forEach((c,i)=>{if(t>c[0]-1e-9&&t<c[1]+1e-9)skip=true;else if(t>=c[1]&&!used[i]){used[i]=true;out.push(mit(c))}});if(!skip)out.push(fn(t))});return out};
-  const L=edgeM(t=>{const w=wf(t+sta0);return P(t,w[0])}),R=edgeM(t=>{const w=wf(t+sta0);return P(t,-w[1])});
+  const COR=cornersOf(pts).filter(c=>c.s>=s0-1e-6&&c.s<=s1+1e-6);
+  const T0=sam(s0,s1,st).filter(t=>!COR.some(c=>t>c.s-1e-6&&t<c.s+c.arc+1e-6)).concat(COR.map(c=>({c}))).sort((p,q)=>(p.c?p.c.s:p)-(q.c?q.c.s:q)),L=[],R=[],CL0=[];
+  const mit=(c,o)=>{if(Math.abs(c.d)>150*DEG)return P(c.s,o);const q=offPt({x:c.x,y:c.y,a:c.a0+c.d/2},o/Math.cos(c.d/2));return SX(q[0],q[1])};
+  T0.forEach(t=>{if(t.c){const w=wf(t.c.s+sta0);L.push(mit(t.c,w[0]));R.push(mit(t.c,-w[1]));CL0.push(P(t.c.s,0));return}const w=wf(t+sta0);L.push(P(t,w[0]));R.push(P(t,-w[1]));CL0.push(P(t,0))});
+  const T0n=T0.filter(t=>!t.c);
   o.push(`<polygon points="${pstr(L.concat(R.slice().reverse()))}" fill="#a9b1ba" stroke="none"/><polyline points="${pstr(L)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/><polyline points="${pstr(R)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/>`);
   o.push(pcSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang}));o.push(jxSvg({g,wf,sta0,P,k,s0,s1,pstr,f1}));o.push(pvSvg({g,P,k,s0,s1,sta0,ang,wf}));
   // ROW lines
   {const zl=(g.rz&&g.rz.length)?g.rz:[{a:sta0,b:sta0+M.total,l:gnum(g.rowl,0),r:gnum(g.rowr,0)}];
-  [[0,1],[1,-1]].forEach(([ix,sg])=>{const runs=[];let cur=null;T0.forEach(t=>{const r=rowAt(g,t+sta0)[ix];if(r>0){(cur=cur||[]).push(P(t,sg*r))}else if(cur){runs.push(cur);cur=null}});if(cur)runs.push(cur);
+  [[0,1],[1,-1]].forEach(([ix,sg])=>{const runs=[];let cur=null;T0n.forEach(t=>{const r=rowAt(g,t+sta0)[ix];if(r>0){(cur=cur||[]).push(P(t,sg*r))}else if(cur){runs.push(cur);cur=null}});if(cur)runs.push(cur);
     runs.forEach(A=>{if(A.length>1)o.push(`<polyline points="${pstr(A)}" fill="none" stroke="#555" stroke-width="1.3" stroke-dasharray="16 4 3 4"/>`)});
     zl.forEach(z=>{const r=ix?z.r:z.l;const A=Math.max(z.a-sta0,s0),B=Math.min(z.b-sta0,s1);if(!(r>0)||(B-A)*k<70)return;const m=(A+B)/2,p=P(m,sg*r);
       o.push(`<text transform="translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)}) translate(0,${sg>0?-9:12})" font-size="11" fill="#555" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">เขตทาง ${sg>0?'ซ้าย':'ขวา'} ${f1(r)} ม.</text>`)})})}
@@ -1307,7 +1309,7 @@ function sheetSvg(M,idx){
   inR.filter(b=>b.z==='C').forEach(b=>{const T=sam(b.a-sta0,b.b-sta0,st);if(T.length<2)return;const A=[],B=[];
     T.forEach(t=>{const w=wf(t+sta0),half=b.w>0?Math.min(b.w/2,Math.max(w[0],w[1])):Math.min(w[0],w[1])*.9;A.push(P(t,Math.min(half,w[0])));B.push(P(t,-Math.min(half,w[1])))});
     const col=b.it?b.it.cat.color:'#8e8e8e';o.push(`<polygon points="${pstr(A.concat(B.reverse()))}" fill="${col}" fill-opacity=".5" stroke="${col}" stroke-width="1"><title>${esc(b.code)} ${esc(b.it?b.it.name:'')}</title></polygon>`)});
-  o.push(`<polyline points="${pstr(T0.map(t=>P(t,0)))}" fill="none" stroke="#fff" stroke-width="1.4" stroke-dasharray="10 7"/>`);
+  o.push(`<polyline points="${pstr(CL0)}" fill="none" stroke="#fff" stroke-width="1.4" stroke-dasharray="10 7"/>`);
   // ticks
   const ts=tickSteps(g,k);const sideLab=(stackM[1]<=stackM[-1])?1:-1;
   const tk=(step,major)=>{let t=Math.ceil((s0+sta0)/step-1e-9)*step;for(;t<=s1+sta0+1e-9;t+=step){const s=t-sta0;if(!major&&Math.abs(t/ts.major-Math.round(t/ts.major))<1e-9)continue;
