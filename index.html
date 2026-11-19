@@ -1912,7 +1912,7 @@ function geoUI(){
   geoUIOld();const gs=[...$('geoCard').querySelectorAll('.gsec')];const secH=gs[4]?gs[4].outerHTML:'',scH=gs[3]?gs[3].outerHTML:'';
   const h=[];const pl=g.pl;
   const sta0=parseSta(g.sta0)!=null?parseSta(g.sta0):0;
-  h.push(`<div class="wzs">${WZ_STEPS.map(([k,t])=>`<button class="b ${step===k?'':'ghost'}" data-act="step" data-v="${k}">${t}</button>`).join('')}<button class="b ${step==='4'?'':'ghost'} sm" data-act="step" data-v="4">⚙ มาตราส่วน/แผ่น</button></div>`);
+  h.push(`<div class="wzs">${WZ_STEPS.map(([k,t])=>`<button class="b ${step===k?'':'ghost'}" data-act="step" data-v="${k}">${t}</button>`).join('')}<button class="b ${step==='4'?'':'ghost'} sm" data-act="step" data-v="4">⚙ มาตราส่วน/แผ่น</button><button class="b ${step==='5'?'':'ghost'} sm" data-act="step" data-v="5" style="${step==='5'?'':'color:#b3261e;border-color:#b3261e'}">5. ลบทั้งหมด CLEAR</button></div>`);
   if(step==='1'){
     if(window._undoPl&&window._undoPl.pid===S.id)h.push(`<div class="undobar">ลบช่วงไปแล้ว <button class="b mv" data-act="undoPl">↶ เอาช่วงที่ลบกลับคืน</button></div>`);
     h.push(`<div class="mute" style="margin:6px 0">บันทึกผังโครงการเป็นช่วงๆ ตามลำดับ STA — แปลนด้านขวา/ด้านล่างอัปเดตทันที ยังไม่ต้องใส่รายการงาน</div>`);
@@ -1953,6 +1953,11 @@ function geoUI(){
     if(pl.length){h.push(`<div class="gsec"><b>เลือกตำแหน่งตัดอย่างเร็ว</b><div class="bar"><select id="secQ">${pl.map((p,i)=>[['ต้นช่วง',p._a],['กลางช่วง',(p._a+p._b)/2],['ปลายช่วง',p._b]].map(([n,v])=>`<option value="${v}">ช่วงที่ ${i+1} · ${n} (STA ${fmtSta(v)})</option>`).join('')).join('')}</select><button class="b ghost sm" data-act="addSecQ">＋ เพิ่มรูปตัดตรงนี้</button></div></div>`)}
     h.push(secEditor(g));
     h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="p">← ③ ระดับ PROFILE</button><button class="b" data-act="mkSec">🧩 สร้าง SECTION</button></div>`);
+  }else if(step==='5'){
+    const nSeg=(g.pl||[]).length,nObs=(g.ob||[]).length,nSec=(g.secs||[]).length,nJx=(g.jx||[]).length,nCa=(g.ca||[]).length,nRz=(g.rz||[]).length;
+    h.push(`<div class="gsec"><b>5. ลบทั้งหมด CLEAR — ล้างข้อมูลที่กรอกในแท็บ STA ทุกช่วง</b>
+    <div class="mute" style="margin:6px 0">จะล้าง: ผังช่วง STA ทุกช่วง (${nSeg} ช่วง) · ทางแยก/จุดสิ้นสุดที่ทางแยก (${nJx}) · พื้นที่มุม (${nCa}) · สำรวจสภาพเดิม (${nObs} รายการ) · ระดับ PROFILE (${nRz}) · รูปตัด SECTION (${nSec}) · จุดเริ่มต้น STA และข้อมูลที่ตั้งไว้ทั้งหมดในแท็บนี้<br>และลบแถว MAKE JOB ที่ดึงมาจากช่วง STA / พื้นที่มุม<br><b>ไม่ล้าง:</b> ข้อมูลโครงการและ Title block (แท็บ ① DATA PROJECT), แผนที่ LOCATION, รูป PHOTO, BOQ FIELD, มาตราส่วนและขนาดแผ่นที่ตั้งไว้, แถว MAKE JOB ที่กรอกเอง</div>
+    <div class="bar"><button class="b" style="background:#b3261e;color:#fff;border-color:#b3261e" data-act="staClear">🧹 5. ลบทั้งหมด CLEAR</button>${window._undoSta&&window._undoSta.pid===S.id?'<button class="b mv" data-act="staUndo">↶ กู้ข้อมูลที่ล้างกลับคืน</button>':''}</div></div>`);
   }else{h.push(scH);h.push(`<div class="bar"><button class="b ghost" data-act="step" data-v="1">← กลับ</button></div>`)}
   window._ui=1;try{$('geoCard').innerHTML=`<div id="wzbody">${h.join('')}</div>`}finally{window._ui=0}}
 (function(){const gc=$('geoCard');
@@ -1994,6 +1999,14 @@ function geoUI(){
       const w=Math.max(1,gnum(s.w,5)),ll=Math.max(5,gnum(s.len,40));g.jx=(g.jx||[]).filter(x=>!x.fk);
       const j=newJx(s.t==='B'?'X':'T');j.fk=w/2;j.legs=[];if(s.t!=='R')j.legs.push({a:90,w,len:ll,off:0});if(s.t!=='L')j.legs.push({a:-90,w,len:ll,off:0});g.jx.push(j);compilePL(g);
       toast('✔ จุดสิ้นสุดโครงการ STA '+fmtSta(g._end)+' อยู่ที่ขอบทางแยก (กลางแยกอยู่ถัดไป '+(w/2)+' ม.)')}
+    else if(act==='staClear'){if(!(g.pl&&g.pl.length)&&!(g.ob||[]).length&&!(g.jx||[]).length&&!(g.ca||[]).length&&!(g.secs||[]).length){toast('ยังไม่มีข้อมูล STA ให้ล้าง');return}
+      if(!confirm('ล้างข้อมูลที่กรอกในแท็บ STA ทั้งหมด (ผังช่วง ทางแยก พื้นที่มุม สำรวจสภาพเดิม PROFILE SECTION)?\n\nข้อมูลโครงการ แผนที่ รูป PHOTO และ BOQ จะไม่ถูกลบ\nล้างแล้วกด "↶ กู้ข้อมูลที่ล้างกลับคืน" ได้ทันที'))return;
+      window._undoSta={pid:S.id,g:JSON.stringify(g),rows:JSON.stringify(S.rows)};
+      const KEEP=['scale','sheetLen','tick','tb','mp','mpL','mpScale','osm','el','w0','rcurve','rowl','rowr','vex','layout'],nw=defGeo();KEEP.forEach(k=>{if(g[k]!==undefined)nw[k]=g[k]});nw.step='5';
+      Object.keys(g).forEach(k=>delete g[k]);Object.assign(g,nw);
+      S.rows=S.rows.filter(r=>!(r.src&&/^(S|C|G):/.test(r.src))&&!r.sg);if(!S.rows.length)S.rows=[newRow()];
+      try{compilePL(g)}catch(e){}renderRows();refresh();toast('🧹 ล้างข้อมูล STA ทั้งหมดแล้ว — กด "↶ กู้ข้อมูลที่ล้างกลับคืน" ได้ถ้ากดผิด')}
+    else if(act==='staUndo'){const u=window._undoSta;if(u&&u.pid===S.id){const o=JSON.parse(u.g);Object.keys(g).forEach(k=>delete g[k]);Object.assign(g,o);g.step='5';S.rows=JSON.parse(u.rows);window._undoSta=null;try{compilePL(g)}catch(e){}renderRows();refresh();toast('✔ กู้ข้อมูล STA กลับคืนแล้ว')}}
     else if(act==='addCa'){g.ca=g.ca||[];g.ca.push({id:uid(),lbl:caNext(g),sta:'',kind:'J',side:'L',dir:'F',l1:'3',l2:'3'})}
     else if(act==='delCa'){g.ca.splice(i,1)}
     else if(act==='autoCa'){compilePL(g);g.ca=g.ca||[];let n=0;(g.pl||[]).forEach(p=>{if(p.t==='L'||p.lead||!(p.turn||gnum(p.ang,0)>0))return;const sta=fmtSta(p._a);if(g.ca.some(c=>c.kind==='T'&&c.sta===sta))return;g.ca.push({id:uid(),lbl:caNext(g),sta,kind:'T',side:'L',dir:'F',l1:'3',l2:'3'});n++});toast(n?'✔ เพิ่มพื้นที่มุม '+n+' จุด (ค่าเริ่มต้น L1=L2=3 ม. — แก้ตามที่วัดจริง)':'ไม่พบจุดเลี้ยวที่ยังไม่มีพื้นที่มุม')}
