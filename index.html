@@ -1121,7 +1121,7 @@ window.addEventListener('beforeunload',()=>save(true));
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 // ===================== v12 : PLAN SHEETS (แนวทาง · ทิศ · ความกว้าง · มาตราส่วน · แบ่งแผ่น · รูปตัด) =====================
 const GEO_STD=[100,150,200,250,300,400,500,750,1000,2000,2500,5000,10000,20000];
-const defGeo=()=>({mode:'sheet',hd:0,layout:'north',sta0:'',segs:[],w0:5,ws:[],tick:'',scale:'',sheetLen:'',secs:[],rcurve:15,rowl:'',rowr:'',vex:'4',jx:[],pv:[],mp:null,sv:'',el:null,osm:null,tb:{},mpL:null,mpScale:'',ob:[],pc:[],obtab:'D',pl:null,plm:0,rz:[],env:[],step:'1'});
+const defGeo=()=>({mode:'sheet',hd:0,layout:'north',sta0:'',segs:[],w0:5,ws:[],tick:'',scale:'',sheetLen:'',secs:[],rcurve:15,rowl:'',rowr:'',vex:'4',jx:[],ca:[],pv:[],mp:null,sv:'',el:null,osm:null,tb:{},mpL:null,mpScale:'',ob:[],pc:[],obtab:'D',pl:null,plm:0,rz:[],env:[],step:'1'});
 function G(){if(!S.geo)S.geo=defGeo();else{const d=defGeo();for(const k in d)if(S.geo[k]===undefined)S.geo[k]=d[k]}const g=S.geo;g.mode='sheet';if(typeof plPrep==='function')plPrep(g);return g}
 const gnum=(v,d)=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:(d===undefined?0:d)};
 const DEG=Math.PI/180;
@@ -1283,7 +1283,7 @@ function sheetSvg(M,idx){
   T0.forEach(t=>{if(t.c){const w=wf(t.c.s+sta0);L.push(mit(t.c,w[0]));R.push(mit(t.c,-w[1]));CL0.push(P(t.c.s,0));return}const w=wf(t+sta0);L.push(P(t,w[0]));R.push(P(t,-w[1]));CL0.push(P(t,0))});
   const T0n=T0.filter(t=>!t.c);
   o.push(`<polygon points="${pstr(L.concat(R.slice().reverse()))}" fill="#a9b1ba" stroke="none"/><polyline points="${pstr(L)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/><polyline points="${pstr(R)}" fill="none" stroke="#2b2f36" stroke-width="1.6"/>`);
-  o.push(pcSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang}));o.push(jxSvg({g,wf,sta0,P,k,s0,s1,pstr,f1}));o.push(pvSvg({g,P,k,s0,s1,sta0,ang,wf}));
+  o.push(pcSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang}));o.push(jxSvg({g,wf,sta0,P,k,s0,s1,pstr,f1}));o.push(caSvg({g,wf,sta0,P,k,s0,s1,pstr,f1}));o.push(pvSvg({g,P,k,s0,s1,sta0,ang,wf}));
   // ROW lines
   {const zl=(g.rz&&g.rz.length)?g.rz:[{a:sta0,b:sta0+M.total,l:gnum(g.rowl,0),r:gnum(g.rowr,0)}];
   [[0,1],[1,-1]].forEach(([ix,sg])=>{const runs=[];let cur=null;T0n.forEach(t=>{const r=rowAt(g,t+sta0)[ix];if(r>0){(cur=cur||[]).push(P(t,sg*r))}else if(cur){runs.push(cur);cur=null}});if(cur)runs.push(cur);
@@ -1558,9 +1558,10 @@ function jxExtent(j){const L=Math.max(0,...(j.legs||[]).map(l=>gnum(l.len,0)+gnu
 function jxArea(j){let a=(j.legs||[]).reduce((s,l)=>s+gnum(l.w,0)*gnum(l.len,0),0);if(j.type==='R'){const Ro=gnum(j.Ro,15),Ri=gnum(j.Ri,8);a+=Math.PI*(Ro*Ro-Ri*Ri)}return Math.round(a*10)/10}
 function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',ST='#2b2f36',D=Math.PI/180;
  (g.jx||[]).forEach((j,ji)=>{const ts=parseSta(j.sta);if(ts==null)return;const t=ts-sta0,ext=jxExtent(j);if(t<s0-ext-5||t>s1+ext+5)return;
-  const O=P(t,0),F1=j.pre?P(t,0):P(t+.5,0),F0=P(t-.5,0),Lf=P(t,1);let fx=F1[0]-F0[0],fy=F1[1]-F0[1];const fl=Math.hypot(fx,fy)||1;fx/=fl;fy/=fl;let lx=Lf[0]-O[0],ly=Lf[1]-O[1];const ll=Math.hypot(lx,ly)||1;lx/=ll;ly/=ll;
+  const O0=P(t,0),F1=j.pre?P(t,0):P(t+.5,0),F0=P(t-.5,0),Lf=P(t,1);let fx=F1[0]-F0[0],fy=F1[1]-F0[1];const fl=Math.hypot(fx,fy)||1;fx/=fl;fy/=fl;let lx=Lf[0]-O0[0],ly=Lf[1]-O0[1];const ll=Math.hypot(lx,ly)||1;lx/=ll;ly/=ll;const bk=Math.max(0,gnum(j.bk,0)),O=bk>0?[O0[0]-fx*bk*k,O0[1]-fy*bk*k]:O0;
   const Pm0=(x,y)=>[O[0]+(x*fx+y*lx)*k,O[1]+(x*fy+y*ly)*k],Pm=Pm0,w=wf(ts),wl=w[0],wr=w[1],det=fx*ly-fy*lx,sw=det<0?0:1;
   const ln=(a,b,st,sw2)=>`<polyline points="${pstr([a,b])}" fill="none" stroke="${st||ST}" stroke-width="${sw2||1.6}"/>`;
+  if(bk>0&&j.type!=='R'){o.push(`<polygon points="${pstr([Pm0(0,wl),Pm0(bk,wl),Pm0(bk,-wr),Pm0(0,-wr)])}" fill="${PV}" stroke="none"/>`,ln(Pm0(0,wl),Pm0(bk,wl)),ln(Pm0(0,-wr),Pm0(bk,-wr)))}
   const legs=(j.legs||[]).map(l=>({a:gnum(l.a,0),w:Math.max(.5,gnum(l.w,5)),len:Math.max(1,gnum(l.len,30)),off:gnum(l.off,0)}));
   const isR=j.type==='R',Ro=Math.max(3,gnum(j.Ro,15)),Ri=Math.max(0,Math.min(Ro-1.5,gnum(j.Ri,8))),rk=Math.max(0,gnum(j.rk,6));
   const tx=(p,txt,sz,col)=>`<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" font-size="${sz||11}" font-weight="700" fill="${col||'#222'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${txt}</text>`;
@@ -1568,11 +1569,11 @@ function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',S
     const E=(kk,u)=>Pm(kk*hb*qx+u*dx,kk*hb*qy+u*dy);const ur=isR?Math.sqrt(Math.max(0,Ro*Ro-hb*hb)):0;
     o.push(`<polygon points="${pstr([E(1,0),E(1,l.len),E(-1,l.len),E(-1,0)])}" fill="${PV}" stroke="none"/>`);
     [1,-1].forEach(kk=>{let u0=isR?ur:(sg*hw-kk*hb*c)/s;if(!(u0>0))u0=0;if(u0>=l.len)return;
-      if(!isR&&rk>.2){const C=[kk*hb*qx+u0*dx,kk*hb*qy+u0*dy],ax=-kk*sg,Mp=Pm(C[0]+ax*rk,C[1]),Cp=Pm(C[0],C[1]),Bp=Pm(C[0]+rk*dx,C[1]+rk*dy);
+      if(!isR&&rk>.2&&!(bk>0&&-kk*sg>0)){const C=[kk*hb*qx+u0*dx,kk*hb*qy+u0*dy],ax=-kk*sg,Mp=Pm(C[0]+ax*rk,C[1]),Cp=Pm(C[0],C[1]),Bp=Pm(C[0]+rk*dx,C[1]+rk*dy);
         const q=`M${Mp[0].toFixed(1)},${Mp[1].toFixed(1)} Q${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} ${Bp[0].toFixed(1)},${Bp[1].toFixed(1)}`;
         o.push(`<path d="${q} L${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} Z" fill="${PV}" stroke="none"/>`,ln(Mp,Cp,PV,3.6),`<path d="${q}" fill="none" stroke="${ST}" stroke-width="1.6"/>`,ln(Bp,E(kk,l.len)))}
       else o.push(ln(E(kk,u0),E(kk,l.len)))});
-    const mid=Pm(l.len*.6*dx,l.len*.6*dy);o.push(tx(mid,(li===0&&!isR?(JX_SHORT[j.type]||'ทางแยก')+' STA '+fmtSta(ts)+' · ':'')+'กว้าง '+f1(l.w)+' ม.',10.5,'#333'))});
+    const mid=Pm(l.len*.6*dx,l.len*.6*dy);o.push(tx(mid,(li===0&&!isR?(JX_SHORT[j.type]||'ทางแยก')+(bk>0?' (กลางแยกก่อน STA '+fmtSta(ts)+' '+f1(bk)+' ม.)':' STA '+fmtSta(ts))+' · ':'')+'กว้าง '+f1(l.w)+' ม.',10.5,'#333'))});
   if(isR){const mw=wl+wr;const all=[{a:0,w:mw},{a:180,w:mw}].concat(legs.map(l=>({a:((l.a%360)+360)%360,w:l.w}))).map(l=>({a:l.a,d:Math.asin(Math.min(1,(l.w/2)/Ro))/D})).sort((p,q)=>p.a-q.a);
     const cp=Pm(0,0);o.push(`<circle cx="${cp[0].toFixed(1)}" cy="${cp[1].toFixed(1)}" r="${(Ro*k).toFixed(1)}" fill="${PV}" stroke="none"/>`);
     all.forEach((l,i)=>{const n=all[(i+1)%all.length];const a0=l.a+l.d,a1=n.a-n.d+(i===all.length-1?360:0);if(a1-a0<=.5)return;
@@ -1782,6 +1783,42 @@ const plTot=g=>{const s=parseSta(g.sta0)||0,e=g._end!=null?g._end:s;return 'ร�
 function jobInfo(r){const it=BYCODE[String(r.code||'').toUpperCase()],c=calc(r);return r.code?(it?'<span class="jname">'+esc(it.code)+' · '+esc(it.name)+' · ปริมาณ <b>'+nf(c.qty||0)+'</b> '+esc(it.unit||'')+'</span>':'<span style="color:#b3261e">ไม่พบรหัสงานนี้ใน JOB LIST</span>'):'พิมพ์รหัส หรือแตะช่องเพื่อเลือกจากรายการ'}
 function plLabels(){const g=G();document.querySelectorAll('#geoCard .plseg[data-pi]').forEach(el=>{const p=g.pl[+el.dataset.pi];if(!p)return;const a=el.querySelector('.plsta');if(a)a.textContent=el.querySelector('.plwi')?plSta(p):plSta(p)+' · '+plWi(p);const w=el.querySelector('.plwi');if(w)w.textContent=plWi(p)+' · ช่องที่เว้นว่าง = ใช้ค่าเดียวกับช่วงก่อน'});
   const t=$('plTot');if(t)t.textContent=plTot(g);document.querySelectorAll('#geoCard [data-ji]').forEach(el=>{const r=S.rows[+el.dataset.ji];if(r)el.innerHTML=jobInfo(r)})}
+
+/* ===== พื้นที่มุม A1,A2,… (v74) ===== */
+function caArea(c){const a=gnum(c.l1,0),b=gnum(c.l2,0);return a>0&&b>0?Math.round(a*b/2*100)/100:0}
+function caTotal(g){return Math.round((g.ca||[]).reduce((t,c)=>t+caArea(c),0)*100)/100}
+function caNext(g){const u=new Set((g.ca||[]).map(c=>c.lbl));let n=1;while(u.has('A'+n))n++;return 'A'+n}
+function caSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c,o=[];
+ (g.ca||[]).forEach(a=>{const ts=parseSta(a.sta),L1=gnum(a.l1,0),L2=gnum(a.l2,0);if(ts==null||!(L1>0&&L2>0))return;const t=ts-sta0;if(t<s0-Math.max(L1,L2)-2||t>s1+Math.max(L1,L2)+2)return;
+  const nz=(x,y)=>{const l=Math.hypot(x,y)||1;return[x/l,y/l]};
+  const O=P(t,0),tb=nz(O[0]-P(t-.5,0)[0],O[1]-P(t-.5,0)[1]),ta=nz(P(t+.5,0)[0]-O[0],P(t+.5,0)[1]-O[1]);
+  const detAt=tt=>{const p0=P(tt,0),p1=P(tt,1),f=nz(P(tt+.25,0)[0]-P(tt-.25,0)[0],P(tt+.25,0)[1]-P(tt-.25,0)[1]),l=nz(p1[0]-p0[0],p1[1]-p0[1]);return f[0]*l[1]-f[1]*l[0]};
+  let dt=detAt(t-1);if(Math.abs(dt)<1e-6)dt=detAt(t+1);const lf=dt>0?1:-1;
+  const NL=d=>lf>0?[-d[1],d[0]]:[d[1],-d[0]];
+  const w=wf(ts);let sd=a.side==='R'?-1:1;
+  const turn=a.kind==='T';
+  if(turn){const cr=tb[0]*ta[1]-tb[1]*ta[0];/* เลี้ยวซ้ายหรือขวาเทียบทิศไป */const leftTurn=(lf>0?cr<0:cr>0)?false:true;sd=leftTurn?1:-1}
+  const hw=sd>0?w[0]:w[1],nb=NL(tb),na=NL(ta),sg=sd>0?1:-1;
+  const m=[(nb[0]+na[0]),(nb[1]+na[1])],den=1+(nb[0]*na[0]+nb[1]*na[1]);
+  const C=[O[0]+sg*m[0]*hw*k/Math.max(.3,den),O[1]+sg*m[1]*hw*k/Math.max(.3,den)];
+  let A,B;
+  if(turn){A=[C[0]-tb[0]*L1*k,C[1]-tb[1]*L1*k];B=[C[0]+ta[0]*L2*k,C[1]+ta[1]*L2*k]}
+  else{const d=a.dir==='B'?[-tb[0],-tb[1]]:ta,n=NL(a.dir==='B'?tb:ta);A=[C[0]+d[0]*L1*k,C[1]+d[1]*L1*k];B=[C[0]+sg*n[0]*L2*k,C[1]+sg*n[1]*L2*k]}
+  o.push(`<polygon points="${pstr([C,A,B])}" fill="#f2b84b" fill-opacity=".55" stroke="#8a5a00" stroke-width="1.2" stroke-dasharray="4 2"/>`);
+  const cx=(C[0]+A[0]+B[0])/3,cy=(C[1]+A[1]+B[1])/3,tx=(x,y,txt,sz,col)=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${sz}" font-weight="700" fill="${col||'#5a3a00'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6">${txt}</text>`;
+  o.push(tx(cx,cy,esc(a.lbl||'A'),12),tx(cx,cy+11,f1(caArea(a))+' ตร.ม.',8.5));
+  o.push(tx((C[0]+A[0])/2,(C[1]+A[1])/2+(sg>0?-3:10),'L1 '+f1(L1),8,'#333'),tx((C[0]+B[0])/2,(C[1]+B[1])/2,'L2 '+f1(L2),8,'#333'))});
+ return o.join('')}
+function caCards(g){g.ca=g.ca||[];const tot=caTotal(g);
+ const h=[`<div class="gsec"><b>📐 พื้นที่มุม (A1, A2, A3 …) ตามจุด STA ที่โค้ง / เลี้ยว / ปากทางแยก</b> <span class="mute">พื้นที่สามเหลี่ยม = ½ × L1 × L2 · L1 วัดตามขอบทางหลัก · L2 วัดตามขอบถนนที่ตัด/ถนนหลังเลี้ยว · แปลนวาดสามเหลี่ยมพร้อมชื่อและพื้นที่ให้ · พื้นที่ถูกส่งไป MAKE JOB เป็นแถวแยก (กว้างเทียบเท่า = L2/2 × ยาว = L1)</span>`];
+ g.ca.forEach((c,i)=>{const f=(k,lab,ex)=>`<div><label>${lab}</label><input data-ca="${i}" data-f="${k}" value="${esc(c[k]==null?'':c[k])}" ${ex||''}></div>`,turn=c.kind==='T';
+  h.push(`<div class="plseg ca"><div class="plh"><b>${esc(c.lbl||'A')}</b><span class="mute caA">${caArea(c)?'พื้นที่ '+caArea(c)+' ตร.ม.':'กรอก L1 และ L2'}</span><span class="sp"></span><button class="b red sm" data-act="delCa" data-i="${i}">✕</button></div>
+  <div class="grid g4">${f('lbl','ชื่อ','maxlength="4"')}${f('sta','STA ตำแหน่งมุม','list="dlSta" placeholder="เช่น 0+040"')}
+  <div><label>ลักษณะมุม</label><select data-ca="${i}" data-f="kind"><option value="J"${turn?'':' selected'}>ปากทางแยก / ถนนตัด (ตรง)</option><option value="T"${turn?' selected':''}>มุมเลี้ยว (ด้านใน)</option></select></div>
+  ${turn?'':`<div><label>ด้านของทางหลัก</label><select data-ca="${i}" data-f="side"><option value="L"${c.side!=='R'?' selected':''}>ซ้าย</option><option value="R"${c.side==='R'?' selected':''}>ขวา</option></select></div><div><label>L1 วัดไปทาง</label><select data-ca="${i}" data-f="dir"><option value="F"${c.dir!=='B'?' selected':''}>ข้างหน้า (STA เพิ่ม)</option><option value="B"${c.dir==='B'?' selected':''}>ย้อนหลัง (STA ลด)</option></select></div>`}
+  ${f('l1','L1 ม. (ตามทางหลัก)','type="number" step="any" inputmode="decimal"')}${f('l2','L2 ม. (ตามถนนที่ตัด)','type="number" step="any" inputmode="decimal"')}</div></div>`)});
+ h.push(`<div class="bar"><button class="b ghost" data-act="addCa">＋ เพิ่มพื้นที่มุม</button><button class="b ghost" data-act="autoCa">⚡ สร้างที่จุดเลี้ยวทุกจุดให้อัตโนมัติ</button><span class="mute" id="caTot">${g.ca.length?'รวม '+g.ca.length+' มุม · '+tot+' ตร.ม.':''}</span></div></div>`);
+ return h.join('')}
 function jxCards(g){const h=[`<div class="gsec"><b>🔀 ทางร่วม · ทางแยก · วงเวียน</b><div class="mute">เพิ่มทางแยกบนแนวทางหลักที่ STA ที่ต้องการ — แปลนวาดแขนงและมุมโค้งให้ทันที (มุม + = ไปทางซ้าย, − = ไปทางขวา วัดจากทิศทางหลักด้านหน้า · "เยื้อง" = ระยะเลื่อนแขนงไปตาม STA ของทางหลัก)</div>`];
   (g.jx||[]).forEach((j,i)=>{const isR=j.type==='R';
     h.push(`<div class="plseg jx"><div class="plh"><b>${JX_T[j.type]} #${i+1}</b><span class="mute jxarea">พื้นที่ผิวทางโดยประมาณ ${jxArea(j)} ตร.ม.</span><span class="sp"></span><button class="b red sm" data-act="delJx" data-i="${i}">✕</button></div>
@@ -1836,7 +1873,7 @@ function stbUI(g){const s=stbState(g);let h=`<div class="gsec stb"><b>🚩 ส�
     if(s.entry==null)h+=`<div class="mute">ยังไม่ได้เลือกแขนเริ่มต้น — กดหมายเลขที่แขนทางแยกในภาพ</div>`;
     else{const t=stbTurn(arms,s);h+=`<div><b>เริ่มจากแขนที่ ${s.entry+1}</b> (เดินเข้าหากลางแยก ทิศ ${Math.round(t.hd)}°)</div><div class="mute" style="margin:6px 0">③ เลือกเส้นทางผ่านกลางแยก — ตัวเลข = แขนปลายทาง</div><div class="bar" style="gap:8px;flex-wrap:wrap">`;
       arms.forEach((B,j)=>{if(j===s.entry)return;const d=stbNrm(B-t.hd);h+=`<button class="b ${s.exit===j?'':'ghost'}" data-act="stbExit" data-v="${j}" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px">${stbSign(d,50)}<span><b>${j+1}</b> · ${stbTurnTxt(d)}</span></button>`});h+='</div>'}
-    h+=`</div></div><div class="mute" style="margin-top:4px"><b>④ STA 0+000 อยู่ที่ขอบทางแยก</b> ด้านแขนที่เลือกเริ่มต้น แล้วไปตามเส้นทางที่เลือก (ขอบทางแยก = ก่อนถึงกลางแยกเท่ากับครึ่งหนึ่งของความกว้างถนนที่ตัด)</div>
+    h+=`</div></div><div class="mute" style="margin-top:4px"><b>④ STA 0+000 อยู่ที่ขอบทางแยกฝั่งขาออก</b> (หลังผ่านกลางแยกไปครึ่งหนึ่งของความกว้างถนนที่ตัด) แล้วนับ STA ไปตามเส้นทางที่เลือก — ส่วนแขนขาเข้าแสดงในแปลนแต่ไม่นับ STA</div>
     <div class="grid">${num('crossW','ความกว้างถนนที่ตัด / แขนทางแยก (ม.)','5')}${num('exitLen','ความยาวเส้นทางหลังผ่านแยก (ม.)','50')}${num('legLen','ความยาวแขนอื่นที่แสดงในแปลน (ม.)','40')}</div>
     <div class="bar"><button class="b amber" data-act="stbApply2"${s.entry==null||s.exit==null?' disabled':''}>✔ สร้างจุดเริ่มต้นที่ทางแยกตามที่เลือก</button><span class="mute">${s.entry==null||s.exit==null?'เลือกแขนเริ่มต้นและเส้นทางผ่านแยกให้ครบก่อน':'จะแทนที่ผังช่วงและทางแยกปัจจุบัน'}</span></div>`}
   return h+'</div>'}
@@ -1851,14 +1888,12 @@ function stbAct(g,act,d){const s=stbState(g);
     g.hd=Math.round(hd*10)/10;if(parseSta(g.sta0)==null)g.sta0='0+000';if(!g.pl.length){g.plm=1;const ns=newSeg('L');ns.len=100;g.pl.push(ns)}toast('✔ ตั้งจุดเริ่มต้นกลางช่วงทาง ทิศ '+g.hd+'°')}
   else if(act==='stbApply2'){if(s.entry==null||s.exit==null)return;if((g.pl.length||(g.jx||[]).length)&&!confirm('สร้างจุดเริ่มต้นที่ทางแยกใหม่ จะแทนที่ผังช่วงและทางแยกที่มีอยู่ — ดำเนินการต่อ?'))return;
     const arms=stbArms(s),t=stbTurn(arms,s),el=Math.max(.5,gnum(s.crossW,5)/2),xl=Math.max(1,gnum(s.exitLen,50)),ll=Math.max(5,gnum(s.legLen,40));
-    if(parseSta(g.sta0)==null)g.sta0='0+000';g.hd=Math.round(t.hd*10)/10;g.plm=1;g.pl=[];
-    {const a=newSeg('L');a.len=el;g.pl.push(a)}
-    if(Math.abs(t.d)>=0.5){const tr=newSeg(t.d>0?'CR':'CL');tr.ang=Math.round(Math.abs(t.d)*10)/10;tr.R='0';tr.turn=1;g.pl.push(tr)}
-    const b=newSeg('L');b.len=xl;g.pl.push(b);
+    const hx=arms[s.exit];if(parseSta(g.sta0)==null)g.sta0='0+000';g.hd=Math.round(hx*10)/10;g.plm=1;g.pl=[];
+    {const b=newSeg('L');b.len=xl;g.pl.push(b)}
     const sh=STB_SHAPES.find(x=>x[0]===s.shape)||STB_SHAPES[0],jt=arms.length===4?'X':(s.shape[0]==='Y'?'Y':'T');
-    const j=newJx(jt);j.pre=1;j.sta=fmtSta((parseSta(g.sta0)||0)+el);j.legs=[];
-    arms.forEach((B,i)=>{if(i===s.exit||i===s.entry)return;j.legs.push({a:Math.round(stbNrm(t.hd-B)*10)/10,w:Math.max(1,gnum(s.crossW,5)),len:ll,off:0})});
-    g.jx=[j];g.sv='';toast('✔ สร้างจุดเริ่มต้นที่ทางแยก ('+sh[1]+') STA 0+000 ที่'+(s.ref==='edge'?'ขอบทางแยก (ก่อนกลางแยก '+el+' ม.)':'ขอบทางแยก')+' เริ่มแขน '+(s.entry+1)+' → '+stbTurnTxt(t.d))}}
+    const j=newJx(jt);j.bk=el;j.sta=fmtSta(parseSta(g.sta0)||0);j.legs=[];
+    arms.forEach((B,i)=>{if(i===s.exit)return;j.legs.push({a:Math.round(stbNrm(hx-B)*10)/10,w:Math.max(1,gnum(s.crossW,5)),len:ll,off:0})});
+    g.jx=[j];g.sv='';toast('✔ สร้างจุดเริ่มต้นที่ทางแยก ('+sh[1]+') STA 0+000 ที่ขอบทางแยกฝั่งขาออก (หลังกลางแยก '+el+' ม.) เริ่มแขน '+(s.entry+1)+' → '+stbTurnTxt(t.d))}}
 
 function geoUI(){
   const g=G();if(String(g.step)==='2')g.step='3';const step=String(g.step||'1');
@@ -1887,7 +1922,7 @@ function geoUI(){
     if(!pl.length)h.push(`<div class="mute" style="padding:10px">ยังไม่มีช่วง — กดปุ่มด้านล่างเพื่อเริ่มบันทึกช่วงแรกของโครงการ</div>`);
     h.push(`<datalist id="dlPv">${PV_OPT.map(v=>`<option value="${v}">`).join('')}</datalist><datalist id="dlSta">${pl.map(p=>`<option value="${fmtSta(p._a)}">`).join('')}${pl.length?`<option value="${fmtSta(pl[pl.length-1]._b)}">`:''}</datalist>`);
     const tot=pl.reduce((a,p)=>a+(p._b-p._a||0),0);
-    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["TL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"],["TR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
+    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["TL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"],["TR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(caCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
   }else if(step==='s'){h.push(surveyUI(g))}else if(step==='p'){h.push(profileUI(g));setTimeout(profPrev,30)}else if(step==='2'){
     h.push(`<div class="mute" style="margin:6px 0">กำหนดรายการงาน (JOB LIST) ตามแต่ละช่วง — แปลนจะอัปเดตภาพตามรายการงานที่เลือก (ช่วง STA ตามผังที่บันทึกไว้ในขั้นที่ ①)</div>`);
     if(!pl.length)h.push(`<div class="gsec">ยังไม่มีช่วงในผัง — กลับไปบันทึกผังในขั้นที่ ① ก่อน<div class="bar"><button class="b" data-act="step" data-v="1">← ไปขั้นที่ ①</button></div></div>`);
@@ -1912,6 +1947,7 @@ function geoUI(){
   gc.addEventListener('input',e=>{if(window._ui)return;const el=e.target,g=G();
     if(el.dataset.ob!==undefined||el.dataset.pc!==undefined){const o=el.dataset.ob!==undefined?g.ob[+el.dataset.ob]:g.pc[+el.dataset.pc];if(!o)return;if(el.tagName!=='SELECT')o[el.dataset.f]=el.value;geoRedraw();return}
     if(el.dataset.jx!==undefined){const j=g.jx[+el.dataset.jx];if(!j)return;if(el.dataset.lg!==undefined)j.legs[+el.dataset.lg][el.dataset.f]=el.value;else if(el.tagName!=='SELECT')j[el.dataset.f]=el.value;geoRedraw();const a=el.closest('.jx');if(a){const x=a.querySelector('.jxarea');if(x)x.textContent='พื้นที่ผิวทางโดยประมาณ '+jxArea(j)+' ตร.ม.'}return}
+    if(el.dataset.ca!==undefined){const c=(g.ca||[])[+el.dataset.ca];if(!c||el.tagName==='SELECT')return;c[el.dataset.f]=el.value;geoRedraw();const a=el.closest('.ca');if(a){const x=a.querySelector('.caA');if(x)x.textContent=caArea(c)?'พื้นที่ '+caArea(c)+' ตร.ม.':'กรอก L1 และ L2'}const t=$('caTot');if(t)t.textContent='รวม '+g.ca.length+' มุม · '+caTotal(g)+' ตร.ม.';return}
     if(el.dataset.sf!==undefined){g.secs[+el.dataset.sf][el.dataset.f]=el.value;geoRedraw();return}
     if(el.dataset.sl!==undefined&&el.tagName!=='SELECT'){const l=g.secs[+el.dataset.sl].layers[+el.dataset.j];if(!l)return;l[el.dataset.f]=el.dataset.f==='code'?el.value.trim().toUpperCase():el.value;geoRedraw();if(el.dataset.f==='code'){const sp=document.querySelector('[data-sli="'+el.dataset.sl+':'+el.dataset.j+'"]');const it=BYCODE[l.code];if(sp)sp.innerHTML=it?'<span class="jname">'+esc(it.code)+' · '+esc(it.name)+'</span>':(l.code?'<span style="color:#b3261e">ไม่พบรหัสงานนี้</span>':'ยังไม่ผูกรหัสรายการงาน')}return}
     if(el.dataset.pl!==undefined){const p=g.pl[+el.dataset.pl];if(!p)return;if(el.dataset.env){p['e'+el.dataset.env]=p['e'+el.dataset.env]||{t:'',w:'',n:''};p['e'+el.dataset.env][el.dataset.f]=el.value}else p[el.dataset.f]=el.value;geoRedraw();plLabels()}
@@ -1919,6 +1955,7 @@ function geoUI(){
   gc.addEventListener('change',e=>{if(window._ui)return;const el=e.target;if(el.dataset&&el.dataset.stb!==undefined){const g=G(),s=stbState(g);s[el.dataset.stb]=el.value===''?'':+el.value;save();geoUI();renderPlan()}});
   gc.addEventListener('change',e=>{if(window._ui)return;const el=e.target;
     if(el.dataset.ob!==undefined||el.dataset.pc!==undefined){const g=G(),o=el.dataset.ob!==undefined?g.ob[+el.dataset.ob]:g.pc[+el.dataset.pc];if(o){o[el.dataset.f]=el.value;save();renderPlan()}return}
+    if(el.dataset.ca!==undefined){const g=G(),c=(g.ca||[])[+el.dataset.ca];if(c){c[el.dataset.f]=el.value;save();if(el.tagName==='SELECT')geoUI();renderPlan()}return}
     if(el.dataset.jx!==undefined&&el.tagName==='SELECT'){const g=G(),j=g.jx[+el.dataset.jx];if(el.dataset.f==='type'){j.type=el.value;j.legs=el.value==='R'?rbLegs(+j.n||4):jxLegDef(el.value);if(!j.Ro)j.Ro=15;if(!j.Ri)j.Ri=8}else if(el.dataset.f==='n'){j.n=+el.value;j.legs=rbLegs(j.n,j.legs)}save();geoUI();renderPlan();return}
     if(el.dataset.jx!==undefined||el.dataset.sf!==undefined||el.dataset.sl!==undefined){const g=G();if(el.dataset.sl!==undefined&&el.tagName==='SELECT'){const l=g.secs[+el.dataset.sl].layers[+el.dataset.j];if(el.dataset.f==='mat'){l.n=el.value==='__oth'?'':el.value}else l[el.dataset.f]=el.value;save();geoUI();renderPlan();return}save();renderPlan();return}if(el.dataset.pl!==undefined||el.dataset.rw!==undefined||el.dataset.p==='sta0'||el.dataset.p==='hd'){const g=G();if(el.dataset.pl!==undefined&&el.dataset.f==='t'&&!el.dataset.env){const p=g.pl[+el.dataset.pl];if(p.t==='L'){p.len=p.len||50}else{p.ang=p.ang||30;p.R=p.R||20}}
       if(el.dataset.p==='sta0'&&parseSta(el.value)==null&&el.value.trim()!==''){toast('รูปแบบ STA ไม่ถูกต้อง เช่น 0+000',true)}
@@ -1938,6 +1975,9 @@ function geoUI(){
     else if(act==='part'){S.rows[ri].fx=1}
     else if(act==='full'){S.rows[ri].fx=0}
     else if(act==='addSecQ'){const v=parseFloat($('secQ').value);const n=g.secs.length;g.secs.push({sta:fmtSta(v),lbl:String.fromCharCode(65+n),a:'',b:'',wl:'',wr:'',slope:3,note:'',layers:n&&g.secs[0].layers?JSON.parse(JSON.stringify(g.secs[0].layers)):STD_LAYERS_NEW()})}
+    else if(act==='addCa'){g.ca=g.ca||[];g.ca.push({id:uid(),lbl:caNext(g),sta:'',kind:'J',side:'L',dir:'F',l1:'3',l2:'3'})}
+    else if(act==='delCa'){g.ca.splice(i,1)}
+    else if(act==='autoCa'){compilePL(g);g.ca=g.ca||[];let n=0;(g.pl||[]).forEach(p=>{if(p.t==='L'||p.lead||!(p.turn||gnum(p.ang,0)>0))return;const sta=fmtSta(p._a);if(g.ca.some(c=>c.kind==='T'&&c.sta===sta))return;g.ca.push({id:uid(),lbl:caNext(g),sta,kind:'T',side:'L',dir:'F',l1:'3',l2:'3'});n++});toast(n?'✔ เพิ่มพื้นที่มุม '+n+' จุด (ค่าเริ่มต้น L1=L2=3 ม. — แก้ตามที่วัดจริง)':'ไม่พบจุดเลี้ยวที่ยังไม่มีพื้นที่มุม')}
     else if(act==='addJx'){g.jx.push(newJx(d.t))}
     else if(act==='svSet'){const jj=g.jx[i];if(!jj)return;if(g.sv){toast('ตั้งไว้แล้ว — กดยกเลิกก่อนถ้าจะตั้งใหม่',true);return}
       const rw=gnum(jj.rw==null?20:jj.rw,20),ld=gnum(jj.ld==null?15:jj.ld,15),half=Math.max(0,rw/2),sh=half+Math.max(0,ld),s0=parseSta(g.sta0)||0,p0=(g.pl&&g.pl[0])||{};
@@ -3321,8 +3361,12 @@ function mjPull(only){const g=G();compilePL(g);
     let r=S.rows.find(x=>x.src===src);
     if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:'',w,sta1:fmtSta(p._a),sta2:fmtSta(p._b),sg:p.id,fx:0});S.rows.push(r);made++}
     else{const old=r.sv||{};if(!mjSame(r.w,old.w))void 0;else r.w=w;r.sv={...sv};r.svn=info;r.sg=p.id;if(!r.fx){r.sta1=fmtSta(p._a);r.sta2=fmtSta(p._b)}upd++}});
+  (g.ca||[]).forEach(c=>{const a=caArea(c);if(!(a>0))return;const src='C:'+c.id;keep.add(src);const w=mjR2(gnum(c.l2,0)/2),l=mjR2(gnum(c.l1,0)),info='พื้นที่มุม '+(c.lbl||'')+' · STA '+(c.sta||'-')+' · ½×'+gnum(c.l1,0)+'×'+gnum(c.l2,0)+' = '+a+' ตร.ม.';
+    let r=S.rows.find(x=>x.src===src);
+    if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{code:'',w,l,d:'',m1:'',m2:'',qn:''},svn:info,C:true};Object.assign(r,{w,l,sta1:c.sta||'',sta2:c.sta||'',fx:1});S.rows.push(r);made++}
+    else{const old=r.sv||{};if(mjSame(r.w,old.w))r.w=w;if(mjSame(r.l,old.l))r.l=l;r.sv={...(r.sv||{}),w,l};r.svn=info;upd++}});
   // ลบแถวที่เคยดึงจากรูปตัด SECTION ในรุ่นก่อนๆ
-  S.rows=S.rows.filter(r=>{if(!r.src||!r.sv||keep.has(r.src))return true;if(!/^(G:|S:)?[^:@]+(@[^:]+)?:\d+$/.test(r.src))return true;del++;return false});
+  S.rows=S.rows.filter(r=>{if(r.src&&/^C:/.test(r.src)&&!keep.has(r.src)){del++;return false}if(!r.src||!r.sv||keep.has(r.src))return true;if(!/^(G:|S:)?[^:@]+(@[^:]+)?:\d+$/.test(r.src))return true;del++;return false});
   save(true);renderRows();refresh();
   toast('✔ ดึงข้อมูลสำรวจ: '+segs.length+' ช่วง (เพิ่มใหม่ '+made+' · คงเดิม '+upd+')'+(del?' · ลบแถวเก่าที่มาจากรูปตัด '+del:'')+' — ไประบุรายการงานของแต่ละช่วงในตารางด้านล่าง');return made+upd}
 function mjResetRow(r){if(!r.sv)return;MJ_F.forEach(([f])=>{if(f in r.sv)r[f]=r.sv[f]});if(r.sv.code)r.code=r.sv.code}
