@@ -1556,6 +1556,7 @@ const OVERLAY_LAYERS=()=>[{n:'ผิวทางแอสฟัลต์คอ�
 function jxLegDef(type){const L=(a,off)=>({a,w:5,len:40,off:off||0});
   return({T:[L(90)],Y:[L(60)],X:[L(90),L(-90)],TL:[L(90)],TR:[L(-90)],SL:[L(90),L(-90,25)],SR:[L(-90),L(90,25)],ML:[L(135)],MR:[L(-135)],YL:[L(45)],YR:[L(-45)],YF:[L(40),L(-40)]})[type]||[]}
 function rbLegs(n,old){const e=Math.max(1,n-2),Lc=Math.ceil(e/2),Rc=Math.floor(e/2),A=[];for(let i=0;i<Lc;i++)A.push(180*(i+1)/(Lc+1));for(let i=0;i<Rc;i++)A.push(180+180*(i+1)/(Rc+1));return A.map((a,i)=>({a:Math.round(a),w:old&&old[i]?old[i].w:5,len:old&&old[i]?old[i].len:40}))}
+function jrk(j){return j.rkOn?Math.max(0,gnum(j.rk,6)):0}
 function newJx(type){const j={id:uid(),type,sta:'',rk:6,Ro:15,Ri:8,n:4,legs:jxLegDef(type)};if(type==='R')j.legs=rbLegs(4);return j}
 function jxExtent(j){const L=Math.max(0,...(j.legs||[]).map(l=>gnum(l.len,0)+gnum(l.w,0)));return j.type==='R'?gnum(j.Ro,15)+L:L}
 function jxArea(j){let a=(j.legs||[]).reduce((s,l)=>s+gnum(l.w,0)*gnum(l.len,0),0);if(j.type==='R'){const Ro=gnum(j.Ro,15),Ri=gnum(j.Ri,8);a+=Math.PI*(Ro*Ro-Ri*Ri)}return Math.round(a*10)/10}
@@ -1567,7 +1568,7 @@ function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',S
   if(bk>0&&j.type!=='R'){o.push(`<polygon points="${pstr([Pm0(0,wl),Pm0(bk,wl),Pm0(bk,-wr),Pm0(0,-wr)])}" fill="${PV}" stroke="none"/>`,ln(Pm0(0,wl),Pm0(bk,wl)),ln(Pm0(0,-wr),Pm0(bk,-wr)))}
   if(fk>0&&j.type!=='R'){o.push(`<polygon points="${pstr([Pm0(-fk,wl),Pm0(fk,wl),Pm0(fk,-wr),Pm0(-fk,-wr)])}" fill="${PV}" stroke="none"/>`,ln(Pm0(-fk,wl),Pm0(fk,wl)),ln(Pm0(-fk,-wr),Pm0(fk,-wr)),ln(Pm0(fk,wl),Pm0(fk,-wr)))}
   const legs=(j.legs||[]).map(l=>({a:gnum(l.a,0),w:Math.max(.5,gnum(l.w,5)),len:Math.max(1,gnum(l.len,30)),off:gnum(l.off,0)}));
-  const isR=j.type==='R',Ro=Math.max(3,gnum(j.Ro,15)),Ri=Math.max(0,Math.min(Ro-1.5,gnum(j.Ri,8))),rk=Math.max(0,gnum(j.rk,6));
+  const isR=j.type==='R',Ro=Math.max(3,gnum(j.Ro,15)),Ri=Math.max(0,Math.min(Ro-1.5,gnum(j.Ri,8))),rk=jrk(j);
   const tx=(p,txt,sz,col)=>`<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" font-size="${sz||11}" font-weight="700" fill="${col||'#222'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${txt}</text>`;
   legs.forEach((l,li)=>{const ph=l.a*D,s=Math.sin(ph),c=Math.cos(ph);if(Math.abs(s)<.05){if(isR)return;const hb=l.w/2,dx=c,dy=s,qx=-s,qy=c,E=(kk,u)=>Pm0(kk*hb*qx+u*dx,kk*hb*qy+u*dy);o.push(`<polygon points="${pstr([E(1,0),E(1,l.len),E(-1,l.len),E(-1,0)])}" fill="${PV}" stroke="none"/>`,ln(E(1,0),E(1,l.len)),ln(E(-1,0),E(-1,l.len)),ln(E(1,l.len),E(-1,l.len)));o.push(tx(Pm0(l.len*.6*dx,l.len*.6*dy),(c>0?'แขนต่อตรง':'แขนด้านหลัง')+' · กว้าง '+f1(l.w)+' ม.',10.5,'#333'));return}const ox=l.off||0,Pm=(x,y)=>Pm0(x+ox,y),wo=wf(ts+ox),hb=l.w/2,sg=s>0?1:-1,hw=s>0?wo[0]:wo[1],dx=c,dy=s,qx=-s,qy=c;
     const E=(kk,u)=>Pm(kk*hb*qx+u*dx,kk*hb*qy+u*dy);const ur=isR?Math.sqrt(Math.max(0,Ro*Ro-hb*hb)):0;
@@ -1599,12 +1600,12 @@ function segIcon(t){const bg='<rect x="9" y="9" width="42" height="42" rx="4" tr
 function envSplit(g){const out=[];(g.env||[]).forEach(e=>{let gaps=[];(g.jx||[]).forEach(j=>{const ts=parseSta(j.sta);if(ts==null)return;
     if(j.type==='R'){const r=gnum(j.Ro,15)+3;gaps.push([ts-r,ts+r]);return}
     (j.legs||[]).forEach(l=>{const a=gnum(l.a,0)*Math.PI/180,s=Math.sin(a),c=Math.cos(a);if(Math.abs(s)<.05)return;if((s>0?'L':'R')!==e.side)return;
-      const ctr=ts+gnum(l.off,0),half=gnum(l.w,5)/2/Math.abs(s)+gnum(j.rk,6)+3+4*Math.abs(c/s);gaps.push([ctr-half,ctr+half])})});
+      const ctr=ts+gnum(l.off,0),half=gnum(l.w,5)/2/Math.abs(s)+jrk(j)+3+4*Math.abs(c/s);gaps.push([ctr-half,ctr+half])})});
   gaps.sort((x,y)=>x[0]-y[0]);let a=e.a;const b=e.b;gaps.forEach(([g0,g1])=>{if(g1<=a||g0>=b)return;if(g0>a)out.push(Object.assign({},e,{a:a,b:g0}));a=Math.max(a,g1)});if(a<b)out.push(Object.assign({},e,{a:a,b:b}))});return out}
 
 function jxCuts(g){const cuts=[];(g.jx||[]).forEach(j=>{const ts=parseSta(j.sta);if(ts==null)return;
   if(j.type==='R'){const Ro=gnum(j.Ro,15);cuts.push([ts-Ro-3,ts+Ro+3]);(j.legs||[]).forEach(l=>{const a=gnum(l.a,0)*Math.PI/180,s=Math.abs(Math.sin(a))||.3,h=gnum(l.w,5)/(2*s)+3,x=Math.min(gnum(l.len,40),18)/Math.tan(Math.max(.3,Math.abs(a)))*Math.sign(Math.cos(a)||1);cuts.push([ts+Math.min(0,x)-h,ts+Math.max(0,x)+h])});return}
-  (j.legs||[]).forEach(l=>{const a=gnum(l.a,0)*Math.PI/180,s=Math.max(.3,Math.abs(Math.sin(a))),h=gnum(l.w,5)/(2*s)+gnum(j.rk,6)+1.5,off=gnum(l.off,0),x=(18*Math.cos(a)/Math.max(.3,Math.abs(Math.sin(a))))*Math.sign(Math.sin(a)||1)*Math.sign(Math.sin(a)||1);cuts.push([ts+off+Math.min(0,x)-h,ts+off+Math.max(0,x)+h])})});return cuts}
+  (j.legs||[]).forEach(l=>{const a=gnum(l.a,0)*Math.PI/180,s=Math.max(.3,Math.abs(Math.sin(a))),h=gnum(l.w,5)/(2*s)+jrk(j)+1.5,off=gnum(l.off,0),x=(18*Math.cos(a)/Math.max(.3,Math.abs(Math.sin(a))))*Math.sign(Math.sin(a)||1)*Math.sign(Math.sin(a)||1);cuts.push([ts+off+Math.min(0,x)-h,ts+off+Math.max(0,x)+h])})});return cuts}
 function cutEnv(env,cuts){if(!cuts.length)return env;let out=[];env.forEach(e=>{let segs=[[e.a,e.b]];cuts.forEach(([ca,cb])=>{const n=[];segs.forEach(([a,b])=>{if(cb<=a||ca>=b)n.push([a,b]);else{if(ca>a)n.push([a,ca]);if(cb<b)n.push([cb,b])}});segs=n});segs.forEach(([a,b])=>{if(b-a>.3)out.push({...e,a,b})})});return out}
 
 // ===== v17: PLAN BUILDER (3 ขั้นตอน) =====
@@ -1789,11 +1790,12 @@ function plLabels(){const g=G();document.querySelectorAll('#geoCard .plseg[data-
   const t=$('plTot');if(t)t.textContent=plTot(g);document.querySelectorAll('#geoCard [data-ji]').forEach(el=>{const r=S.rows[+el.dataset.ji];if(r)el.innerHTML=jobInfo(r)})}
 
 /* ===== พื้นที่มุม A1,A2,… (v74) ===== */
-function caArea(c){const a=gnum(c.l1,0),b=gnum(c.l2,0);return a>0&&b>0?Math.round(a*b/2*100)/100:0}
+function caArc(c){return c.shp==='arc'}
+function caArea(c){const a=gnum(c.l1,0);if(caArc(c))return a>0?Math.round((1-Math.PI/4)*a*a*100)/100:0;const b=gnum(c.l2,0);return a>0&&b>0?Math.round(a*b/2*100)/100:0}
 function caTotal(g){return Math.round((g.ca||[]).reduce((t,c)=>t+caArea(c),0)*100)/100}
 function caNext(g){const u=new Set((g.ca||[]).map(c=>c.lbl));let n=1;while(u.has('A'+n))n++;return 'A'+n}
 function caSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c,o=[];
- (g.ca||[]).forEach(a=>{const ts=parseSta(a.sta),L1=gnum(a.l1,0),L2=gnum(a.l2,0);if(ts==null||!(L1>0&&L2>0))return;const t=ts-sta0;if(t<s0-Math.max(L1,L2)-2||t>s1+Math.max(L1,L2)+2)return;
+ (g.ca||[]).forEach(a=>{const ts=parseSta(a.sta),L1=gnum(a.l1,0),L2=caArc(a)?gnum(a.l1,0):gnum(a.l2,0);if(ts==null||!(L1>0&&L2>0))return;const t=ts-sta0;if(t<s0-Math.max(L1,L2)-2||t>s1+Math.max(L1,L2)+2)return;
   const nz=(x,y)=>{const l=Math.hypot(x,y)||1;return[x/l,y/l]};
   const O=P(t,0),tb=nz(O[0]-P(t-.5,0)[0],O[1]-P(t-.5,0)[1]),ta=nz(P(t+.5,0)[0]-O[0],P(t+.5,0)[1]-O[1]);
   const detAt=tt=>{const p0=P(tt,0),p1=P(tt,1),f=nz(P(tt+.25,0)[0]-P(tt-.25,0)[0],P(tt+.25,0)[1]-P(tt-.25,0)[1]),l=nz(p1[0]-p0[0],p1[1]-p0[1]);return f[0]*l[1]-f[1]*l[0]};
@@ -1808,19 +1810,21 @@ function caSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c,o=[];
   let A,B;
   if(turn){A=[C[0]-tb[0]*L1*k,C[1]-tb[1]*L1*k];B=[C[0]+ta[0]*L2*k,C[1]+ta[1]*L2*k]}
   else{const d=a.dir==='B'?[-tb[0],-tb[1]]:ta,n=NL(a.dir==='B'?tb:ta);A=[C[0]+d[0]*L1*k,C[1]+d[1]*L1*k];B=[C[0]+sg*n[0]*L2*k,C[1]+sg*n[1]*L2*k]}
-  o.push(`<polygon points="${pstr([C,A,B])}" fill="#f2b84b" fill-opacity=".55" stroke="#8a5a00" stroke-width="1.2" stroke-dasharray="4 2"/>`);
+  if(caArc(a)){const D=[A[0]+B[0]-C[0],A[1]+B[1]-C[1]],cr=(A[0]-D[0])*(B[1]-D[1])-(B[0]-D[0])*(A[1]-D[1]),Rp=(L1*k).toFixed(1);
+    o.push(`<path d="M${C[0].toFixed(1)},${C[1].toFixed(1)} L${A[0].toFixed(1)},${A[1].toFixed(1)} A${Rp},${Rp} 0 0 ${cr>0?1:0} ${B[0].toFixed(1)},${B[1].toFixed(1)} Z" fill="#f2b84b" fill-opacity=".55" stroke="#8a5a00" stroke-width="1.2" stroke-dasharray="4 2"/>`)}
+  else o.push(`<polygon points="${pstr([C,A,B])}" fill="#f2b84b" fill-opacity=".55" stroke="#8a5a00" stroke-width="1.2" stroke-dasharray="4 2"/>`);
   const cx=(C[0]+A[0]+B[0])/3,cy=(C[1]+A[1]+B[1])/3,tx=(x,y,txt,sz,col)=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${sz}" font-weight="700" fill="${col||'#5a3a00'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6">${txt}</text>`;
-  o.push(`<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" font-size="11" font-weight="700" fill="#5a3a00" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6" data-ld="1">${esc(a.lbl||'A')} · ${f1(caArea(a))} ตร.ม. (L1 ${f1(L1)} × L2 ${f1(L2)})</text>`)});
+  o.push(`<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" font-size="11" font-weight="700" fill="#5a3a00" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6" data-ld="1">${esc(a.lbl||'A')} · ${f1(caArea(a))} ตร.ม. (${caArc(a)?'รัศมีโค้ง R '+f1(L1)+' ม.':'L1 '+f1(L1)+' × L2 '+f1(L2)})</text>`)});
  return o.join('')}
 function caCards(g){g.ca=g.ca||[];const tot=caTotal(g);
- const h=[`<div class="gsec"><b>📐 พื้นที่มุม (A1, A2, A3 …) ตามจุด STA ที่โค้ง / เลี้ยว / ปากทางแยก</b> <span class="mute">พื้นที่สามเหลี่ยม = ½ × L1 × L2 · L1 วัดตามขอบทางหลัก · L2 วัดตามขอบถนนที่ตัด/ถนนหลังเลี้ยว · แปลนวาดสามเหลี่ยมพร้อมชื่อและพื้นที่ให้ · พื้นที่ถูกส่งไป MAKE JOB เป็นแถวแยก (กว้างเทียบเท่า = L2/2 × ยาว = L1)</span>`];
+ const h=[`<div class="gsec"><b>📐 พื้นที่มุม (A1, A2, A3 …) ตามจุด STA ที่โค้ง / เลี้ยว / ปากทางแยก</b> <span class="mute">ทางแยกไม่สร้างรัศมีโค้งให้อัตโนมัติ — เพิ่มภายหลังได้ที่นี่: สามเหลี่ยม = ½ × L1 × L2 (L1 ตามขอบทางหลัก · L2 ตามขอบถนนที่ตัด/ถนนหลังเลี้ยว) หรือรัศมีโค้ง = (1 − π/4) × R² · แปลนวาดสามเหลี่ยมพร้อมชื่อและพื้นที่ให้ · พื้นที่ถูกส่งไป MAKE JOB เป็นแถวแยก (กว้างเทียบเท่า = L2/2 × ยาว = L1)</span>`];
  g.ca.forEach((c,i)=>{const f=(k,lab,ex)=>`<div><label>${lab}</label><input data-ca="${i}" data-f="${k}" value="${esc(c[k]==null?'':c[k])}" ${ex||''}></div>`,turn=c.kind==='T';
   h.push(`<div class="plseg ca"><div class="plh"><b>${esc(c.lbl||'A')}</b><span class="mute caA">${caArea(c)?'พื้นที่ '+caArea(c)+' ตร.ม.':'กรอก L1 และ L2'}</span><span class="sp"></span><button class="b red sm" data-act="delCa" data-i="${i}">✕</button></div>
   <div class="grid g4">${f('lbl','ชื่อ','maxlength="4"')}${f('sta','STA ตำแหน่งมุม','list="dlSta" placeholder="เช่น 0+040"')}
-  <div><label>ลักษณะมุม</label><select data-ca="${i}" data-f="kind"><option value="J"${turn?'':' selected'}>ปากทางแยก / ถนนตัด (ตรง)</option><option value="T"${turn?' selected':''}>มุมเลี้ยว (ด้านใน)</option></select></div>
+  <div><label>รูปมุม</label><select data-ca="${i}" data-f="shp"><option value="tri"${caArc(c)?'':' selected'}>สามเหลี่ยม (L1×L2)</option><option value="arc"${caArc(c)?' selected':''}>รัศมีโค้ง (R)</option></select></div><div><label>ลักษณะมุม</label><select data-ca="${i}" data-f="kind"><option value="J"${turn?'':' selected'}>ปากทางแยก / ถนนตัด (ตรง)</option><option value="T"${turn?' selected':''}>มุมเลี้ยว (ด้านใน)</option></select></div>
   ${turn?'':`<div><label>ด้านของทางหลัก</label><select data-ca="${i}" data-f="side"><option value="L"${c.side!=='R'?' selected':''}>ซ้าย</option><option value="R"${c.side==='R'?' selected':''}>ขวา</option></select></div><div><label>L1 วัดไปทาง</label><select data-ca="${i}" data-f="dir"><option value="F"${c.dir!=='B'?' selected':''}>ข้างหน้า (STA เพิ่ม)</option><option value="B"${c.dir==='B'?' selected':''}>ย้อนหลัง (STA ลด)</option></select></div>`}
-  ${f('l1','L1 ม. (ตามทางหลัก)','type="number" step="any" inputmode="decimal"')}${f('l2','L2 ม. (ตามถนนที่ตัด)','type="number" step="any" inputmode="decimal"')}</div></div>`)});
- h.push(`<div class="bar"><button class="b ghost" data-act="addCa">＋ เพิ่มพื้นที่มุม</button><button class="b ghost" data-act="autoCa">⚡ สร้างที่จุดเลี้ยวทุกจุดให้อัตโนมัติ</button><span class="mute" id="caTot">${g.ca.length?'รวม '+g.ca.length+' มุม · '+tot+' ตร.ม.':''}</span></div></div>`);
+  ${caArc(c)?f('l1','รัศมีโค้ง R ม.','type="number" step="any" inputmode="decimal"'):f('l1','L1 ม. (ตามทางหลัก)','type="number" step="any" inputmode="decimal"')+f('l2','L2 ม. (ตามถนนที่ตัด)','type="number" step="any" inputmode="decimal"')}</div></div>`)});
+ h.push(`<div class="bar"><button class="b ghost" data-act="addCa">＋ เพิ่มพื้นที่มุม (สามเหลี่ยม)</button><button class="b ghost" data-act="addCaR">⌒ สร้างรัศมีโค้งที่มุมทางแยก</button><button class="b ghost" data-act="autoCa">⚡ สร้างที่จุดเลี้ยวทุกจุดให้อัตโนมัติ</button><span class="mute" id="caTot">${g.ca.length?'รวม '+g.ca.length+' มุม · '+tot+' ตร.ม.':''}</span></div></div>`);
  return h.join('')}
 
 /* ===== จุดสิ้นสุดที่ขอบทางแยก / จุดตัด (v75) ===== */
@@ -2007,6 +2011,7 @@ function geoUI(){
       S.rows=S.rows.filter(r=>!(r.src&&/^(S|C|G):/.test(r.src))&&!r.sg);if(!S.rows.length)S.rows=[newRow()];
       try{compilePL(g)}catch(e){}renderRows();refresh();toast('🧹 ล้างข้อมูล STA ทั้งหมดแล้ว — กด "↶ กู้ข้อมูลที่ล้างกลับคืน" ได้ถ้ากดผิด')}
     else if(act==='staUndo'){const u=window._undoSta;if(u&&u.pid===S.id){const o=JSON.parse(u.g);Object.keys(g).forEach(k=>delete g[k]);Object.assign(g,o);g.step='5';S.rows=JSON.parse(u.rows);window._undoSta=null;try{compilePL(g)}catch(e){}renderRows();refresh();toast('✔ กู้ข้อมูล STA กลับคืนแล้ว')}}
+    else if(act==='addCaR'){g.ca=g.ca||[];g.ca.push({id:uid(),lbl:caNext(g),sta:'',kind:'J',shp:'arc',side:'L',dir:'F',l1:'6',l2:'6'})}
     else if(act==='addCa'){g.ca=g.ca||[];g.ca.push({id:uid(),lbl:caNext(g),sta:'',kind:'J',side:'L',dir:'F',l1:'3',l2:'3'})}
     else if(act==='delCa'){g.ca.splice(i,1)}
     else if(act==='autoCa'){compilePL(g);g.ca=g.ca||[];let n=0;(g.pl||[]).forEach(p=>{if(p.t==='L'||p.lead||!(p.turn||gnum(p.ang,0)>0))return;const sta=fmtSta(p._a);if(g.ca.some(c=>c.kind==='T'&&c.sta===sta))return;g.ca.push({id:uid(),lbl:caNext(g),sta,kind:'T',side:'L',dir:'F',l1:'3',l2:'3'});n++});toast(n?'✔ เพิ่มพื้นที่มุม '+n+' จุด (ค่าเริ่มต้น L1=L2=3 ม. — แก้ตามที่วัดจริง)':'ไม่พบจุดเลี้ยวที่ยังไม่มีพื้นที่มุม')}
@@ -3393,7 +3398,7 @@ function mjPull(only){const g=G();compilePL(g);
     let r=S.rows.find(x=>x.src===src);
     if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{...sv},svn:info,C:true};Object.assign(r,{code:'',w,sta1:fmtSta(p._a),sta2:fmtSta(p._b),sg:p.id,fx:0});S.rows.push(r);made++}
     else{const old=r.sv||{};if(!mjSame(r.w,old.w))void 0;else r.w=w;r.sv={...sv};r.svn=info;r.sg=p.id;if(!r.fx){r.sta1=fmtSta(p._a);r.sta2=fmtSta(p._b)}upd++}});
-  (g.ca||[]).forEach(c=>{const a=caArea(c);if(!(a>0))return;const src='C:'+c.id;keep.add(src);const w=mjR2(gnum(c.l2,0)/2),l=mjR2(gnum(c.l1,0)),info='พื้นที่มุม '+(c.lbl||'')+' · STA '+(c.sta||'-')+' · ½×'+gnum(c.l1,0)+'×'+gnum(c.l2,0)+' = '+a+' ตร.ม.';
+  (g.ca||[]).forEach(c=>{const a=caArea(c);if(!(a>0))return;const src='C:'+c.id;keep.add(src);const w=mjR2(a/gnum(c.l1,1)),l=mjR2(gnum(c.l1,0)),info='พื้นที่มุม '+(c.lbl||'')+' · STA '+(c.sta||'-')+(caArc(c)?' · รัศมีโค้ง R '+gnum(c.l1,0)+' ม. (1−π/4)R²':' · ½×'+gnum(c.l1,0)+'×'+gnum(c.l2,0))+' = '+a+' ตร.ม.';
     let r=S.rows.find(x=>x.src===src);
     if(!r){while(S.rows.length&&isBlank(S.rows[S.rows.length-1]))S.rows.pop();r={...newRow(),src,sv:{code:'',w,l,d:'',m1:'',m2:'',qn:''},svn:info,C:true};Object.assign(r,{w,l,sta1:c.sta||'',sta2:c.sta||'',fx:1});S.rows.push(r);made++}
     else{const old=r.sv||{};if(mjSame(r.w,old.w))r.w=w;if(mjSame(r.l,old.l))r.l=l;r.sv={...(r.sv||{}),w,l};r.svn=info;upd++}});
