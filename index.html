@@ -1374,6 +1374,7 @@ function sheetSvg(M,idx){
   list.slice(0,maxRows).forEach(b=>{o.push(`<rect x="${px+12}" y="${y-10}" width="10" height="10" fill="${b.it?b.it.cat.color:'#888'}"/><text x="${px+28}" y="${y}" font-size="12"><tspan font-weight="700">${esc(b.code)}</tspan> ${esc(cut(b.it?b.it.name:'ไม่พบรหัส',17))}</text><text x="${px+pw-10}" y="${y}" font-size="11" fill="#555" text-anchor="end">${fmtSta(b.a)}–${fmtSta(b.b)}</text>`);y+=21});
   if(list.length>maxRows)o.push(`<text x="${px+12}" y="${y}" font-size="12" fill="#777">… และอีก ${list.length-maxRows} รายการ (ดูในตารางสำรวจ)</text>`);
   }
+  if(M.ov&&M.ovT)ovTable(M,o);
   // PROFILE บนแผ่น PLAN
   if(M.ps){const ps=M.ps,sa=s0+sta0,sb=s1+sta0,eN=elN(g);
     if(M.pfB){let X,hl=N;o.push(`<rect x="30" y="600" width="1080" height="420" fill="#fff" stroke="#333"/>`);
@@ -1393,14 +1394,21 @@ function ovPanel(M,o,px,pw,y,inR,secIn){const g=M.g,sta0=M.sta0,ln=[],T=(t,b,c)=
   const f1=v=>(Math.round(v*10)/10).toString(),cv=curvesList(g,sta0);
   let wmin=1e9,wmax=0;for(let t=0;t<=M.total;t+=Math.max(1,M.total/60)){const w=M.wf(t+sta0),s=w[0]+w[1];wmin=Math.min(wmin,s);wmax=Math.max(wmax,s)}
   T('ความยาวทั้งโครงการ '+f1(M.total)+' ม.',1,'#1f3a5f');T('STA '+fmtSta(sta0)+' – '+fmtSta(sta0+M.total));
-  T('ผิวทางกว้าง '+(Math.abs(wmax-wmin)<.05?f1(wmax):f1(wmin)+'–'+f1(wmax))+' ม. · โค้ง '+cv.length+' แห่ง');T('รูปตัดขวาง '+(g.secs||[]).filter(x=>parseSta(x.sta)!=null).length+' รูป · ช่วงทาง '+(g.pl||[]).filter(p=>!p.lead).length+' ช่วง');
+  T('ผิวทางกว้าง '+(Math.abs(wmax-wmin)<.05?f1(wmax):f1(wmin)+'–'+f1(wmax))+' ม. · โค้ง '+cv.length+' แห่ง');T('รูปตัดขวาง '+(g.secs||[]).filter(x=>parseSta(x.sta)!=null).length+' รูป · ช่วงทาง '+ovSegs(g).length+' ช่วง');
   const rl=Math.max(gnum(g.rowl,0),...(g.rz||[]).map(z=>z.l)),rr=Math.max(gnum(g.rowr,0),...(g.rz||[]).map(z=>z.r));if(rl>0||rr>0)T('เขตทาง ซ้าย '+f1(rl)+' / ขวา '+f1(rr)+' ม.');
   const pc=(g.pc||[]).filter(x=>x.type||x.cond);if(pc.length){T('ผิวทางเดิม:',1,'#7a4b00');pc.slice(0,3).forEach(x=>T(' · '+(x.a||'')+'–'+(x.b||'')+' '+(x.type||'')+(x.cond?' ('+x.cond+')':'')));if(pc.length>3)T(' … อีก '+(pc.length-3)+' ช่วง',0,'#777')}
   const ob={};(g.ob||[]).forEach(q=>{if(OB[q.k])ob[OB[q.k].n]=(ob[OB[q.k].n]||0)+1});const ok=Object.keys(ob);if(ok.length)T('สิ่งก่อสร้าง/จุดสำรวจ: '+ok.map(k=>k+' '+ob[k]).join(', '),0,'#444');
   const nj=new Set(inR.map(b=>b.code)).size;T('รายการงานทั้งหมด '+nj+' ชนิด · '+inR.length+' ช่วงงาน',0,'#444');
   const maxY=598;let n=0;for(const l of ln){if(y>maxY-4)break;o.push('<text x="'+(px+12)+'" y="'+y+'" font-size="12" '+(l.b?'font-weight="700" ':'')+'fill="'+(l.c||'#222')+'">'+esc(cut(l.t,46))+'</text>');y+=17;n++}
   if(n<ln.length)o.push('<text x="'+(px+12)+'" y="'+(maxY)+'" font-size="11" fill="#c0392b">… ข้อมูลเพิ่มเติมดูในแผ่นถัดไป/ตารางสำรวจ</text>')}
-function ovModel(M){const f=chunkFrame(M.pts,0,M.total,M.lay,M.mg);const need=Math.max(f.bw*5000/M.AW,f.bh*5000/M.AH);const N=Math.max(M.N>0&&M.chunks.length===1?M.N:0,Math.ceil(need/50)*50);return{...M,g:M.g.ovEnv?M.g:{...M.g,env:[]},ov:true,chunks:[[0,M.total]],N,idx:0}}
+function ovSegs(g){return(g.pl||[]).filter(p=>!p.lead&&!p.turn&&p._b>p._a+1e-6)}
+function ovModel(M){const segs=ovSegs(M.g),n=segs.length,cols=Math.max(1,Math.min(3,Math.ceil(n/8))),rpc=Math.min(12,Math.ceil(n/cols)),tblH=n?34+rpc*17+10:0,y1=M.area.y1,area={...M.area,y1:y1-tblH},AH=M.AH-tblH;
+  const f=chunkFrame(M.pts,0,M.total,M.lay,M.mg);const need=Math.max(f.bw*5000/M.AW,f.bh*5000/AH);const N=Math.max(M.N>0&&M.chunks.length===1?M.N:0,Math.ceil(need/50)*50);return{...M,g:M.g.ovEnv?M.g:{...M.g,env:[]},ov:true,chunks:[[0,M.total]],N,idx:0,area,AH,ovT:n?{segs,n,cols,rpc,y0:y1-tblH,y1}:null}}
+function ovTable(M,o){const t=M.ovT,g=M.g,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'},r2=v=>(Math.round(v*100)/100).toString(),cw=1080/t.cols,shown=Math.min(t.n,t.cols*t.rpc);
+  o.push(`<rect x="30" y="${t.y0}" width="1080" height="${t.y1-t.y0}" fill="#fff" stroke="#333"/><text x="42" y="${t.y0+20}" font-size="14" font-weight="700" fill="#1f3a5f">รายการช่วงทางทั้งหมด (${t.n} ช่วง · รวม ${r2(M.total)} ม.)</text>`);
+  t.segs.slice(0,shown).forEach((p,i)=>{const c=Math.floor(i/t.rpc),r=i%t.rpc,x=42+c*cw,y=t.y0+42+r*17,ty=(tn[p.t]||'')+(p.t!=='L'&&gnum(p.R,0)>0?' R'+r2(gnum(p.R,0)):'');
+    o.push(`<text x="${x}" y="${y}" font-size="12.5"><tspan font-weight="700" fill="#1f3a5f">ช่วงที่ ${i+1}</tspan> STA ${fmtSta(p._a)} – ${fmtSta(p._b)} · ยาว ${r2(p._b-p._a)} ม. <tspan fill="#666">${esc(ty)}</tspan></text>`)});
+  if(t.n>shown)o.push(`<text x="1100" y="${t.y1-6}" font-size="11" fill="#c0392b" text-anchor="end">… และอีก ${t.n-shown} ช่วง (ดูในผังช่วง STA)</text>`)}
 function segNote(M,o,px,pw,y,s0,s1){const g=M.g,sta0=M.sta0,tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'};
   const sg=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a&&p._a<s1+sta0-1e-6&&p._b>s0+sta0+1e-6).map(p=>({a:Math.max(p._a,s0+sta0),b:Math.min(p._b,s1+sta0),t:tn[p.t]||''}));
   if(sg.length<2)return y;
