@@ -228,6 +228,17 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
 :root[data-theme=c] .rowtop .n{color:#ffc933}
 .mjlg input{flex:1;min-width:0}
 .rg .pos{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;min-width:140px;padding-bottom:6px}
+
+/* v82: แถบหัวการ์ดช่วงทางสีตามชนิดช่วง (ตรง/โค้งซ้าย/โค้งขวา/เลี้ยว) ปรับตามโทนสี a b c */
+:root,:root[data-theme=a]{--kL:#1f5fa8;--kCL:#7a3a9e;--kCR:#0e7c6b;--kT:#b4570a;--kt:#fff}
+:root[data-theme=b]{--kL:#0f4d2a;--kCL:#6b2f8a;--kCR:#0b5f78;--kT:#9a4a00;--kt:#fff}
+:root[data-theme=c]{--kL:#6fb3ff;--kCL:#d6a7ff;--kCR:#5fe0c8;--kT:#ffb454;--kt:#101214}
+:root .plseg[data-k="L"]{--kc:var(--kL)}:root .plseg[data-k="CL"]{--kc:var(--kCL)}:root .plseg[data-k="CR"]{--kc:var(--kCR)}:root .plseg[data-k="T"]{--kc:var(--kT)}
+:root .plseg[data-k]{border-left:8px solid var(--kc);border-top:2px solid var(--kc)}
+:root .plseg[data-k]>.plh{background:var(--kc);color:var(--kt);margin:-10px -10px 10px -10px;padding:8px 12px;border-radius:7px 7px 0 0;font-size:1.1em}
+:root .plseg[data-k]>.plh b{color:var(--kt);font-size:1.22em}
+:root .plseg[data-k]>.plh .plsta{font-size:1.15em;font-weight:700}
+:root .plseg[data-k]>.plh .mute,:root .plseg[data-k]>.plh small{color:var(--kt);opacity:.95}
 </style>
 </head>
 <body>
@@ -1935,7 +1946,7 @@ function geoUI(){
      <div class="compass">${[['N',0],['E',90],['S',180],['W',270]].map(([n,d])=>`<button class="b ${gnum(g.hd)===d?'':'ghost'} sm" data-hd="${d}">${n}</button>`).join('')}<button class="b ghost sm" id="hdGps">🧭 หาทิศจากพิกัด GPS</button></div><div class="mute" id="hdInfo"></div></div>`);
     pl.forEach((p,i)=>{const t=p.t||'L',L=p._b-p._a||0;const d=(k,v,ex)=>`<input data-pl="${i}" data-f="${k}" value="${esc(v)}" ${ex||''}>`;
       const eh=(sd,e)=>`<div class="envb"><label>สภาพแวดล้อม${sd==='L'?'ซ้าย':'ขวา'}</label><select data-pl="${i}" data-env="${sd}" data-f="t">${ENV_T.map(x=>`<option value="${x}"${((e.t||'')===x||(x==='บ้านเรือน/ชุมชน'&&e.t==='บ้านเรือน/อาคาร'))?' selected':''}>${x||'ไม่มี'}</option>`).join('')}</select>${e.t?(envAuto(e.t)?'<div class="mute">วาดผังจำลองกระจายตามแนวถนนให้อัตโนมัติ — ไม่ต้องกรอกความกว้าง</div>':`<input data-pl="${i}" data-env="${sd}" data-f="w" type="number" step="any" value="${esc(e.w)}" placeholder="กว้าง ม.">`)+`<input data-pl="${i}" data-env="${sd}" data-f="n" value="${esc(e.n||'')}" placeholder="ชื่อ/หมายเหตุ">`:''}</div>`;
-      h.push(`<div class="plseg" data-pi="${i}"><div class="plh">${(()=>{const m=plMarks(g,p);return m.ic})()}<b>ช่วงที่ ${i+1}</b> <span class="mute plsta">${plSta(p)}</span>${plMarks(g,p).mk}<span class="sp"></span></div><div class="plact">${i>0?`<button class="b ghost mv" data-act="up" data-i="${i}" title="ย้ายช่วงนี้ขึ้นก่อนช่วงข้างบน">▲ ย้ายขึ้น</button>`:''}${i<pl.length-1?`<button class="b ghost mv" data-act="dn" data-i="${i}" title="ย้ายช่วงนี้ลงหลังช่วงข้างล่าง">▼ ย้ายลง</button>`:''}<span class="sp"></span><button class="b mv del" data-act="delPl" data-i="${i}" title="ลบช่วงนี้">✕ ลบช่วง</button></div>
+      h.push(`<div class="plseg" data-pi="${i}" data-k="${p.turn?'T':p.t}"><div class="plh">${(()=>{const m=plMarks(g,p);return m.ic})()}<b>ช่วงที่ ${i+1}</b> <span class="mute plsta">${plSta(p)}</span>${plMarks(g,p).mk}<span class="sp"></span></div><div class="plact">${i>0?`<button class="b ghost mv" data-act="up" data-i="${i}" title="ย้ายช่วงนี้ขึ้นก่อนช่วงข้างบน">▲ ย้ายขึ้น</button>`:''}${i<pl.length-1?`<button class="b ghost mv" data-act="dn" data-i="${i}" title="ย้ายช่วงนี้ลงหลังช่วงข้างล่าง">▼ ย้ายลง</button>`:''}<span class="sp"></span><button class="b mv del" data-act="delPl" data-i="${i}" title="ลบช่วงนี้">✕ ลบช่วง</button></div>
       <div class="grid g4"><div><label>ลักษณะช่วง</label><select data-pl="${i}" data-f="t" data-re="1"><option value="L"${t==='L'?' selected':''}>ตรง</option><option value="CL"${t==='CL'?' selected':''}>${p.turn?'เลี้ยวซ้าย':'โค้งซ้าย'}</option><option value="CR"${t==='CR'?' selected':''}>${p.turn?'เลี้ยวขวา':'โค้งขวา'}</option></select></div>
       ${t==='L'?`<div><label>ความยาว (ม.)</label>${d('len',p.len,'type="number" step="any" inputmode="decimal"')}</div>`:`<div><label>มุมเลี้ยว Δ (°)</label>${d('ang',p.ang,'type="number" step="any"')}</div><div><label>รัศมี R (ม.)${p.turn?' · 0 = หักมุมฉาก':''}</label>${d('R',p.R,'type="number" step="any"')}</div>`}
       ${i>0?`<div><label>ทิศการไป</label><select data-pl="${i}" data-f="hd"><option value="">ต่อเนื่องจากช่วงก่อน</option>${[['N',0],['NE',45],['E',90],['SE',135],['S',180],['SW',225],['W',270],['NW',315]].map(([n,v])=>`<option value="${v}"${String(p.hd)===String(v)?' selected':''}>หักไปทาง ${n}</option>`).join('')}</select></div>`:''}</div>
@@ -1952,7 +1963,7 @@ function geoUI(){
     if(!pl.length)h.push(`<div class="gsec">ยังไม่มีช่วงในผัง — กลับไปบันทึกผังในขั้นที่ ① ก่อน<div class="bar"><button class="b" data-act="step" data-v="1">← ไปขั้นที่ ①</button></div></div>`);
     h.push(`<datalist id="dlJob">${ITEMS.map(it=>`<option value="${esc(it.code)}" label="${esc(it.code+' — '+it.name)}">${esc(it.name)}</option>`).join('')}</datalist>`);
     pl.forEach((p,i)=>{const rows=S.rows.map((r,ri)=>({r,ri})).filter(x=>x.r.sg===p.id);
-      h.push(`<div class="plseg" data-pi="${i}"><div class="plh">${plMarks(g,p).ic}<b>ช่วงที่ ${i+1}</b> <span class="mute plsta">${plSta(p)} · ${plWi(p)}</span>${plMarks(g,p).mk}</div>`);
+      h.push(`<div class="plseg" data-pi="${i}" data-k="${p.turn?'T':p.t}"><div class="plh">${plMarks(g,p).ic}<b>ช่วงที่ ${i+1}</b> <span class="mute plsta">${plSta(p)} · ${plWi(p)}</span>${plMarks(g,p).mk}</div>`);
       rows.forEach(({r,ri})=>{const it=BYCODE[String(r.code||'').toUpperCase()],c=calc(r);const lc=k=>`<button class="b sm ${r[k]?'':'ghost'}" data-act="lcr" data-ri="${ri}" data-k="${k}">${k}</button>`;
         h.push(`<div class="jobr"><div class="jr1 jr0"><input class="jcode" data-rw="${ri}" data-f="code" list="dlJob" value="${esc(r.code)}" placeholder="พิมพ์รหัสงาน หรือเลือกจากรายการ เช่น B01" autocomplete="off"></div><div class="jr1">${lc('L')}${lc('C')}${lc('R')}<input data-rw="${ri}" data-f="w" type="number" step="any" value="${esc(r.w)}" placeholder="กว้าง ม." style="width:84px"><input data-rw="${ri}" data-f="d" type="number" step="any" value="${esc(r.d)}" placeholder="หนา/ลึก ม." style="width:92px"><button class="b red sm" data-act="delJob" data-ri="${ri}">✕</button></div>
          <div class="mute"><span data-ji="${ri}">${jobInfo(r)}</span>${r.fx?` · STA ${esc(r.sta1)}–${esc(r.sta2)} <button class="b ghost sm" data-act="full" data-ri="${ri}">เต็มช่วง</button>`:` · <a href="#" data-act="part" data-ri="${ri}">กำหนดช่วงย่อย</a>`}</div>
