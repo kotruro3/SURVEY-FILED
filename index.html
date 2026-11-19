@@ -1572,8 +1572,8 @@ function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',S
   legs.forEach((l,li)=>{const ph=l.a*D,s=Math.sin(ph),c=Math.cos(ph);if(Math.abs(s)<.05){if(isR)return;const hb=l.w/2,dx=c,dy=s,qx=-s,qy=c,E=(kk,u)=>Pm0(kk*hb*qx+u*dx,kk*hb*qy+u*dy);o.push(`<polygon points="${pstr([E(1,0),E(1,l.len),E(-1,l.len),E(-1,0)])}" fill="${PV}" stroke="none"/>`,ln(E(1,0),E(1,l.len)),ln(E(-1,0),E(-1,l.len)),ln(E(1,l.len),E(-1,l.len)));o.push(tx(Pm0(l.len*.6*dx,l.len*.6*dy),(c>0?'แขนต่อตรง':'แขนด้านหลัง')+' · กว้าง '+f1(l.w)+' ม.',10.5,'#333'));return}const ox=l.off||0,Pm=(x,y)=>Pm0(x+ox,y),wo=wf(ts+ox),hb=l.w/2,sg=s>0?1:-1,hw=s>0?wo[0]:wo[1],dx=c,dy=s,qx=-s,qy=c;
     const E=(kk,u)=>Pm(kk*hb*qx+u*dx,kk*hb*qy+u*dy);const ur=isR?Math.sqrt(Math.max(0,Ro*Ro-hb*hb)):0;
     o.push(`<polygon points="${pstr([E(1,0),E(1,l.len),E(-1,l.len),E(-1,0)])}" fill="${PV}" stroke="none"/>`);
-    [1,-1].forEach(kk=>{let u0=isR?ur:(sg*hw-kk*hb*c)/s;if(!(u0>0))u0=0;if(u0>=l.len)return;
-      if(!isR&&rk>.2&&!((bk>0||fk>0)&&-kk*sg>0)){const C=[kk*hb*qx+u0*dx,kk*hb*qy+u0*dy],ax=-kk*sg,Mp=Pm(C[0]+ax*rk,C[1]),Cp=Pm(C[0],C[1]),Bp=Pm(C[0]+rk*dx,C[1]+rk*dy);
+    [1,-1].forEach(kk=>{let u0=isR?ur:(sg*hw-kk*hb*c)/s;if(!(u0>0))u0=0;if(bk>0&&-kk*sg<0&&!isR&&!legs.some(q=>Math.abs(Math.abs(q.a)-180)<10))u0=0;if(u0>=l.len)return;
+      if(!isR&&rk>.2&&!((bk>0||fk>0)&&-kk*sg>0)&&!(bk>0&&-kk*sg<0&&!legs.some(q=>Math.abs(Math.abs(q.a)-180)<10))){const C=[kk*hb*qx+u0*dx,kk*hb*qy+u0*dy],ax=-kk*sg,Mp=Pm(C[0]+ax*rk,C[1]),Cp=Pm(C[0],C[1]),Bp=Pm(C[0]+rk*dx,C[1]+rk*dy);
         const q=`M${Mp[0].toFixed(1)},${Mp[1].toFixed(1)} Q${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} ${Bp[0].toFixed(1)},${Bp[1].toFixed(1)}`;
         o.push(`<path d="${q} L${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} Z" fill="${PV}" stroke="none"/>`,ln(Mp,Cp,PV,3.6),`<path d="${q}" fill="none" stroke="${ST}" stroke-width="1.6"/>`,ln(Bp,E(kk,l.len)))}
       else o.push(ln(E(kk,u0),E(kk,l.len)))});
