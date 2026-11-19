@@ -1593,7 +1593,7 @@ function pvSvg(c){const{g,P,k,s0,s1,sta0,ang,wf}=c;const o=[];(g.pv||[]).forEach
 function segIcon(t){const bg='<rect x="9" y="9" width="42" height="42" rx="4" transform="rotate(45 30 30)" fill="#f6c90e" stroke="#222" stroke-width="1.5"/>';
   const hd=(m,x)=>m?x:60-x;let body;
   if(t==='L')body='<line x1="30" y1="50" x2="30" y2="26" stroke="#111" stroke-width="5"/><polygon points="30,10 20,27 40,27" fill="#111"/>';
-  else if(t==='TL'||t==='TR'){const X=x=>t==='TL'?x:60-x;body=`<path d="M${X(41)} 51 V31 Q${X(41)} 24 ${X(34)} 24 H${X(27)}" fill="none" stroke="#111" stroke-width="5"/><polygon points="${X(13)},24 ${X(28)},16.5 ${X(28)},31.5" fill="#111"/>`}
+  else if(t==='TL'||t==='TR'){const X=x=>t==='TL'?x:60-x;body=`<path d="M${X(38)} 44 V31 Q${X(38)} 24 ${X(31)} 24 H${X(27)}" fill="none" stroke="#111" stroke-width="5"/><polygon points="${X(13)},24 ${X(28)},16.5 ${X(28)},31.5" fill="#111"/>`}
   else{const m=t==='CL',X=x=>m?x:60-x;body=`<path d="M${X(36)} 50 V38 Q${X(36)} 28 ${X(25)} 23" fill="none" stroke="#111" stroke-width="5"/><polygon points="${X(15)},15 ${X(30)},15 ${X(22)},30" fill="#111" transform="rotate(${m?-8:8} 30 22)"/>`}
   return `<svg viewBox="0 0 60 60" width="52" height="52">${bg}${body}</svg>`}
 function envSplit(g){const out=[];(g.env||[]).forEach(e=>{let gaps=[];(g.jx||[]).forEach(j=>{const ts=parseSta(j.sta);if(ts==null)return;
