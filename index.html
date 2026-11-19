@@ -1210,33 +1210,36 @@ function relabel(str,C){const{g,P,wf,sta0,s0,s1,k,area}=C,RAD=Math.PI/180;
   const near=(x,y)=>{let b=null,bd=1e18;for(const s of S){const d=(s.x-x)**2+(s.y-y)**2;if(d<bd){bd=d;b=s}}return b};
   const bad=(x,y)=>{const s=near(x,y);const dx=x-s.x,dy=y-s.y,al=dx*s.tx+dy*s.ty;if(Math.abs(al)>step*k*1.2+4)return false;const d=dx*s.nx+dy*s.ny;return d>=0?d<s.cl:-d<s.cr};
   const pts=b=>{const xs=[b.x0,(b.x0+b.x1)/2,b.x1],ys=[b.y0,(b.y0+b.y1)/2,b.y1],o=[];xs.forEach(x=>ys.forEach(y=>o.push([x,y])));return o};
-  const inRoad=b=>pts(b).some(p=>bad(p[0],p[1]));
+  const inRoad0=b=>pts(b).some(p=>bad(p[0],p[1]));let inRoad=b=>inRoad0(b)||polyHit(b);
   const placed=[];const hit=b=>placed.some(p=>b.x0<p.x1+1.5&&b.x1>p.x0-1.5&&b.y0<p.y1+1&&b.y1>p.y0-1);
   const inA=b=>b.x0>=area.x0+3&&b.x1<=area.x1-3&&b.y0>=area.y0+3&&b.y1<=area.y1-3;
+  const polys=[];(str.match(/<polygon points="[^"]*" fill="#a9b1ba"/g)||[]).forEach(m=>{const q=m.match(/points="([^"]*)"/)[1].trim().split(/\s+/).map(p=>p.split(',').map(Number));if(q.length>2)polys.push(q)});
+  const pip=(x,y,q)=>{let c=false;for(let i=0,j=q.length-1;i<q.length;j=i++){if(((q[i][1]>y)!==(q[j][1]>y))&&(x<(q[j][0]-q[i][0])*(y-q[i][1])/((q[j][1]-q[i][1])||1e-9)+q[i][0]))c=!c}return c};
+  const polyHit=b=>{if(!polys.length)return false;for(let i=0;i<=4;i++)for(let j=0;j<=4;j++){const x=b.x0+(b.x1-b.x0)*i/4,y=b.y0+(b.y1-b.y0)*j/4;if(polys.some(q=>pip(x,y,q)))return true}return false};
   const items=[];
   str=str.replace(/<text\b([^>]*)>([^<]*)<\/text>/g,(m,at,tx)=>{
     if(!/paint-order="stroke"/.test(at)||/fill="#c0392b"[^>]*font-size="13"|font-size="13"[^>]*fill="#c0392b"/.test(at)){const mm=at.match(/transform="translate\(([-\d.]+),([-\d.]+)\)/),xx=at.match(/\bx="([-\d.]+)"/),yy=at.match(/\by="([-\d.]+)"/);
       const fsz=+(at.match(/font-size="([\d.]+)"/)||[0,10])[1],w=tx.length*fsz*.55,ax=mm?+mm[1]:xx?+xx[1]:null,ay=mm?+mm[2]:yy?+yy[1]:null;if(ax!=null&&/fill="#c0392b"/.test(at)&&fsz===13)placed.push({x0:ax-w/2,x1:ax+w/2,y0:ay-fsz,y1:ay+4});return m}
-    if(/fill="#1f3a5f"/.test(at)){const xx=at.match(/\bx="([-\d.]+)"/),yy=at.match(/\by="([-\d.]+)"/),fsz=+(at.match(/font-size="([\d.]+)"/)||[0,10])[1],w=tx.length*fsz*.55;if(xx&&yy)placed.push({x0:+xx[1]-w/2,x1:+xx[1]+w/2,y0:+yy[1]-fsz,y1:+yy[1]+4});return m}
+    if(/fill="#1f3a5f"/.test(at)&&!/data-ld="1"/.test(at)){const xx=at.match(/\bx="([-\d.]+)"/),yy=at.match(/\by="([-\d.]+)"/),fsz=+(at.match(/font-size="([\d.]+)"/)||[0,10])[1],w=tx.length*fsz*.55;if(xx&&yy)placed.push({x0:+xx[1]-w/2,x1:+xx[1]+w/2,y0:+yy[1]-fsz,y1:+yy[1]+4});return m}
     const fsz=+(at.match(/font-size="([\d.]+)"/)||[0,10])[1],fw=/font-weight="(700|600)"/.test(at),W=Math.max(8,[...tx].length*fsz*(fw?.58:.52)),Hh=fsz+2;
     let ax,ay,rot=0,anc=(at.match(/text-anchor="(\w+)"/)||[0,'start'])[1];
     const mt=at.match(/transform="translate\(([-\d.]+),([-\d.]+)\)(?: rotate\(([-\d.]+)\))?(?: translate\(([-\d.]+),([-\d.]+)\))?"/);
     if(mt){ax=+mt[1];ay=+mt[2];rot=+(mt[3]||0);const dy=+(mt[5]||0),dx=+(mt[4]||0),a=rot*RAD;ax+=dx*Math.cos(a)-dy*Math.sin(a);ay+=dx*Math.sin(a)+dy*Math.cos(a)}
     else{const xx=at.match(/\bx="([-\d.]+)"/),yy=at.match(/\by="([-\d.]+)"/);if(!xx||!yy)return m;ax=+xx[1];ay=+yy[1]}
     if(!(ax>area.x0&&ax<area.x1&&ay>area.y0&&ay<area.y1))return m;
-    items.push({at,tx,fsz,fw,W,Hh,ax,ay,rot,anc,m,idx:items.length});return '\u0001'+(items.length-1)+'\u0001'});
+    items.push({at,tx,fsz,fw,W,Hh,ax,ay,rot,anc,m,idx:items.length,ld:/data-ld="1"/.test(at)});return '\u0001'+(items.length-1)+'\u0001'});
   // วางตามลำดับ: ป้ายที่อยู่นอกเขตทางและไม่ชนกันอยู่ที่เดิม
   const out=[];let alt=0;
   items.forEach(it=>{const{W,Hh,fsz}=it;
     let cx=it.ax,cy=it.ay;if(it.anc==='start')cx+=W/2;else if(it.anc==='end')cx-=W/2;cy-=Hh*.3;
     const a=it.rot*RAD,c=Math.abs(Math.cos(a)),s=Math.abs(Math.sin(a)),bw=W*c+Hh*s,bh=W*s+Hh*c,orig={x0:cx-bw/2,x1:cx+bw/2,y0:cy-bh/2,y1:cy+bh/2};
     let box=null,moved=false;
-    if(inA(orig)&&!hit(orig)&&!inRoad(orig)){box=orig;placed.push(orig);out[it.idx]=it.m;return}
+    if(!it.ld&&inA(orig)&&!hit(orig)&&!inRoad(orig)){box=orig;placed.push(orig);out[it.idx]=it.m;return}
     const sn=near(it.ax,it.ay);let d0=(it.ax-sn.x)*sn.nx+(it.ay-sn.y)*sn.ny;const pref=Math.abs(d0)<1?((alt++%2)?1:-1):(d0>=0?1:-1);
     const lbl={x:it.ax,y:it.ay};let best=null;
-    for(let ring=0;ring<14&&!best;ring++){for(const side of [pref,-pref]){const base=(side>0?sn.cl:sn.cr)+Hh*.7+ring*Hh*1.05;
+    for(const mo of [15,8,0]){if(best)break;for(let ring=0;ring<14&&!best;ring++){for(const side of [pref,-pref]){const base=(side>0?sn.cl:sn.cr)+mo*k+Hh*.7+ring*Hh*1.05;
         for(const sh of [0,1,-1,2,-2,3,-3]){const ex=sn.tx*sh*W*.55*(ring>1?1:.5),ey=sn.ty*sh*W*.55*(ring>1?1:.5),px=sn.x+sn.nx*side*base+ex+(Math.abs(sn.nx)>.5?side*sn.nx*W/2*Math.abs(sn.nx):0),py=sn.y+sn.ny*side*base+ey;
-          const b={x0:px-W/2,x1:px+W/2,y0:py-Hh/2,y1:py+Hh/2};if(inA(b)&&!hit(b)&&!inRoad(b)){best={b,cx:px,cy:py};break}}if(best)break}}
+          const b={x0:px-W/2,x1:px+W/2,y0:py-Hh/2,y1:py+Hh/2};if(inA(b)&&!hit(b)&&!inRoad(b)){best={b,cx:px,cy:py};break}}if(best)break}}}
     if(!best){placed.push(orig);out[it.idx]=it.m;return}
     placed.push(best.b);
     let fill=(it.at.match(/fill="([^"]+)"/)||[0,'#222'])[1];if(/^#f{3}$|^#ffffff$/i.test(fill))fill='#222';
@@ -1339,9 +1342,9 @@ function sheetSvg(M,idx){
   const ml=(s,txt,right)=>{const w=wf(s+sta0),a=P(s,w[0]+10),b=P(s,-w[1]-10);o.push(`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="#111" stroke-width="2.2" stroke-dasharray="3 6"/><text x="${a[0].toFixed(1)}" y="${(a[1]-8).toFixed(1)}" font-size="12" font-weight="700" fill="#111" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${txt}</text>`)};
   if(idx>0)ml(s0,`เส้นต่อแผ่นที่ ${idx} (STA ${fmtSta(s0+sta0)})`);if(idx<chunks.length-1)ml(s1,`เส้นต่อแผ่นที่ ${idx+2} (STA ${fmtSta(s1+sta0)})`);
   // start / end labels
-  if(idx===0){const p=P(0,0);o.push(`<text x="${p[0].toFixed(1)}" y="${(p[1]-16).toFixed(1)}" font-size="12" font-weight="700" fill="#1f3a5f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${g.sv?'ช่วงนำ (ไม่สำรวจ)':'จุดเริ่มต้น'}</text>`)}
+  if(idx===0){const p=P(0,0);o.push(`<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" font-size="12" font-weight="700" fill="#1f3a5f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3" data-ld="1">${g.sv?'ช่วงนำ (ไม่สำรวจ)':'จุดเริ่มต้น'}</text>`)}
   {const sv=parseSta(g.sv);if(sv!=null){const t=sv-sta0;if(t>=s0-1e-6&&t<=s1+1e-6){const w=wf(sv),a1=P(t,w[0]+5),b1=P(t,-(w[1]+5)),m1=P(t,w[0]+8);o.push(`<polyline points="${pstr([a1,b1])}" stroke="#d32f2f" stroke-width="2" stroke-dasharray="6 3" fill="none"/><text x="${m1[0].toFixed(1)}" y="${m1[1].toFixed(1)}" font-size="12" font-weight="700" fill="#d32f2f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">จุดเริ่มสำรวจ STA ${fmtSta(sv)} (ขอบเขตทางแยก)</text>`)}}}
-  if(idx===chunks.length-1){const p=P(M.total,0);o.push(`<text x="${p[0].toFixed(1)}" y="${(p[1]-16).toFixed(1)}" font-size="12" font-weight="700" fill="#1f3a5f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">จุดสิ้นสุด</text>`)}
+  if(idx===chunks.length-1){const p=P(M.total,0);o.push(`<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" font-size="12" font-weight="700" fill="#1f3a5f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3" data-ld="1">จุดสิ้นสุด</text>`)}
   {const body=relabel(o.splice(gi0).join(''),{g,P,wf,sta0,s0,s1,k,area});o.push(body)}
   o.push('</g>');
   // north arrow
@@ -1558,10 +1561,11 @@ function jxExtent(j){const L=Math.max(0,...(j.legs||[]).map(l=>gnum(l.len,0)+gnu
 function jxArea(j){let a=(j.legs||[]).reduce((s,l)=>s+gnum(l.w,0)*gnum(l.len,0),0);if(j.type==='R'){const Ro=gnum(j.Ro,15),Ri=gnum(j.Ri,8);a+=Math.PI*(Ro*Ro-Ri*Ri)}return Math.round(a*10)/10}
 function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',ST='#2b2f36',D=Math.PI/180;
  (g.jx||[]).forEach((j,ji)=>{const ts=parseSta(j.sta);if(ts==null)return;const t=ts-sta0,ext=jxExtent(j);if(t<s0-ext-5||t>s1+ext+5)return;
-  const O0=P(t,0),F1=j.pre?P(t,0):P(t+.5,0),F0=P(t-.5,0),Lf=P(t,1);let fx=F1[0]-F0[0],fy=F1[1]-F0[1];const fl=Math.hypot(fx,fy)||1;fx/=fl;fy/=fl;let lx=Lf[0]-O0[0],ly=Lf[1]-O0[1];const ll=Math.hypot(lx,ly)||1;lx/=ll;ly/=ll;const bk=Math.max(0,gnum(j.bk,0)),O=bk>0?[O0[0]-fx*bk*k,O0[1]-fy*bk*k]:O0;
+  const O0=P(t,0),F1=j.pre?P(t,0):P(t+.5,0),F0=P(t-.5,0),Lf=P(t,1);let fx=F1[0]-F0[0],fy=F1[1]-F0[1];const fl=Math.hypot(fx,fy)||1;fx/=fl;fy/=fl;let lx=Lf[0]-O0[0],ly=Lf[1]-O0[1];const ll=Math.hypot(lx,ly)||1;lx/=ll;ly/=ll;const bk=Math.max(0,gnum(j.bk,0)),fk=Math.max(0,gnum(j.fk,0)),O=bk>0?[O0[0]-fx*bk*k,O0[1]-fy*bk*k]:(fk>0?[O0[0]+fx*fk*k,O0[1]+fy*fk*k]:O0);
   const Pm0=(x,y)=>[O[0]+(x*fx+y*lx)*k,O[1]+(x*fy+y*ly)*k],Pm=Pm0,w=wf(ts),wl=w[0],wr=w[1],det=fx*ly-fy*lx,sw=det<0?0:1;
   const ln=(a,b,st,sw2)=>`<polyline points="${pstr([a,b])}" fill="none" stroke="${st||ST}" stroke-width="${sw2||1.6}"/>`;
   if(bk>0&&j.type!=='R'){o.push(`<polygon points="${pstr([Pm0(0,wl),Pm0(bk,wl),Pm0(bk,-wr),Pm0(0,-wr)])}" fill="${PV}" stroke="none"/>`,ln(Pm0(0,wl),Pm0(bk,wl)),ln(Pm0(0,-wr),Pm0(bk,-wr)))}
+  if(fk>0&&j.type!=='R'){o.push(`<polygon points="${pstr([Pm0(-fk,wl),Pm0(fk,wl),Pm0(fk,-wr),Pm0(-fk,-wr)])}" fill="${PV}" stroke="none"/>`,ln(Pm0(-fk,wl),Pm0(fk,wl)),ln(Pm0(-fk,-wr),Pm0(fk,-wr)),ln(Pm0(fk,wl),Pm0(fk,-wr)))}
   const legs=(j.legs||[]).map(l=>({a:gnum(l.a,0),w:Math.max(.5,gnum(l.w,5)),len:Math.max(1,gnum(l.len,30)),off:gnum(l.off,0)}));
   const isR=j.type==='R',Ro=Math.max(3,gnum(j.Ro,15)),Ri=Math.max(0,Math.min(Ro-1.5,gnum(j.Ri,8))),rk=Math.max(0,gnum(j.rk,6));
   const tx=(p,txt,sz,col)=>`<text x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" font-size="${sz||11}" font-weight="700" fill="${col||'#222'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${txt}</text>`;
@@ -1569,11 +1573,11 @@ function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',S
     const E=(kk,u)=>Pm(kk*hb*qx+u*dx,kk*hb*qy+u*dy);const ur=isR?Math.sqrt(Math.max(0,Ro*Ro-hb*hb)):0;
     o.push(`<polygon points="${pstr([E(1,0),E(1,l.len),E(-1,l.len),E(-1,0)])}" fill="${PV}" stroke="none"/>`);
     [1,-1].forEach(kk=>{let u0=isR?ur:(sg*hw-kk*hb*c)/s;if(!(u0>0))u0=0;if(u0>=l.len)return;
-      if(!isR&&rk>.2&&!(bk>0&&-kk*sg>0)){const C=[kk*hb*qx+u0*dx,kk*hb*qy+u0*dy],ax=-kk*sg,Mp=Pm(C[0]+ax*rk,C[1]),Cp=Pm(C[0],C[1]),Bp=Pm(C[0]+rk*dx,C[1]+rk*dy);
+      if(!isR&&rk>.2&&!((bk>0||fk>0)&&-kk*sg>0)){const C=[kk*hb*qx+u0*dx,kk*hb*qy+u0*dy],ax=-kk*sg,Mp=Pm(C[0]+ax*rk,C[1]),Cp=Pm(C[0],C[1]),Bp=Pm(C[0]+rk*dx,C[1]+rk*dy);
         const q=`M${Mp[0].toFixed(1)},${Mp[1].toFixed(1)} Q${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} ${Bp[0].toFixed(1)},${Bp[1].toFixed(1)}`;
         o.push(`<path d="${q} L${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} Z" fill="${PV}" stroke="none"/>`,ln(Mp,Cp,PV,3.6),`<path d="${q}" fill="none" stroke="${ST}" stroke-width="1.6"/>`,ln(Bp,E(kk,l.len)))}
       else o.push(ln(E(kk,u0),E(kk,l.len)))});
-    const mid=Pm(l.len*.6*dx,l.len*.6*dy);o.push(tx(mid,(li===0&&!isR?(JX_SHORT[j.type]||'ทางแยก')+(bk>0?' (กลางแยกก่อน STA '+fmtSta(ts)+' '+f1(bk)+' ม.)':' STA '+fmtSta(ts))+' · ':'')+'กว้าง '+f1(l.w)+' ม.',10.5,'#333'))});
+    const mid=Pm(l.len*.6*dx,l.len*.6*dy);o.push(tx(mid,(li===0&&!isR?(JX_SHORT[j.type]||'ทางแยก')+(bk>0?' (กลางแยกก่อน STA '+fmtSta(ts)+' '+f1(bk)+' ม.)':fk>0?' (กลางแยกหลัง STA '+fmtSta(ts)+' '+f1(fk)+' ม.)':' STA '+fmtSta(ts))+' · ':'')+'กว้าง '+f1(l.w)+' ม.',10.5,'#333'))});
   if(isR){const mw=wl+wr;const all=[{a:0,w:mw},{a:180,w:mw}].concat(legs.map(l=>({a:((l.a%360)+360)%360,w:l.w}))).map(l=>({a:l.a,d:Math.asin(Math.min(1,(l.w/2)/Ro))/D})).sort((p,q)=>p.a-q.a);
     const cp=Pm(0,0);o.push(`<circle cx="${cp[0].toFixed(1)}" cy="${cp[1].toFixed(1)}" r="${(Ro*k).toFixed(1)}" fill="${PV}" stroke="none"/>`);
     all.forEach((l,i)=>{const n=all[(i+1)%all.length];const a0=l.a+l.d,a1=n.a-n.d+(i===all.length-1?360:0);if(a1-a0<=.5)return;
@@ -1767,7 +1771,7 @@ function compilePL(g){
    pl.forEach(p=>{if(!p.tj||p.t==='L'||p.turn)return;const ty=p.tj==='X'?'X':(p.t==='CR'?'TR':'TL');let x=g.jx.find(q=>q.src===p.id);
      if(!x){x=newJx(ty);x.src=p.id;x.at=ty;g.jx.push(x)}else if(x.at&&x.type===x.at&&x.at!==ty){x.type=ty;x.legs=jxLegDef(ty);x.at=ty}
      x.sta=fmtSta(p._a)})}
-  g.env=cutEnv(g.env,jxCuts(g));g._end=acc}
+  (g.jx||[]).forEach(j=>{if(j.fk)j.sta=fmtSta(acc)});g.env=cutEnv(g.env,jxCuts(g));g._end=acc}
 const WZ_STEPS=[['1','① ผังช่วง (STA)'],['s','② สำรวจสภาพเดิม'],['p','③ ระดับ PROFILE'],['3','④ รูปตัด SECTION (สร้างแผ่น)']];
 function plMarks(g,p){const a=p._a,b=p._b;if(a==null||b==null)return'';const last=g.pl[g.pl.length-1]===p;const inR=s=>s!=null&&s>=a-1e-6&&(last?s<=b+1e-6:s<b-1e-9);
   const sm=(svg,w)=>svg.replace(/width="\d+" height="\d+"/,`width="${w}" height="${w}"`);
@@ -1806,8 +1810,7 @@ function caSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c,o=[];
   else{const d=a.dir==='B'?[-tb[0],-tb[1]]:ta,n=NL(a.dir==='B'?tb:ta);A=[C[0]+d[0]*L1*k,C[1]+d[1]*L1*k];B=[C[0]+sg*n[0]*L2*k,C[1]+sg*n[1]*L2*k]}
   o.push(`<polygon points="${pstr([C,A,B])}" fill="#f2b84b" fill-opacity=".55" stroke="#8a5a00" stroke-width="1.2" stroke-dasharray="4 2"/>`);
   const cx=(C[0]+A[0]+B[0])/3,cy=(C[1]+A[1]+B[1])/3,tx=(x,y,txt,sz,col)=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${sz}" font-weight="700" fill="${col||'#5a3a00'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6">${txt}</text>`;
-  o.push(tx(cx,cy,esc(a.lbl||'A'),12),tx(cx,cy+11,f1(caArea(a))+' ตร.ม.',8.5));
-  o.push(tx((C[0]+A[0])/2,(C[1]+A[1])/2+(sg>0?-3:10),'L1 '+f1(L1),8,'#333'),tx((C[0]+B[0])/2,(C[1]+B[1])/2,'L2 '+f1(L2),8,'#333'))});
+  o.push(`<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" font-size="11" font-weight="700" fill="#5a3a00" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="2.6" data-ld="1">${esc(a.lbl||'A')} · ${f1(caArea(a))} ตร.ม. (L1 ${f1(L1)} × L2 ${f1(L2)})</text>`)});
  return o.join('')}
 function caCards(g){g.ca=g.ca||[];const tot=caTotal(g);
  const h=[`<div class="gsec"><b>📐 พื้นที่มุม (A1, A2, A3 …) ตามจุด STA ที่โค้ง / เลี้ยว / ปากทางแยก</b> <span class="mute">พื้นที่สามเหลี่ยม = ½ × L1 × L2 · L1 วัดตามขอบทางหลัก · L2 วัดตามขอบถนนที่ตัด/ถนนหลังเลี้ยว · แปลนวาดสามเหลี่ยมพร้อมชื่อและพื้นที่ให้ · พื้นที่ถูกส่งไป MAKE JOB เป็นแถวแยก (กว้างเทียบเท่า = L2/2 × ยาว = L1)</span>`];
@@ -1819,6 +1822,15 @@ function caCards(g){g.ca=g.ca||[];const tot=caTotal(g);
   ${f('l1','L1 ม. (ตามทางหลัก)','type="number" step="any" inputmode="decimal"')}${f('l2','L2 ม. (ตามถนนที่ตัด)','type="number" step="any" inputmode="decimal"')}</div></div>`)});
  h.push(`<div class="bar"><button class="b ghost" data-act="addCa">＋ เพิ่มพื้นที่มุม</button><button class="b ghost" data-act="autoCa">⚡ สร้างที่จุดเลี้ยวทุกจุดให้อัตโนมัติ</button><span class="mute" id="caTot">${g.ca.length?'รวม '+g.ca.length+' มุม · '+tot+' ตร.ม.':''}</span></div></div>`);
  return h.join('')}
+
+/* ===== จุดสิ้นสุดที่ขอบทางแยก / จุดตัด (v75) ===== */
+function enbState(g){g.enb=Object.assign({t:'B',w:5,len:40,sta:''},g.enb||{});return g.enb}
+function enbUI(g){const s=enbState(g),has=(g.jx||[]).some(j=>j.fk);
+ const num=(k,lab,ph,ty)=>`<div><label>${lab}</label><input ${ty?'':'type="number" step="any" inputmode="decimal"'} data-enb="${k}" value="${esc(s[k])}" placeholder="${ph||''}"></div>`;
+ return `<div class="gsec"><b>🏁 กำหนดจุดสิ้นสุดโครงการที่ขอบทางแยก / จุดตัด</b> <span class="mute">ปลายโครงการจะอยู่ที่ <b>ขอบใกล้</b> ของถนนที่ตัด (ก่อนถึงกลางแยกครึ่งหนึ่งของความกว้างถนนที่ตัด) แปลนวาดถนนที่ตัดต่อจากปลายทางให้</span>
+ <div class="bar" style="gap:8px;flex-wrap:wrap;margin:6px 0">${[['B','⊤ ถนนตัดสองข้าง (ซ้าย+ขวา)'],['L','◁ ถนนตัดเฉพาะซ้าย'],['R','▷ ถนนตัดเฉพาะขวา']].map(([k,n])=>`<button class="b ${s.t===k?'':'ghost'}" data-act="enbT" data-v="${k}">${n}</button>`).join('')}</div>
+ <div class="grid">${num('sta','STA สิ้นสุด (เว้นว่าง = ปลายผังช่วงปัจจุบัน)','เช่น 0+250',1)}${num('w','ความกว้างถนนที่ตัด (ม.)','5')}${num('len','ความยาวถนนที่ตัดที่แสดงในแปลน (ม.)','40')}</div>
+ <div class="bar"><button class="b amber" data-act="enbApply">✔ ตั้งจุดสิ้นสุดที่ขอบทางแยก</button>${has?'<button class="b ghost" data-act="enbClear">↶ ยกเลิกจุดสิ้นสุดที่ทางแยก</button>':''}</div></div>`}
 function jxCards(g){const h=[`<div class="gsec"><b>🔀 ทางร่วม · ทางแยก · วงเวียน</b><div class="mute">เพิ่มทางแยกบนแนวทางหลักที่ STA ที่ต้องการ — แปลนวาดแขนงและมุมโค้งให้ทันที (มุม + = ไปทางซ้าย, − = ไปทางขวา วัดจากทิศทางหลักด้านหน้า · "เยื้อง" = ระยะเลื่อนแขนงไปตาม STA ของทางหลัก)</div>`];
   (g.jx||[]).forEach((j,i)=>{const isR=j.type==='R';
     h.push(`<div class="plseg jx"><div class="plh"><b>${JX_T[j.type]} #${i+1}</b><span class="mute jxarea">พื้นที่ผิวทางโดยประมาณ ${jxArea(j)} ตร.ม.</span><span class="sp"></span><button class="b red sm" data-act="delJx" data-i="${i}">✕</button></div>
@@ -1893,7 +1905,7 @@ function stbAct(g,act,d){const s=stbState(g);
     const sh=STB_SHAPES.find(x=>x[0]===s.shape)||STB_SHAPES[0],jt=arms.length===4?'X':(s.shape[0]==='Y'?'Y':'T');
     const j=newJx(jt);j.bk=el;j.sta=fmtSta(parseSta(g.sta0)||0);j.legs=[];
     arms.forEach((B,i)=>{if(i===s.exit)return;j.legs.push({a:Math.round(stbNrm(hx-B)*10)/10,w:Math.max(1,gnum(s.crossW,5)),len:ll,off:0})});
-    g.jx=[j];g.sv='';toast('✔ สร้างจุดเริ่มต้นที่ทางแยก ('+sh[1]+') STA 0+000 ที่ขอบทางแยกฝั่งขาออก (หลังกลางแยก '+el+' ม.) เริ่มแขน '+(s.entry+1)+' → '+stbTurnTxt(t.d))}}
+    g.jx=[j].concat((g.jx||[]).filter(x=>x.fk));g.sv='';toast('✔ สร้างจุดเริ่มต้นที่ทางแยก ('+sh[1]+') STA 0+000 ที่ขอบทางแยกฝั่งขาออก (หลังกลางแยก '+el+' ม.) เริ่มแขน '+(s.entry+1)+' → '+stbTurnTxt(t.d))}}
 
 function geoUI(){
   const g=G();if(String(g.step)==='2')g.step='3';const step=String(g.step||'1');
@@ -1922,7 +1934,7 @@ function geoUI(){
     if(!pl.length)h.push(`<div class="mute" style="padding:10px">ยังไม่มีช่วง — กดปุ่มด้านล่างเพื่อเริ่มบันทึกช่วงแรกของโครงการ</div>`);
     h.push(`<datalist id="dlPv">${PV_OPT.map(v=>`<option value="${v}">`).join('')}</datalist><datalist id="dlSta">${pl.map(p=>`<option value="${fmtSta(p._a)}">`).join('')}${pl.length?`<option value="${fmtSta(pl[pl.length-1]._b)}">`:''}</datalist>`);
     const tot=pl.reduce((a,p)=>a+(p._b-p._a||0),0);
-    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["TL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"],["TR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(caCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
+    h.push(`<div style="font-weight:700;margin-top:8px">เพิ่มช่วงถัดไป — เลือกลักษณะช่วง</div><div class="jxpick">${[["L","ทางตรง","addL","เพิ่มทางตรง"],["CL","โค้งซ้าย","addCL","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["CR","โค้งขวา","addCR","โค้งต่อเนื่อง กรอกมุม+รัศมีเอง"],["TL","เลี้ยวซ้าย","addTL","เลี้ยวซ้ายที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"],["TR","เลี้ยวขวา","addTR","เลี้ยวขวาที่จุดตัด/สามแยก (หักมุมฉาก 90° ไม่มีรัศมีโค้ง · แก้มุมได้ · ใส่รัศมี R ถ้าต้องการโค้งมน)"]].map(([t,n,a,tt])=>`<button class="b ghost" data-act="${a}" title="${tt}">${segIcon(t)}<span>${n}</span></button>`).join("")}</div><div class="bar"><button class="b amber sm" id="trBtn">📍 วาดแนวจากแผนที่</button><span class="mute" id="plTot">${plTot(g)}</span></div>`);h.push(jxCards(g));h.push(enbUI(g));h.push(caCards(g));h.push(`<div class="bar"><button class="b" data-act="step" data-v="s">ไปขั้นที่ ② สำรวจสภาพเดิม →</button></div>`);
   }else if(step==='s'){h.push(surveyUI(g))}else if(step==='p'){h.push(profileUI(g));setTimeout(profPrev,30)}else if(step==='2'){
     h.push(`<div class="mute" style="margin:6px 0">กำหนดรายการงาน (JOB LIST) ตามแต่ละช่วง — แปลนจะอัปเดตภาพตามรายการงานที่เลือก (ช่วง STA ตามผังที่บันทึกไว้ในขั้นที่ ①)</div>`);
     if(!pl.length)h.push(`<div class="gsec">ยังไม่มีช่วงในผัง — กลับไปบันทึกผังในขั้นที่ ① ก่อน<div class="bar"><button class="b" data-act="step" data-v="1">← ไปขั้นที่ ①</button></div></div>`);
@@ -1952,7 +1964,7 @@ function geoUI(){
     if(el.dataset.sl!==undefined&&el.tagName!=='SELECT'){const l=g.secs[+el.dataset.sl].layers[+el.dataset.j];if(!l)return;l[el.dataset.f]=el.dataset.f==='code'?el.value.trim().toUpperCase():el.value;geoRedraw();if(el.dataset.f==='code'){const sp=document.querySelector('[data-sli="'+el.dataset.sl+':'+el.dataset.j+'"]');const it=BYCODE[l.code];if(sp)sp.innerHTML=it?'<span class="jname">'+esc(it.code)+' · '+esc(it.name)+'</span>':(l.code?'<span style="color:#b3261e">ไม่พบรหัสงานนี้</span>':'ยังไม่ผูกรหัสรายการงาน')}return}
     if(el.dataset.pl!==undefined){const p=g.pl[+el.dataset.pl];if(!p)return;if(el.dataset.env){p['e'+el.dataset.env]=p['e'+el.dataset.env]||{t:'',w:'',n:''};p['e'+el.dataset.env][el.dataset.f]=el.value}else p[el.dataset.f]=el.value;geoRedraw();plLabels()}
     else if(el.dataset.rw!==undefined){const r=S.rows[+el.dataset.rw];if(!r)return;const f=el.dataset.f;r[f]=f==='code'?el.value.trim().toUpperCase():el.value;if(f==='sta1'||f==='sta2')r.fx=1;geoRedraw();clearTimeout(window._rwT);window._rwT=setTimeout(()=>{renderRows();refresh()},300);plLabels()}});
-  gc.addEventListener('change',e=>{if(window._ui)return;const el=e.target;if(el.dataset&&el.dataset.stb!==undefined){const g=G(),s=stbState(g);s[el.dataset.stb]=el.value===''?'':+el.value;save();geoUI();renderPlan()}});
+  gc.addEventListener('change',e=>{if(window._ui)return;const el=e.target;if(el.dataset&&el.dataset.enb!==undefined){const g=G(),s=enbState(g);s[el.dataset.enb]=el.dataset.enb==='sta'?el.value.trim():(el.value===''?'':+el.value);save();return}if(el.dataset&&el.dataset.stb!==undefined){const g=G(),s=stbState(g);s[el.dataset.stb]=el.value===''?'':+el.value;save();geoUI();renderPlan()}});
   gc.addEventListener('change',e=>{if(window._ui)return;const el=e.target;
     if(el.dataset.ob!==undefined||el.dataset.pc!==undefined){const g=G(),o=el.dataset.ob!==undefined?g.ob[+el.dataset.ob]:g.pc[+el.dataset.pc];if(o){o[el.dataset.f]=el.value;save();renderPlan()}return}
     if(el.dataset.ca!==undefined){const g=G(),c=(g.ca||[])[+el.dataset.ca];if(c){c[el.dataset.f]=el.value;save();if(el.tagName==='SELECT')geoUI();renderPlan()}return}
@@ -1975,6 +1987,13 @@ function geoUI(){
     else if(act==='part'){S.rows[ri].fx=1}
     else if(act==='full'){S.rows[ri].fx=0}
     else if(act==='addSecQ'){const v=parseFloat($('secQ').value);const n=g.secs.length;g.secs.push({sta:fmtSta(v),lbl:String.fromCharCode(65+n),a:'',b:'',wl:'',wr:'',slope:3,note:'',layers:n&&g.secs[0].layers?JSON.parse(JSON.stringify(g.secs[0].layers)):STD_LAYERS_NEW()})}
+    else if(act==='enbT'){enbState(g).t=d.v}
+    else if(act==='enbClear'){g.jx=(g.jx||[]).filter(x=>!x.fk);toast('ยกเลิกจุดสิ้นสุดที่ทางแยกแล้ว')}
+    else if(act==='enbApply'){const s=enbState(g);compilePL(g);const body=(g.pl||[]).filter(p=>!p.lead);if(!body.length||g._end==null){toast('ยังไม่มีผังช่วง — สร้างผังช่วงก่อนกำหนดจุดสิ้นสุด',true);return}
+      const want=parseSta(s.sta);if(want!=null&&want>(parseSta(g.sta0)||0)){const dl=want-g._end,last=body[body.length-1];if(Math.abs(dl)>1e-6){if(last.t==='L'&&gnum(last.len,0)+dl>0)last.len=Math.round((gnum(last.len,0)+dl)*100)/100;else if(dl>0){const ns=newSeg('L');ns.len=Math.round(dl*100)/100;g.pl.push(ns)}else{toast('STA สิ้นสุดน้อยกว่าปลายช่วงสุดท้ายที่เป็นทางโค้ง — ปรับความยาวช่วงในรายการด้านบนก่อน',true);return}}}
+      const w=Math.max(1,gnum(s.w,5)),ll=Math.max(5,gnum(s.len,40));g.jx=(g.jx||[]).filter(x=>!x.fk);
+      const j=newJx(s.t==='B'?'X':'T');j.fk=w/2;j.legs=[];if(s.t!=='R')j.legs.push({a:90,w,len:ll,off:0});if(s.t!=='L')j.legs.push({a:-90,w,len:ll,off:0});g.jx.push(j);compilePL(g);
+      toast('✔ จุดสิ้นสุดโครงการ STA '+fmtSta(g._end)+' อยู่ที่ขอบทางแยก (กลางแยกอยู่ถัดไป '+(w/2)+' ม.)')}
     else if(act==='addCa'){g.ca=g.ca||[];g.ca.push({id:uid(),lbl:caNext(g),sta:'',kind:'J',side:'L',dir:'F',l1:'3',l2:'3'})}
     else if(act==='delCa'){g.ca.splice(i,1)}
     else if(act==='autoCa'){compilePL(g);g.ca=g.ca||[];let n=0;(g.pl||[]).forEach(p=>{if(p.t==='L'||p.lead||!(p.turn||gnum(p.ang,0)>0))return;const sta=fmtSta(p._a);if(g.ca.some(c=>c.kind==='T'&&c.sta===sta))return;g.ca.push({id:uid(),lbl:caNext(g),sta,kind:'T',side:'L',dir:'F',l1:'3',l2:'3'});n++});toast(n?'✔ เพิ่มพื้นที่มุม '+n+' จุด (ค่าเริ่มต้น L1=L2=3 ม. — แก้ตามที่วัดจริง)':'ไม่พบจุดเลี้ยวที่ยังไม่มีพื้นที่มุม')}
