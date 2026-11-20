@@ -1562,7 +1562,7 @@ function geoSet(el,val){const g=G();
   const a=g[el.dataset.arr][+el.dataset.i];if(el.dataset.sub){a[el.dataset.sub][+el.dataset.j][el.dataset.f]=val}else a[el.dataset.f]=val}
 // ===== v18: ทางแยก / วงเวียน / ผิวทางเดิม-ใหม่ =====
 const JX_T={X:'สี่แยก (ทางเอกตัดกัน)',YF:'ทางเอกแยกเป็นสอง รูปตัววาย',TL:'ทางโทแยกทางเอก ทางซ้าย (ตัว T)',TR:'ทางโทแยกทางเอก ทางขวา (ตัว T)',SL:'ทางโทแยกเยื้องกัน เริ่มซ้าย',SR:'ทางโทแยกเยื้องกัน เริ่มขวา',ML:'ทางโทเชื่อมทางเอกจากซ้าย',MR:'ทางโทเชื่อมทางเอกจากขวา',YL:'ทางแยกทางเอก ซ้ายรูปตัววาย',YR:'ทางแยกทางเอก ขวารูปตัววาย',R:'วงเวียน',T:'ทางแยกตัว T (เดิม)',Y:'ทางแยกตัว Y (เดิม)'};
-const JX_PICK=['X','YF','TL','TR','SL','SR','ML','MR','YL','YR'];
+const JX_PICK=['X','YF','TL','TR','ML','MR','YL','YR'];
 const JX_SHORT={X:'สี่แยก',YF:'ตัววาย',TL:'ตัว T ซ้าย',TR:'ตัว T ขวา',SL:'เยื้อง เริ่มซ้าย',SR:'เยื้อง เริ่มขวา',ML:'เชื่อมจากซ้าย',MR:'เชื่อมจากขวา',YL:'Y ซ้าย',YR:'Y ขวา',R:'วงเวียน',T:'ตัว T',Y:'ตัว Y'};
 function jxIcon(t){const legs=t==='R'?[]:jxLegDef(t),thr=t!=='YF';let s=`<svg viewBox="0 0 60 60" width="52" height="52"><rect x="9" y="9" width="42" height="42" rx="4" transform="rotate(45 30 30)" fill="#f6c90e" stroke="#222" stroke-width="1.5"/>`;
   if(t==='R')return s+`<circle cx="30" cy="30" r="9" fill="none" stroke="#111" stroke-width="5"/><line x1="30" y1="12" x2="30" y2="21" stroke="#111" stroke-width="5"/><line x1="30" y1="39" x2="30" y2="48" stroke="#111" stroke-width="5"/><line x1="12" y1="30" x2="21" y2="30" stroke="#111" stroke-width="5"/></svg>`;
@@ -1598,13 +1598,13 @@ function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',S
         o.push(`<path d="${q} L${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} Z" fill="${PV}" stroke="none"/>`,ln(Mp,Cp,PV,3.6),`<path d="${q}" fill="none" stroke="${ST}" stroke-width="1.6"/>`,ln(Bp,E(kk,l.len)))}
       else o.push(ln(E(kk,u0),E(kk,l.len)))});
     const mid=Pm(l.len*.6*dx,l.len*.6*dy);o.push(tx(mid,(li===0&&!isR?(JX_SHORT[j.type]||'ทางแยก')+(bk>0?' (กลางแยกก่อน STA '+fmtSta(ts)+' '+f1(bk)+' ม.)':fk>0?' (กลางแยกหลัง STA '+fmtSta(ts)+' '+f1(fk)+' ม.)':' STA '+fmtSta(ts))+' · ':'')+'กว้าง '+f1(l.w)+' ม.',10.5,'#333'))});
-  if(isR){const mw=wl+wr;const all=[{a:0,w:mw},{a:180,w:mw}].concat(legs.map(l=>({a:((l.a%360)+360)%360,w:l.w}))).map(l=>({a:l.a,d:Math.asin(Math.min(1,(l.w/2)/Ro))/D})).sort((p,q)=>p.a-q.a);
+  if(isR){const mw=wl+wr;const all=[{a:0,w:mw},{a:180,w:mw}].filter(q=>!(fk>0&&q.a===0)&&!(bk>0&&q.a===180)).concat(legs.map(l=>({a:((l.a%360)+360)%360,w:l.w}))).map(l=>({a:l.a,d:Math.asin(Math.min(1,(l.w/2)/Ro))/D})).sort((p,q)=>p.a-q.a);
     const cp=Pm(0,0);o.push(`<circle cx="${cp[0].toFixed(1)}" cy="${cp[1].toFixed(1)}" r="${(Ro*k).toFixed(1)}" fill="${PV}" stroke="none"/>`);
     all.forEach((l,i)=>{const n=all[(i+1)%all.length];const a0=l.a+l.d,a1=n.a-n.d+(i===all.length-1?360:0);if(a1-a0<=.5)return;
       const p0=Pm(Ro*Math.cos(a0*D),Ro*Math.sin(a0*D)),p1=Pm(Ro*Math.cos(a1*D),Ro*Math.sin(a1*D));
       o.push(`<path d="M${p0[0].toFixed(1)},${p0[1].toFixed(1)} A${(Ro*k).toFixed(1)},${(Ro*k).toFixed(1)} 0 ${a1-a0>180?1:0} ${sw} ${p1[0].toFixed(1)},${p1[1].toFixed(1)}" fill="none" stroke="${ST}" stroke-width="1.6"/>`)});
     if(Ri>0)o.push(`<circle cx="${cp[0].toFixed(1)}" cy="${cp[1].toFixed(1)}" r="${(Ri*k).toFixed(1)}" fill="#bcd9a4" stroke="#4d7a2f" stroke-width="1.5"/>`);
-    o.push(tx([cp[0],cp[1]-3],'วงเวียน '+(2+legs.length)+' แยก',11,'#2f5a1b'),tx([cp[0],cp[1]+11],'R '+f1(Ro)+' · เกาะกลาง R '+f1(Ri)+' ม.',10,'#2f5a1b'),tx([cp[0],cp[1]+25],'STA '+fmtSta(ts),10,'#2f5a1b'))}
+    o.push(tx([cp[0],cp[1]-3],'วงเวียน '+(2+legs.length)+' แยก',11,'#2f5a1b'),tx([cp[0],cp[1]+11],'R '+f1(Ro)+' · เกาะกลาง R '+f1(Ri)+' ม.',10,'#2f5a1b'),tx([cp[0],cp[1]+25],(bk>0||fk>0)?'กลางวงเวียน STA '+fmtSta(ts+(fk>0?fk:0)-(bk>0?bk:0)):'STA '+fmtSta(ts),10,'#2f5a1b'))}
  });return o.join('')}
 function pvSvg(c){const{g,P,k,s0,s1,sta0,ang,wf}=c;const o=[];(g.pv||[]).forEach(z=>{const A=Math.max(z.a-sta0,s0),B=Math.min(z.b-sta0,s1);if((B-A)*k<90)return;const m=(A+B)/2,w=wf(m+sta0),p=P(m,w[0]+1.6);
   const txt=(z.o?'ผิวทางเดิม: '+z.o:'')+(z.b2?(z.o?' · ':'')+'รองพื้นทางเดิม: '+z.b2:'')+((z.o||z.b2)&&z.n?'  →  ':'')+(z.n?'ผิวทางใหม่: '+z.n:'');
@@ -1772,6 +1772,10 @@ function plPrep(g){
     g.plm=1;if(parseSta(g.sta0)==null)g.sta0='0+000'}}
   if(g.plm)compilePL(g)}
 function autoEndJx(g){let ch=false;const body=(g.pl||[]).filter(p=>!p.lead&&!p.turn&&p._b>p._a+1e-6);if(!body.length||g._end==null)return false;const last=body[body.length-1];
+  const first=body[0],sa=parseSta(g.sta0)||0;
+  (g.jx||[]).forEach(j=>{if(j.type!=='R'||j.fk||j.bk||j.src)return;const ts=parseSta(j.sta);if(ts==null)return;const Ro=Math.max(3,gnum(j.Ro,15));
+    if(Math.abs(ts-g._end)<=.05&&last.t==='L'&&gnum(last.len,0)>Ro+.5){last.len=Math.round((gnum(last.len,0)-Ro)*100)/100;j.fk=Ro;ch=true;try{toast('✔ จุดสิ้นสุดโครงการอยู่ที่ขอบนอกวงเวียน (ย่นปลายทาง '+Ro+' ม.)')}catch(e){}}
+    else if(Math.abs(ts-sa)<=.05&&first.t==='L'&&gnum(first.len,0)>Ro+.5){first.len=Math.round((gnum(first.len,0)-Ro)*100)/100;j.bk=Ro;ch=true;try{toast('✔ จุดเริ่มต้นโครงการอยู่ที่ขอบนอกวงเวียน (ย่นต้นทาง '+Ro+' ม.)')}catch(e){}}});
   (g.jx||[]).forEach(j=>{if(j.fk||j.bk||j.src||j.type==='R')return;const ts=parseSta(j.sta);if(ts==null||Math.abs(ts-g._end)>.05)return;
     const lg=(j.legs||[]).filter(l=>Math.abs(Math.sin(gnum(l.a,0)*Math.PI/180))>.5);if(!lg.length)return;const hw=Math.max(...lg.map(l=>gnum(l.w,5)))/2;
     if(last.t!=='L'||!(gnum(last.len,0)>hw+.5))return;
@@ -1867,7 +1871,7 @@ function jxCards(g,mode){mode=mode||'mid';const jm=j=>j.bk>0?'start':(j.fk>0?'en
   let jn=0;
   (g.jx||[]).forEach((j,i)=>{if(jm(j)!==mode)return;jn++;const isR=j.type==='R';
     h.push(`<div class="plseg jx"><div class="plh"><b>${JX_T[j.type]} #${jn}</b><span class="mute jxarea">พื้นที่ผิวทางโดยประมาณ ${jxArea(j)} ตร.ม.</span><span class="sp"></span><button class="b red sm" data-act="delJx" data-i="${i}">✕</button></div>
-    <div class="grid g4"><div><label>ประเภท</label><select data-jx="${i}" data-f="type">${Object.keys(JX_T).filter(k=>(k!=='T'&&k!=='Y')||j.type===k).map(k=>`<option value="${k}"${j.type===k?' selected':''}>${JX_T[k]}</option>`).join('')}</select></div>
+    <div class="grid g4"><div><label>ประเภท</label><select data-jx="${i}" data-f="type">${Object.keys(JX_T).filter(k=>(k!=='T'&&k!=='Y'&&k!=='SL'&&k!=='SR')||j.type===k).map(k=>`<option value="${k}"${j.type===k?' selected':''}>${JX_T[k]}</option>`).join('')}</select></div>
     <div><label>STA ตำแหน่งแยก</label><input data-jx="${i}" data-f="sta" list="dlSta" value="${esc(j.sta)}" placeholder="เช่น 0+040"${mode!=='mid'?' readonly title="ตำแหน่งถูกกำหนดอัตโนมัติจากจุดเริ่ม/จุดสิ้นสุดโครงการ"':''}></div>
     ${isR?`<div><label>รัศมีวงเวียน (ม.)</label><input data-jx="${i}" data-f="Ro" type="number" step="any" value="${esc(j.Ro)}"></div><div><label>รัศมีเกาะกลาง (ม.)</label><input data-jx="${i}" data-f="Ri" type="number" step="any" value="${esc(j.Ri)}"></div><div><label>จำนวนแยกทั้งหมด</label><select data-jx="${i}" data-f="n">${[3,4,5,6,7,8].map(n=>`<option value="${n}"${+j.n===n?' selected':''}>${n} แยก</option>`).join('')}</select></div>`:`<div><label>รัศมีโค้งปากทางแยก</label><div class="mute">ไม่สร้างอัตโนมัติ — เพิ่มภายหลังที่ "พื้นที่มุม"</div></div>`}</div>
     ${g.sv?`<div class="sv20"><div class="mute">โครงการนี้เคยตั้งจุดเริ่มสำรวจที่ขอบเขตทางไว้ (STA <b>${esc(g.sv)}</b>) <button class="b ghost sm" data-act="svClear">↶ ยกเลิกการตั้งนี้</button></div></div>`:''}
