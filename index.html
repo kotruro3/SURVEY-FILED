@@ -2083,14 +2083,15 @@ function geoUI(){
     save();geoUI();renderPlan()})})();
 
 (function(){const pb=$('planbox');let z=100;
- function setZ(n,cx,cy){n=Math.max(50,Math.min(800,Math.round(n)));const r=pb.getBoundingClientRect();cx=cx==null?r.width/2:cx;cy=cy==null?r.height/2:cy;const fx=(pb.scrollLeft+cx)/pb.scrollWidth,fy=(pb.scrollTop+cy)/pb.scrollHeight;z=n;pb.style.setProperty('--pz',z);pb.classList.toggle('zoomed',z>100);pb.classList.toggle('pan',z>100);pb.scrollLeft=fx*pb.scrollWidth-cx;pb.scrollTop=fy*pb.scrollHeight-cy;$('pzv').textContent=z+'%'}
+ function setZ(n,cx,cy){n=Math.max(50,Math.min(800,Math.round(n)));const r=pb.getBoundingClientRect();cx=cx==null?r.width/2:cx;cy=cy==null?r.height/2:cy;const fx=(pb.scrollLeft+cx)/pb.scrollWidth,fy=(pb.scrollTop+cy)/pb.scrollHeight;z=n;pb.style.setProperty('--pz',z);pb.classList.toggle('zoomed',z>100);pb.classList.toggle('pan',z>100);pb.scrollLeft=fx*pb.scrollWidth-cx;pb.scrollTop=fy*pb.scrollHeight-cy;$('pzv').textContent=z+'%';const m=document.getElementById('zmv');if(m)m.textContent=z+'%'}
+ window.pzSet=setZ;window.pzGet=()=>z;
  $('pzI').onclick=()=>setZ(z*1.25);$('pzO').onclick=()=>setZ(z/1.25);$('pzF').onclick=()=>setZ(100);
  pb.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;e.preventDefault();const r=pb.getBoundingClientRect();setZ(z*(e.deltaY<0?1.15:1/1.15),e.clientX-r.left,e.clientY-r.top)},{passive:false});
  let d0=0,z0=100;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
  pb.addEventListener('touchstart',e=>{if(e.touches.length===2){d0=dist(e.touches);z0=z}},{passive:true});
  pb.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();const r=pb.getBoundingClientRect();setZ(z0*dist(e.touches)/d0,(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,(e.touches[0].clientY+e.touches[1].clientY)/2-r.top)}},{passive:false});
  pb.addEventListener('touchend',()=>{d0=0});
- let drag=null;pb.addEventListener('mousedown',e=>{if(z<=100)return;drag={x:e.clientX,y:e.clientY,l:pb.scrollLeft,t:pb.scrollTop};e.preventDefault()});
+ let drag=null;pb.addEventListener('mousedown',e=>{if(z<=100)return;if(window.LBL&&LBL.on&&e.target.closest&&e.target.closest('text'))return;drag={x:e.clientX,y:e.clientY,l:pb.scrollLeft,t:pb.scrollTop};e.preventDefault()});
  window.addEventListener('mousemove',e=>{if(!drag)return;pb.scrollLeft=drag.l-(e.clientX-drag.x);pb.scrollTop=drag.t-(e.clientY-drag.y)});window.addEventListener('mouseup',()=>drag=null)})();
 
 $('geoCard').addEventListener('input',e=>{const el=e.target;if(!(el.dataset.p||el.dataset.arr))return;geoSet(el,el.value);geoRedraw()});
@@ -3257,6 +3258,8 @@ function lblSet(el,o){
   else if(dx||dy)el.setAttribute('transform','translate('+lblNum(dx)+','+lblNum(dy)+')');
   // ขนาด
   if(o&&o.fs>0)el.setAttribute('font-size',o.fs);else if(ofs)el.setAttribute('font-size',ofs);
+  // สี
+  if(o&&o.c)el.setAttribute('fill',o.c);else if(el.dataset.ofill!==undefined&&el.dataset.ofill!=='')el.setAttribute('fill',el.dataset.ofill);
   // ข้อความ / ซ่อน
   const hide=!!(o&&o.h);
   if(hide){el.textContent='';el.setAttribute('display','none')}
@@ -3268,25 +3271,27 @@ function lblSet(el,o){
 function lblApply(){
   const lo=(G().lo)||{};
   document.querySelectorAll('#planbox svg.sheet').forEach((svg,si)=>{const cnt={};
+    svg.querySelectorAll('text[data-ub]').forEach(e=>e.remove());
+    (G().utb||[]).filter(b=>b.sh===si).forEach(b=>{const el=document.createElementNS('http://www.w3.org/2000/svg','text');el.setAttribute('x',b.x);el.setAttribute('y',b.y);el.setAttribute('font-size',b.fs||14);el.setAttribute('font-weight','700');el.setAttribute('fill',b.c||'#c0392b');el.setAttribute('paint-order','stroke');el.setAttribute('stroke','#fff');el.setAttribute('stroke-width','3');el.setAttribute('font-family','Sarabun,Tahoma,sans-serif');el.textContent=b.t;el.dataset.ub=b.id;el.dataset.ot=b.t;el.dataset.ox=String(b.x);el.dataset.oy=String(b.y);el.dataset.otr='';el.dataset.ofs=String(b.fs||14);el.dataset.ofill=b.c||'#c0392b';el.dataset.lk=si+'|ub|'+b.id;svg.appendChild(el);const o=(G().lo||{})[el.dataset.lk];if(o)lblSet(el,o);el.classList.toggle('lbe',LBL.on)});
     svg.querySelectorAll('text').forEach(el=>{
-      if(el.dataset.ot===undefined){el.dataset.ot=el.textContent;el.dataset.ox=el.getAttribute('x')||'';el.dataset.oy=el.getAttribute('y')||'';el.dataset.otr=el.getAttribute('transform')||'';el.dataset.ofs=el.getAttribute('font-size')||''}
-      const ot=el.dataset.ot;if(!ot.trim())return;cnt[ot]=(cnt[ot]||0)+1;el.dataset.lk=si+'|'+ot+'|'+cnt[ot];
+      if(el.dataset.ot===undefined){el.dataset.ot=el.textContent;el.dataset.ox=el.getAttribute('x')||'';el.dataset.oy=el.getAttribute('y')||'';el.dataset.otr=el.getAttribute('transform')||'';el.dataset.ofs=el.getAttribute('font-size')||'';el.dataset.ofill=el.getAttribute('fill')||''}
+      if(el.dataset.ub)return;const ot=el.dataset.ot;if(!ot.trim())return;cnt[ot]=(cnt[ot]||0)+1;el.dataset.lk=si+'|'+ot+'|'+cnt[ot];
       const o=lo[el.dataset.lk];if(o)lblSet(el,o);
       el.classList.toggle('lbe',LBL.on)})})}
 const lblOv=()=>{const g=G();if(!g.lo)g.lo={};return g.lo};
 function lblUpd(patch){const el=LBL.sel;if(!el)return;const k=el.dataset.lk,lo=lblOv(),o=Object.assign({},lo[k]||{},patch);
   ['dx','dy'].forEach(f=>{if(o[f]!=null)o[f]=lblNum(o[f])});
-  if(!o.dx&&!o.dy&&!(o.fs>0)&&!(o.t!=null&&o.t!=='')&&!o.h)delete lo[k];else lo[k]=o;
+  if(!o.dx&&!o.dy&&!(o.fs>0)&&!(o.t!=null&&o.t!=='')&&!o.h&&!o.c)delete lo[k];else lo[k]=o;
   lblSet(el,lo[k]);save(true);lblPanelFill()}
 function lblSelect(el){if(LBL.sel)LBL.sel.classList.remove('lbsel');LBL.sel=el;if(el){el.classList.add('lbsel')}lblPanelFill()}
 function lblPanel(){let p=$('lblPanel');if(p)return p;p=document.createElement('div');p.id='lblPanel';
-  p.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:60;background:var(--card);color:var(--ink);border:2px solid var(--brand);border-radius:12px;padding:8px 10px;box-shadow:0 4px 18px #0006;display:none;max-height:46vh;overflow:auto';
+  p.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:760;background:var(--card);color:var(--ink);border:2px solid var(--brand);border-radius:12px;padding:8px 10px;box-shadow:0 4px 18px #0006;display:none;max-height:46vh;overflow:auto';
   p.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="color:var(--brand)">✏ ปรับข้อความ</b><span class="mute" id="lblInfo" style="flex:1 1 100%"></span>
    <input id="lblTxt" style="flex:1 1 200px;min-width:140px" placeholder="ข้อความ">
    <span>ขนาด</span><button class="b ghost sm" id="lblFm">−</button><input id="lblFs" type="number" step="0.5" min="2" style="width:70px"><button class="b ghost sm" id="lblFp">＋</button>
    <span>ย้าย</span><button class="b ghost sm" data-mv="-1,0">◀</button><button class="b ghost sm" data-mv="0,-1">▲</button><button class="b ghost sm" data-mv="0,1">▼</button><button class="b ghost sm" data-mv="1,0">▶</button>
    <select id="lblStep" style="width:78px"><option value="0.5">0.5</option><option value="1" selected>1</option><option value="3">3</option><option value="8">8</option></select>
-   <label class="mck"><input type="checkbox" id="lblHide"><span>ซ่อน</span></label>
+   <input type="color" id="lblCol" value="#c0392b" title="สีตัวอักษร" style="width:42px;height:38px;padding:2px"><label class="mck"><input type="checkbox" id="lblHide"><span>ซ่อน</span></label><button class="b red sm" id="lblDel" style="display:none">🗑 ลบกล่องนี้</button>
    <button class="b ghost sm" id="lblReset">↺ คืนค่าข้อความนี้</button><button class="b red sm" id="lblResetAll">↺ คืนค่าทั้งหมด</button><button class="b sm" id="lblDone">✔ เสร็จ</button></div>`;
   document.body.appendChild(p);
   const st=()=>parseFloat($('lblStep').value)||1;
@@ -3295,6 +3300,8 @@ function lblPanel(){let p=$('lblPanel');if(p)return p;p=document.createElement('
   const fsCur=()=>{const o=lblOv()[LBL.sel.dataset.lk]||{};return o.fs>0?o.fs:(parseFloat(LBL.sel.dataset.ofs)||10)};
   $('lblFm').onclick=()=>{if(LBL.sel)lblUpd({fs:Math.max(2,lblNum(fsCur()-1))})};$('lblFp').onclick=()=>{if(LBL.sel)lblUpd({fs:lblNum(fsCur()+1)})};
   $('lblFs').onchange=e=>{if(LBL.sel){const v=parseFloat(e.target.value);if(v>0)lblUpd({fs:v})}};
+  $('lblCol').oninput=e=>{if(LBL.sel)lblUpd2({c:e.target.value})};
+  $('lblDel').onclick=()=>{const el=LBL.sel;if(!el||!el.dataset.ub)return;const g=G();g.utb=(g.utb||[]).filter(b=>String(b.id)!==el.dataset.ub);if(g.lo)delete g.lo[el.dataset.lk];el.remove();lblSelect(null);save(true)};
   $('lblHide').onchange=e=>{if(LBL.sel)lblUpd({h:e.target.checked})};
   $('lblReset').onclick=()=>{if(!LBL.sel)return;delete lblOv()[LBL.sel.dataset.lk];lblSet(LBL.sel,null);save(true);lblPanelFill()};
   $('lblResetAll').onclick=()=>{if(!confirm('คืนค่าข้อความที่ปรับไว้ทั้งหมด (ทุกแผ่น)?'))return;G().lo={};save(true);renderPlan();lblSelect(null)};
@@ -3302,20 +3309,31 @@ function lblPanel(){let p=$('lblPanel');if(p)return p;p=document.createElement('
   return p}
 function lblUpd2(patch){ // พิมพ์ข้อความ: ไม่เติมช่อง input ใหม่ (รักษาเคอร์เซอร์)
   const el=LBL.sel;if(!el)return;const k=el.dataset.lk,lo=lblOv(),o=Object.assign({},lo[k]||{},patch);
-  if(!o.dx&&!o.dy&&!(o.fs>0)&&!(o.t!=null&&o.t!=='')&&!o.h)delete lo[k];else lo[k]=o;lblSet(el,lo[k]);save(true)}
+  if(!o.dx&&!o.dy&&!(o.fs>0)&&!(o.t!=null&&o.t!=='')&&!o.h&&!o.c)delete lo[k];else lo[k]=o;lblSet(el,lo[k]);save(true)}
 function lblPanelFill(){const p=lblPanel(),el=LBL.sel;p.style.display=LBL.on?'block':'none';if(!LBL.on)return;
   $('lblInfo').textContent=el?'ลากข้อความบนแผ่นเพื่อย้าย หรือใช้ปุ่มด้านล่าง · ข้อความเดิม: '+el.dataset.ot:'แตะ/คลิกข้อความบนแผ่นที่ต้องการปรับ แล้วลากเพื่อย้าย';
-  ['lblTxt','lblFs','lblFm','lblFp','lblHide','lblReset'].forEach(i=>$(i).disabled=!el);if(!el)return;
+  ['lblTxt','lblFs','lblFm','lblFp','lblHide','lblReset','lblCol'].forEach(i=>$(i).disabled=!el);$('lblDel').style.display=(el&&el.dataset.ub)?'':'none';if(!el)return;
   const o=lblOv()[el.dataset.lk]||{};if(document.activeElement!==$('lblTxt'))$('lblTxt').value=(o.t!=null&&o.t!=='')?o.t:el.dataset.ot;
-  $('lblFs').value=o.fs>0?o.fs:(parseFloat(el.dataset.ofs)||10);$('lblHide').checked=!!o.h}
+  $('lblFs').value=o.fs>0?o.fs:(parseFloat(el.dataset.ofs)||10);$('lblHide').checked=!!o.h;$('lblCol').value=/^#[0-9a-f]{6}$/i.test(o.c||el.dataset.ofill||'')?(o.c||el.dataset.ofill):'#222222'}
 function lblMode(on){LBL.on=on;const b=$('lblTog');if(b){b.classList.toggle('ghost',!on);b.textContent=on?'✔ ปิดโหมดปรับข้อความ':'✏ ปรับข้อความบนแผ่น (ย้าย / ขนาด / แก้ข้อความ)'}
   document.querySelectorAll('#planbox svg.sheet').forEach(s=>s.classList.toggle('lbmode',on));
   document.querySelectorAll('#planbox text').forEach(t=>t.classList.toggle('lbe',on));
   if(!on&&LBL.sel){LBL.sel.classList.remove('lbsel');LBL.sel=null}lblPanelFill()}
 (function(){
   const box=$('planbox'),card=box.parentNode,bar=document.createElement('div');bar.className='bar';bar.style.margin='0 0 6px';
-  bar.innerHTML='<button class="b ghost sm" id="lblTog">✏ ปรับข้อความบนแผ่น (ย้าย / ขนาด / แก้ข้อความ)</button><span class="mute">ปรับแล้วบันทึกกับโครงการ และติดไปกับรูป/PDF/DXF ที่ส่งออก</span>';
+  bar.id='zmBar';bar.innerHTML='<button class="b sm" id="zmFull">⛶ เต็มจอ</button><span class="pz" style="margin:0"><button class="b ghost sm" id="zmO">−</button><b id="zmv">100%</b><button class="b ghost sm" id="zmI">＋</button><button class="b ghost sm" id="zmF">พอดี</button></span><button class="b ghost sm" id="lblTog">✏ ปรับข้อความบนแผ่น (ย้าย / ขนาด / แก้ข้อความ)</button><button class="b ghost sm" id="tbAdd">🅣 ＋ กล่องข้อความ</button><span class="mute" id="zmHint">ปรับแล้วบันทึกกับโครงการ และติดไปกับรูป/PDF/DXF ที่ส่งออก</span>';
   card.insertBefore(bar,box);$('lblTog').onclick=()=>lblMode(!LBL.on);
+  $('zmI').onclick=()=>pzSet(pzGet()*1.25);$('zmO').onclick=()=>pzSet(pzGet()/1.25);$('zmF').onclick=()=>pzSet(100);
+  const full=on=>{if(on&&!card._ph){card._ph=document.createComment('zfs');card.parentNode.insertBefore(card._ph,card);document.body.appendChild(card)}else if(!on&&card._ph){card._ph.parentNode.insertBefore(card,card._ph);card._ph.remove();card._ph=null}card.classList.toggle('zfs',on);document.body.style.overflow=on?'hidden':'';$('zmFull').textContent=on?'✕ ออกจากเต็มจอ':'⛶ เต็มจอ';if(on&&!LBL.on)lblMode(true);try{pzSet(pzGet())}catch(_){}};
+  $('zmFull').onclick=()=>full(!card.classList.contains('zfs'));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&card.classList.contains('zfs')&&!document.activeElement.matches('input,select,textarea'))full(false)});
+  $('tbAdd').onclick=()=>{ // วางกล่องข้อความกลางจอบนแผ่นที่มองเห็น
+    const svgs=[...box.querySelectorAll('svg.sheet')];if(!svgs.length){toast('ยังไม่มีแผ่นแบบ',true);return}
+    const vr=box.getBoundingClientRect(),cx=Math.max(vr.left,0)+Math.min(vr.width,innerWidth)/2,cy=Math.max(vr.top,0)+Math.min(vr.height,innerHeight-Math.max(vr.top,0))/2;
+    let si=0,best=1e18;svgs.forEach((sv,i)=>{const r=sv.getBoundingClientRect();const d=cy<r.top?r.top-cy:cy>r.bottom?cy-r.bottom:0;if(d<best){best=d;si=i}});
+    const sv=svgs[si],m=sv.getScreenCTM(),q=sv.createSVGPoint(),r=sv.getBoundingClientRect();q.x=Math.min(Math.max(cx,r.left+20),r.right-20);q.y=Math.min(Math.max(cy,r.top+20),r.bottom-20);const p=q.matrixTransform(m.inverse());
+    const vb=sv.viewBox.baseVal,g=G();if(!g.utb)g.utb=[];const b={id:Date.now().toString(36)+Math.floor(Math.random()*99),sh:si,x:lblNum(p.x),y:lblNum(p.y),t:'ข้อความ',fs:Math.max(10,Math.round(vb.width/90)),c:'#c0392b'};g.utb.push(b);save(true);lblApply();
+    if(!LBL.on)lblMode(true);const el=sv.querySelector('text[data-ub="'+b.id+'"]');if(el)lblSelect(el);setTimeout(()=>{const t=$('lblTxt');t&&(t.focus(),t.select())},50)};
   const pt=(svg,e)=>{const m=svg.getScreenCTM();if(!m)return null;const q=svg.createSVGPoint();q.x=e.clientX;q.y=e.clientY;return q.matrixTransform(m.inverse())};
   box.addEventListener('pointerdown',e=>{if(!LBL.on)return;const el=e.target.closest&&e.target.closest('text');if(!el||el.dataset.lk===undefined)return;e.preventDefault();
     lblSelect(el);const svg=el.ownerSVGElement,p=pt(svg,e),o=lblOv()[el.dataset.lk]||{};LBL.drag={el,svg,sx:p.x,sy:p.y,dx:o.dx||0,dy:o.dy||0,moved:false};try{svg.setPointerCapture(e.pointerId)}catch(_){}});
@@ -3323,7 +3341,7 @@ function lblMode(on){LBL.on=on;const b=$('lblTog');if(b){b.classList.toggle('gho
     const lo=lblOv(),k=d.el.dataset.lk,o=Object.assign({},lo[k]||{},{dx:lblNum(d.dx+ddx),dy:lblNum(d.dy+ddy)});lo[k]=o;lblSet(d.el,o)});
   const end=()=>{const d=LBL.drag;LBL.drag=null;if(d&&d.moved){save(true);lblPanelFill()}};box.addEventListener('pointerup',end);box.addEventListener('pointercancel',end);
   box.addEventListener('touchmove',e=>{if(LBL.drag&&LBL.drag.moved)e.preventDefault()},{passive:false});
-  const st=document.createElement('style');st.textContent='svg.lbmode text.lbe{cursor:move}svg.lbmode text.lbe:hover{fill:#e67e00}svg.lbmode text.lbsel{fill:#e67e00;stroke:#e67e00;stroke-width:.5}';document.head.appendChild(st);
+  const st=document.createElement('style');st.textContent='#zmBar{position:sticky;top:0;z-index:5;background:var(--card);padding:4px 0;flex-wrap:wrap}.card.zfs{position:fixed;inset:0;z-index:700;margin:0;border-radius:0;display:flex;flex-direction:column;padding:6px 8px;overflow:hidden}.card.zfs #planbox{flex:1 1 auto;min-height:0;max-height:none!important}.card.zfs #legend,.card.zfs #zmHint{display:none}svg.lbmode text.lbe{cursor:move}svg.lbmode text.lbe:hover{fill:#e67e00}svg.lbmode text.lbsel{fill:#e67e00;stroke:#e67e00;stroke-width:.5}';document.head.appendChild(st);
   const _rs=renderSheets;renderSheets=function(){const r=_rs.apply(this,arguments);try{lblApply();if(LBL.on){document.querySelectorAll('#planbox svg.sheet').forEach(s=>s.classList.add('lbmode'));LBL.sel=null;lblPanelFill()}}catch(e){console.error(e)}return r};
 })();
 
