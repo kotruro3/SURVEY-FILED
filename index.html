@@ -1297,6 +1297,7 @@ function sheetSvg(M,idx){
     runs.forEach(A=>{if(A.length>1)o.push(`<polyline points="${pstr(A)}" fill="none" stroke="#555" stroke-width="1.3" stroke-dasharray="16 4 3 4"/>`)});
     zl.forEach(z=>{const r=ix?z.r:z.l;const A=Math.max(z.a-sta0,s0),B=Math.min(z.b-sta0,s1);if(!(r>0)||(B-A)*k<70)return;const m=(A+B)/2,p=P(m,sg*r);
       o.push(`<text transform="translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)}) translate(0,${sg>0?-9:12})" font-size="11" fill="#555" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">เขตทาง ${sg>0?'ซ้าย':'ขวา'} ${f1(r)} ม.</text>`)})})}
+  const envS=o.length;
   (g.env||[]).forEach(e=>{const A=Math.max(e.a-sta0,s0),B=Math.min(e.b-sta0,s1);if(B-A<=.01)return;const sg=e.side==='L'?1:-1,T=sam(A,B,st);
     const e0=t=>{const w=wf(t+sta0),rw=rowAt(g,t+sta0);return(sg>0?Math.max(w[0],rw[0]):Math.max(w[1],rw[1]))+.3};
     const P1=T.map(t=>P(t,sg*e0(t))),P2=T.map(t=>P(t,sg*(e0(t)+e.w)));const water=/คลอง|แม่น้ำ|ร่อง|น้ำ/.test(e.t),home=envIsHome(e.t),agr=envIsAg(e.t);
@@ -1310,6 +1311,9 @@ function sheetSvg(M,idx){
           it.bunds.forEach(x=>o.push(`<polyline points="${pstr([M(x,it.d0),M(x,it.d1)])}" stroke="#aab95a" stroke-width=".8" fill="none"/>`));
           it.rows.forEach(d=>o.push(`<polyline points="${pstr(EDG(it.a+1.2,it.b-1.2,d))}" stroke="#7a5c22" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0.1 5" fill="none"/>`))}})}
     if((B-A)*k>=60){const m=(A+B)/2,p=P(m,sg*(e0(m)+e.w/2));o.push(`<text transform="translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)})" font-size="11" font-weight="700" fill="${sk}" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${esc(e.t)}${e.name?' '+esc(cut(e.name,14)):''}${(home||agr)?'':' '+f1(e.w)+' ม.'}</text>`)}});
+  // v90: สภาพแวดล้อมไม่ทับผิวทาง (ทางหลัก/ทางแยก/วงเวียน/โค้ง) — ตัดด้วยหน้ากากรูปผิวทาง
+  if(o.length>envS){const pm=[];o.slice(0,envS).join('').replace(/<(?:polygon|circle|path)\b[^>]*fill="#a9b1ba"[^>]*\/>/g,m=>{pm.push(m.replace(/fill="#a9b1ba"/,'fill="#000"').replace(/\sstroke="[^"]*"/g,''));return m});
+    if(pm.length){const mid='emk'+sid;const en=o.length;for(let i=envS;i<en;i++)if(!/^\s*<text\b/.test(o[i]))o[i]=`<g mask="url(#${mid})">${o[i]}</g>`;o.push(`<mask id="${mid}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/>${pm.join('')}</mask>`)}}
   o.push(obSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1}));
   const rl0=Math.max(gnum(g.rowl,0),...(g.rz||[]).map(z=>z.l)),rr0=Math.max(gnum(g.rowr,0),...(g.rz||[]).map(z=>z.r));
   // centre items
