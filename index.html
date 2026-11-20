@@ -364,7 +364,7 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
    <div class="grid g2" style="margin-top:4px"><div><label>ระบบพิกัด</label><select id="xpCoord"><option value="utm">UTM จริง (WGS84 หน่วยเมตร)</option><option value="loc">พิกัดท้องถิ่น (ศูนย์กลางบริเวณ = 0,0)</option></select></div><div><label>ขนาดตัวอักษรตามมาตราส่วนพิมพ์ 1: (เว้นว่าง = ตามแผ่น)</label><input id="xpN" type="number" min="100" step="100" placeholder="เช่น 5000"></div></div>
    <div class="bar" style="gap:6px 18px;margin:6px 0"><label class="mck"><input type="checkbox" id="xpOsm" checked><span>รวมข้อมูลสภาพแวดล้อมจาก OSM (ถนน แม่น้ำ พื้นที่ สถานที่)</span></label><label class="mck"><input type="checkbox" id="xpAnn" checked><span>รวมสิ่งที่วาดเอง (เส้น รูปทรง ข้อความ หมุด)</span></label></div>
    <div class="bar"><button class="b" id="xpDxf">⬇ ดาวน์โหลด .dxf</button></div>
-   <div class="mute">ไฟล์เป็น 2 มิติ แยกเลเยอร์ (บริเวณ, จุดที่ตั้ง, OSM_*, ANN_*) · SketchUp ฟรีรุ่นเว็บนำเข้า DXF ไม่ได้ ต้องเป็น SketchUp Pro หรือเปิดใน AutoCAD แล้วบันทึกเป็น DWG</div></div>
+   <div class="mute">ไฟล์เป็น 2 มิติ แยกเลเยอร์ (บริเวณ, จุดที่ตั้ง, แนวทาง PL_*, OSM_*, ANN_*) · พื้นหลังภาพถ่าย/แผนที่ในรูปเป็นภาพ ไม่ใช่เส้น จึงไม่อยู่ใน DXF (ข้อมูลเส้นมาจาก OSM) · SketchUp ฟรีรุ่นเว็บนำเข้า DXF ไม่ได้ ต้องเป็น SketchUp Pro หรือเปิดใน AutoCAD แล้วบันทึกเป็น DWG</div></div>
   <div class="bar" style="margin:14px 0"><button class="b" id="xpNext">ขั้นตอนถัดไป → ③ STA</button></div>
 </section>
 
@@ -3245,6 +3245,88 @@ function elRefresh(){const g=G(),vals=elVals(g);vals.forEach(v=>{const r=documen
 })();
 
 loadJobs();
+// ===== v88: ปรับข้อความบนแผ่นแบบ (ย้ายตำแหน่ง / ขนาด / แก้ข้อความ / ซ่อน) =====
+const LBL={on:false,sel:null,drag:null};
+const lblNum=v=>Math.round(v*100)/100;
+function lblSet(el,o){
+  const ox=el.dataset.ox,oy=el.dataset.oy,otr=el.dataset.otr,ofs=el.dataset.ofs;
+  const dx=o&&o.dx||0,dy=o&&o.dy||0;
+  // ตำแหน่ง
+  if(otr){let tr=otr;if(dx||dy){const m=tr.match(/translate\(\s*([-\d.]+)[ ,]+([-\d.]+)\s*\)/);tr=m?tr.replace(m[0],'translate('+lblNum(+m[1]+dx)+','+lblNum(+m[2]+dy)+')'):'translate('+lblNum(dx)+','+lblNum(dy)+') '+tr}el.setAttribute('transform',tr)}
+  else if(ox!==''&&oy!==''){el.setAttribute('x',lblNum(+ox+dx));el.setAttribute('y',lblNum(+oy+dy));el.removeAttribute('transform')}
+  else if(dx||dy)el.setAttribute('transform','translate('+lblNum(dx)+','+lblNum(dy)+')');
+  // ขนาด
+  if(o&&o.fs>0)el.setAttribute('font-size',o.fs);else if(ofs)el.setAttribute('font-size',ofs);
+  // ข้อความ / ซ่อน
+  const hide=!!(o&&o.h);
+  if(hide){el.textContent='';el.setAttribute('display','none')}
+  else{el.removeAttribute('display');const t=(o&&o.t!=null&&o.t!=='')?o.t:el.dataset.ot;if(el.textContent!==t&&!(o&&o.t==null&&el.children.length))el.textContent=t}
+  // เส้นชี้ของป้ายที่ถูกย้ายออกจากจุดเดิม ให้ปลายเส้นตามข้อความ
+  const par=el.parentNode;if(par&&par.classList&&par.classList.contains('lbl')){const ln=par.querySelector('line');if(ln){if(ln.dataset.ox2===undefined){ln.dataset.ox2=ln.getAttribute('x2');ln.dataset.oy2=ln.getAttribute('y2')}
+    ln.setAttribute('x2',lblNum(+ln.dataset.ox2+dx));ln.setAttribute('y2',lblNum(+ln.dataset.oy2+dy));ln.style.display=hide?'none':''}}
+}
+function lblApply(){
+  const lo=(G().lo)||{};
+  document.querySelectorAll('#planbox svg.sheet').forEach((svg,si)=>{const cnt={};
+    svg.querySelectorAll('text').forEach(el=>{
+      if(el.dataset.ot===undefined){el.dataset.ot=el.textContent;el.dataset.ox=el.getAttribute('x')||'';el.dataset.oy=el.getAttribute('y')||'';el.dataset.otr=el.getAttribute('transform')||'';el.dataset.ofs=el.getAttribute('font-size')||''}
+      const ot=el.dataset.ot;if(!ot.trim())return;cnt[ot]=(cnt[ot]||0)+1;el.dataset.lk=si+'|'+ot+'|'+cnt[ot];
+      const o=lo[el.dataset.lk];if(o)lblSet(el,o);
+      el.classList.toggle('lbe',LBL.on)})})}
+const lblOv=()=>{const g=G();if(!g.lo)g.lo={};return g.lo};
+function lblUpd(patch){const el=LBL.sel;if(!el)return;const k=el.dataset.lk,lo=lblOv(),o=Object.assign({},lo[k]||{},patch);
+  ['dx','dy'].forEach(f=>{if(o[f]!=null)o[f]=lblNum(o[f])});
+  if(!o.dx&&!o.dy&&!(o.fs>0)&&!(o.t!=null&&o.t!=='')&&!o.h)delete lo[k];else lo[k]=o;
+  lblSet(el,lo[k]);save(true);lblPanelFill()}
+function lblSelect(el){if(LBL.sel)LBL.sel.classList.remove('lbsel');LBL.sel=el;if(el){el.classList.add('lbsel')}lblPanelFill()}
+function lblPanel(){let p=$('lblPanel');if(p)return p;p=document.createElement('div');p.id='lblPanel';
+  p.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:60;background:var(--card);color:var(--ink);border:2px solid var(--brand);border-radius:12px;padding:8px 10px;box-shadow:0 4px 18px #0006;display:none;max-height:46vh;overflow:auto';
+  p.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="color:var(--brand)">✏ ปรับข้อความ</b><span class="mute" id="lblInfo" style="flex:1 1 100%"></span>
+   <input id="lblTxt" style="flex:1 1 200px;min-width:140px" placeholder="ข้อความ">
+   <span>ขนาด</span><button class="b ghost sm" id="lblFm">−</button><input id="lblFs" type="number" step="0.5" min="2" style="width:70px"><button class="b ghost sm" id="lblFp">＋</button>
+   <span>ย้าย</span><button class="b ghost sm" data-mv="-1,0">◀</button><button class="b ghost sm" data-mv="0,-1">▲</button><button class="b ghost sm" data-mv="0,1">▼</button><button class="b ghost sm" data-mv="1,0">▶</button>
+   <select id="lblStep" style="width:78px"><option value="0.5">0.5</option><option value="1" selected>1</option><option value="3">3</option><option value="8">8</option></select>
+   <label class="mck"><input type="checkbox" id="lblHide"><span>ซ่อน</span></label>
+   <button class="b ghost sm" id="lblReset">↺ คืนค่าข้อความนี้</button><button class="b red sm" id="lblResetAll">↺ คืนค่าทั้งหมด</button><button class="b sm" id="lblDone">✔ เสร็จ</button></div>`;
+  document.body.appendChild(p);
+  const st=()=>parseFloat($('lblStep').value)||1;
+  p.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{if(!LBL.sel)return;const[a,c]=b.dataset.mv.split(',').map(Number),o=lblOv()[LBL.sel.dataset.lk]||{};lblUpd({dx:(o.dx||0)+a*st(),dy:(o.dy||0)+c*st()})});
+  $('lblTxt').oninput=e=>{if(LBL.sel)lblUpd2({t:e.target.value})};
+  const fsCur=()=>{const o=lblOv()[LBL.sel.dataset.lk]||{};return o.fs>0?o.fs:(parseFloat(LBL.sel.dataset.ofs)||10)};
+  $('lblFm').onclick=()=>{if(LBL.sel)lblUpd({fs:Math.max(2,lblNum(fsCur()-1))})};$('lblFp').onclick=()=>{if(LBL.sel)lblUpd({fs:lblNum(fsCur()+1)})};
+  $('lblFs').onchange=e=>{if(LBL.sel){const v=parseFloat(e.target.value);if(v>0)lblUpd({fs:v})}};
+  $('lblHide').onchange=e=>{if(LBL.sel)lblUpd({h:e.target.checked})};
+  $('lblReset').onclick=()=>{if(!LBL.sel)return;delete lblOv()[LBL.sel.dataset.lk];lblSet(LBL.sel,null);save(true);lblPanelFill()};
+  $('lblResetAll').onclick=()=>{if(!confirm('คืนค่าข้อความที่ปรับไว้ทั้งหมด (ทุกแผ่น)?'))return;G().lo={};save(true);renderPlan();lblSelect(null)};
+  $('lblDone').onclick=()=>lblMode(false);
+  return p}
+function lblUpd2(patch){ // พิมพ์ข้อความ: ไม่เติมช่อง input ใหม่ (รักษาเคอร์เซอร์)
+  const el=LBL.sel;if(!el)return;const k=el.dataset.lk,lo=lblOv(),o=Object.assign({},lo[k]||{},patch);
+  if(!o.dx&&!o.dy&&!(o.fs>0)&&!(o.t!=null&&o.t!=='')&&!o.h)delete lo[k];else lo[k]=o;lblSet(el,lo[k]);save(true)}
+function lblPanelFill(){const p=lblPanel(),el=LBL.sel;p.style.display=LBL.on?'block':'none';if(!LBL.on)return;
+  $('lblInfo').textContent=el?'ลากข้อความบนแผ่นเพื่อย้าย หรือใช้ปุ่มด้านล่าง · ข้อความเดิม: '+el.dataset.ot:'แตะ/คลิกข้อความบนแผ่นที่ต้องการปรับ แล้วลากเพื่อย้าย';
+  ['lblTxt','lblFs','lblFm','lblFp','lblHide','lblReset'].forEach(i=>$(i).disabled=!el);if(!el)return;
+  const o=lblOv()[el.dataset.lk]||{};if(document.activeElement!==$('lblTxt'))$('lblTxt').value=(o.t!=null&&o.t!=='')?o.t:el.dataset.ot;
+  $('lblFs').value=o.fs>0?o.fs:(parseFloat(el.dataset.ofs)||10);$('lblHide').checked=!!o.h}
+function lblMode(on){LBL.on=on;const b=$('lblTog');if(b){b.classList.toggle('ghost',!on);b.textContent=on?'✔ ปิดโหมดปรับข้อความ':'✏ ปรับข้อความบนแผ่น (ย้าย / ขนาด / แก้ข้อความ)'}
+  document.querySelectorAll('#planbox svg.sheet').forEach(s=>s.classList.toggle('lbmode',on));
+  document.querySelectorAll('#planbox text').forEach(t=>t.classList.toggle('lbe',on));
+  if(!on&&LBL.sel){LBL.sel.classList.remove('lbsel');LBL.sel=null}lblPanelFill()}
+(function(){
+  const box=$('planbox'),card=box.parentNode,bar=document.createElement('div');bar.className='bar';bar.style.margin='0 0 6px';
+  bar.innerHTML='<button class="b ghost sm" id="lblTog">✏ ปรับข้อความบนแผ่น (ย้าย / ขนาด / แก้ข้อความ)</button><span class="mute">ปรับแล้วบันทึกกับโครงการ และติดไปกับรูป/PDF/DXF ที่ส่งออก</span>';
+  card.insertBefore(bar,box);$('lblTog').onclick=()=>lblMode(!LBL.on);
+  const pt=(svg,e)=>{const m=svg.getScreenCTM();if(!m)return null;const q=svg.createSVGPoint();q.x=e.clientX;q.y=e.clientY;return q.matrixTransform(m.inverse())};
+  box.addEventListener('pointerdown',e=>{if(!LBL.on)return;const el=e.target.closest&&e.target.closest('text');if(!el||el.dataset.lk===undefined)return;e.preventDefault();
+    lblSelect(el);const svg=el.ownerSVGElement,p=pt(svg,e),o=lblOv()[el.dataset.lk]||{};LBL.drag={el,svg,sx:p.x,sy:p.y,dx:o.dx||0,dy:o.dy||0,moved:false};try{svg.setPointerCapture(e.pointerId)}catch(_){}});
+  box.addEventListener('pointermove',e=>{const d=LBL.drag;if(!d)return;const p=pt(d.svg,e);if(!p)return;const ddx=p.x-d.sx,ddy=p.y-d.sy;if(!d.moved&&Math.hypot(ddx,ddy)<1.5)return;d.moved=true;e.preventDefault();
+    const lo=lblOv(),k=d.el.dataset.lk,o=Object.assign({},lo[k]||{},{dx:lblNum(d.dx+ddx),dy:lblNum(d.dy+ddy)});lo[k]=o;lblSet(d.el,o)});
+  const end=()=>{const d=LBL.drag;LBL.drag=null;if(d&&d.moved){save(true);lblPanelFill()}};box.addEventListener('pointerup',end);box.addEventListener('pointercancel',end);
+  box.addEventListener('touchmove',e=>{if(LBL.drag&&LBL.drag.moved)e.preventDefault()},{passive:false});
+  const st=document.createElement('style');st.textContent='svg.lbmode text.lbe{cursor:move}svg.lbmode text.lbe:hover{fill:#e67e00}svg.lbmode text.lbsel{fill:#e67e00;stroke:#e67e00;stroke-width:.5}';document.head.appendChild(st);
+  const _rs=renderSheets;renderSheets=function(){const r=_rs.apply(this,arguments);try{lblApply();if(LBL.on){document.querySelectorAll('#planbox svg.sheet').forEach(s=>s.classList.add('lbmode'));LBL.sel=null;lblPanelFill()}}catch(e){console.error(e)}return r};
+})();
+
 // ===== v39: ส่งออกแผนที่สังเขป — รูปภาพ (เลือกขนาด/ความละเอียด) + DXF =====
 const MM_PAPER=[['a4','A4 (297×210 มม.)',297,210],['a3','A3 (420×297 มม.)',420,297],['a2','A2 (594×420 มม.)',594,420],['a1','A1 (841×594 มม.)',841,594],['s169','สไลด์ 16:9 (PowerPoint/Google Slides)',16,9],['s43','สไลด์ 4:3',4,3],['sq','สี่เหลี่ยมจัตุรัส (โพสต์/เอกสาร)',1,1]];
 const MM_DPI=[[96,'ร่าง (96 DPI / 1280 px)',1280],[150,'ปกติ (150 DPI / 1920 px)',1920],[200,'ละเอียด (200 DPI / 2560 px)',2560],[300,'พิมพ์ (300 DPI / 3840 px)',3840]];
@@ -3273,6 +3355,14 @@ function mmDxfBuild(op){const ma=maGet();if(!ma)return null;const g=G(),V=MMV||m
   ci(lay('MAP_AREA',1,'DASHED'),XY(ma.lat,ma.lon),ma.r);tx('MAP_AREA',[XY(ma.lat,ma.lon)[0],XY(ma.lat,ma.lon)[1]+ma.r+H],'บริเวณสถานที่ก่อสร้าง (โดยสังเขป) รัศมี '+Math.round(ma.r)+' ม.',H*1.1);
   sitesGet().forEach((s,i)=>{const q=XY(s.lat,s.lon),L=lay('MAP_SITE',5);ci(L,q,H*.5);ci(L,q,H*.12);pl(L,[[q[0]-H,q[1]],[q[0]+H,q[1]]]);pl(L,[[q[0],q[1]-H],[q[0],q[1]+H]]);
     tx(L,[q[0]+H*.8,q[1]+H*.5],(i+1)+'. '+(s.name||'จุดก่อสร้างที่ '+(i+1)),H*1.1);tx(L,[q[0]+H*.8,q[1]-H*.9],s.lat.toFixed(6)+', '+s.lon.toFixed(6),H*.8)});
+  // v87: แนวเส้นทางโครงการ (แนวทาง + ขอบผิวทาง + ROW + STA)
+  if(op.route!==false){try{const R=mmRoute();if(R&&R.len>0){const wf=widthFn(g),s0=R.s0,A2=t=>ptAt(R.pts,Math.max(0,Math.min(R.len,t))),LL=p=>{const l=mmLoc(R.mp,p[0],p[1]);return XY(l.lat,l.lon)},O=(t,off)=>LL(offPt(A2(t),off));
+      const T=[];for(let t=0;t<R.len;t+=2)T.push(t);T.push(R.len);
+      pl(lay('PL_CENTER',1,'CENTER'),T.map(t=>{const p=A2(t);return LL([p.x,p.y])}));
+      pl(lay('PL_EDGE_L',3),T.map(t=>O(t,wf(t+s0)[0])));pl(lay('PL_EDGE_R',3),T.map(t=>O(t,-wf(t+s0)[1])));
+      (g.rz||[]).forEach(z=>{const a=Math.max(0,z.a-s0),b=Math.min(R.len,z.b-s0);if(b<=a)return;const TT=T.filter(t=>t>=a&&t<=b);if(TT.length<2)return;if(z.l>0)pl(lay('PL_ROW',5,'DASHED'),TT.map(t=>O(t,z.l)));if(z.r>0)pl(lay('PL_ROW',5,'DASHED'),TT.map(t=>O(t,-z.r)))});
+      const stp=R.len>3000?100:20;for(let st=Math.ceil(s0/stp)*stp;st<=s0+R.len+1e-6;st+=stp){const t=st-s0;pl(lay('PL_STA',2),[O(t,3),O(t,-3)])}
+      [[0,'START STA '+fmtSta(s0)],[R.len,'END STA '+fmtSta(s0+R.len)]].forEach(([t,s2])=>{const q=O(t,wf(t+s0)[0]+H*1.5);tx(lay('PL_STA_TXT',2),q,s2,H)})}}catch(e){}}
   // OSM
   if(op.osm&&g.osm){const names={wat:['OSM_WATER',5],for:['OSM_FOREST',3],res:['OSM_RESIDENTIAL',41],frm:['OSM_FARM',2],bld:['OSM_BUILDING',8]};
     (g.osm.polys||[]).forEach(q=>{const n=names[q.k];if(!n)return;const A=P(q.p);pl(lay(n[0],n[1]),A,true);if(q.n&&A.length)tx(n[0],A[0],q.n,H*.8)});
@@ -3307,8 +3397,14 @@ function mmXpInit(){const P=$('xpPaper');if(P.dataset.ok)return;P.dataset.ok=1;
 $('xpImg').onclick=async()=>{if(!maGet()){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}const bt=$('xpImg'),old=bt.textContent;bt.disabled=true;bt.textContent='กำลังสร้างรูป…';
   try{await renderMapSheet();const b=await mmRaster();if(!b)throw new Error('สร้างรูปไม่สำเร็จ');const s=mmImgSize();dlReady(b,fname()+'_MAP_'+$('xpPaper').value.toUpperCase()+'_'+s.w+'x'+s.h+($('xpFmt').value==='jpg'?'.jpg':'.png'));toast('✔ สร้างรูป '+s.w+'×'+s.h+' แล้ว')}catch(e){problem('MAPIMG_FAIL',e&&e.message)}
   bt.disabled=false;bt.textContent=old};
-$('xpDxf').onclick=()=>{if(!maGet()){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}
-  try{const r=mmDxfBuild({utm:$('xpCoord').value==='utm',osm:$('xpOsm').checked,ann:$('xpAnn').checked,n:gnum($('xpN').value,0)||0});dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_MAP.dxf');toast('✔ ได้ไฟล์ DXF '+r.layers.length+' เลเยอร์ ('+($('xpCoord').value==='utm'?'UTM '+r.zone:'พิกัดท้องถิ่น')+')')}catch(e){problem('MAPDXF_FAIL',e&&e.message)}};
+$('xpDxf').onclick=async()=>{if(!maGet()){toast('ยังไม่มีแผนที่สังเขป — กำหนดบริเวณก่อน',true);return}
+  const bt=$('xpDxf'),old=bt.textContent;bt.disabled=true;
+  try{let note='';
+    if($('xpOsm').checked&&!(G().osm&&((G().osm.lines||[]).length+(G().osm.polys||[]).length+(G().osm.pois||[]).length))){
+      if(navigator.onLine===false)note=' · ⚠ ยังไม่มีข้อมูล OSM (ออฟไลน์ ดึงไม่ได้)';
+      else{bt.textContent='กำลังดึงข้อมูล OSM…';try{const V=mmView2(gnum(G().mpScale,0)||0);G().osm=await mmFetchOsm(V.view);save(true)}catch(e){note=' · ⚠ ดึง OSM ไม่สำเร็จ'}}}
+    const r=mmDxfBuild({utm:$('xpCoord').value==='utm',osm:$('xpOsm').checked,ann:$('xpAnn').checked,n:gnum($('xpN').value,0)||0});dl(new Blob([r.text],{type:'application/dxf'}),fname()+'_MAP.dxf');toast('✔ ได้ไฟล์ DXF '+r.layers.length+' เลเยอร์ ('+($('xpCoord').value==='utm'?'UTM '+r.zone:'พิกัดท้องถิ่น')+')'+note,!!note)}catch(e){problem('MAPDXF_FAIL',e&&e.message)}
+  bt.disabled=false;bt.textContent=old};
 $('xpNext').onclick=()=>showTab('t3');
 mmXpInit();
 
