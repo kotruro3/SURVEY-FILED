@@ -336,8 +336,7 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
     <button class="b" id="mFit">🔍 ดูทั้งหมด</button>
     <button class="b amber" id="mkMapBtn" title="กำหนดบริเวณสถานที่ก่อสร้างโดยสังเขป (ศูนย์กลาง + รัศมี) แล้วสร้างแผนที่สังเขป">🗺 กำหนดบริเวณก่อสร้าง</button><button class="b ghost" id="mMe">📍 ตำแหน่งฉัน</button>
     <button class="b ghost" id="ggOpen" title="เปิด Google Maps ที่บริเวณก่อสร้าง (หรือตำแหน่งปัจจุบัน)">🌐 Google Maps</button>
-    <button class="b ghost" id="mAddMe">＋ จุดสำคัญที่ตำแหน่งฉัน</button>
-    <span class="mute">แตะบนแผนที่เพื่อเพิ่มจุดสำคัญ · แผนที่ต้องมีอินเทอร์เน็ต (การจับพิกัดไม่ต้อง)</span>
+    <span class="mute">แผนที่ต้องมีอินเทอร์เน็ต (การจับพิกัดไม่ต้อง) · กำหนดบริเวณและจุดที่ตั้งก่อสร้างที่ปุ่ม "กำหนดบริเวณก่อสร้าง" (การจับพิกัดไม่ต้อง)</span>
   </div>
   <div id="map"></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">🗺 แผนที่สังเขปบริเวณก่อสร้าง (A4) — วาดเส้นทาง/หมุด/ข้อความเองได้</h3>
@@ -355,7 +354,7 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
     <div id="mmProp" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0;padding:8px;border:1px solid var(--line);border-radius:8px"></div>
     <div class="mute">ข้อมูล Title block (โลโก้ ผู้ลงนาม มาตราส่วน หมายเหตุ ฯลฯ) กรอกที่แท็บ ① DATA PROJECT</div></div>
    <div id="mmSheet"></div></div>
-  <div class="card" style="margin-top:12px"><h3 style="margin:0 0 8px">จุดสำคัญ / ภาพรวมโครงการ</h3><div id="pts"></div><div class="mute" id="ptsEmpty"></div></div>
+  <div class="card" id="ptsCard" style="margin-top:12px"><h3 style="margin:0 0 8px">จุดสำคัญ / ภาพรวมโครงการ (ข้อมูลเดิม)</h3><div id="pts"></div><div class="mute" id="ptsEmpty"></div></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">📤 ส่งออกแผนที่สังเขป</h3>
    <div class="mute">ส่งออกจากแผ่นแผนที่สังเขปด้านบน (รวมสิ่งที่คุณวาด หมุด จุดที่ตั้ง และสีที่ปรับไว้)</div>
    <div style="font-weight:700;margin-top:8px">🖼 1) ไฟล์รูปภาพ (นำไปทำ Presentation / เอกสาร)</div>
@@ -728,8 +727,6 @@ function initMap(){
   const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri World Imagery'});
   osm.addTo(MAP);L.control.layers({'แผนที่ถนน':osm,'ภาพถ่ายดาวเทียม':sat,'Esri World Topo':mmLf('esritopo'),'Esri Street':mmLf('esristreet'),'OpenTopoMap':mmLf('otm')}).addTo(MAP);
   MLAYER=L.layerGroup().addTo(MAP);
-  MAP.on('click',e=>{const ll=e.latlng;L.popup().setLatLng(ll).setContent(`<div style="font-size:13px">${fmtLL(ll.lat,ll.lng)}<br><button id="mkPt" style="margin-top:6px;padding:4px 8px">＋ เพิ่มจุดสำคัญที่นี่</button></div>`).openOn(MAP);
-    setTimeout(()=>{const b=document.getElementById('mkPt');if(b)b.onclick=()=>{addPoint(fmtLL(ll.lat,ll.lng));MAP.closePopup()}},0)});
 }
 async function renderMap(fit){
   if(!window.L){$('map').innerHTML='<div class="mute" style="padding:20px">โหลดแผนที่ไม่ได้ — ต้องต่ออินเทอร์เน็ต (ข้อมูลพิกัดยังบันทึกและส่งออกได้ตามปกติ)</div>';renderPts();return}
@@ -755,7 +752,7 @@ function renderPts(){
       if(openPicker({title:'เลือก/ยืนยันตำแหน่งจุดสำคัญ: '+(p.name||p.type),init:parseLL(p.ll),onConfirm:c=>set(c.lat,c.lon)}))return;
       try{const g=await getPos();set(g.coords.latitude,g.coords.longitude)}catch(e){problem(/ไม่รองรับ/.test(e.message)?'GPS_UNSUPPORTED':'GPS_FAIL',e.message)}};
     d.querySelector('[data-x]').onclick=()=>{if(confirm('ลบจุดนี้?')){(p.ph||[]).forEach(pDel);S.pts.splice(i,1);save();renderMap()}};box.appendChild(d)});
-  $('ptsEmpty').textContent=S.pts.length?'':'ยังไม่มีจุดสำคัญ — แตะแผนที่เพื่อเพิ่ม หรือกด "จุดสำคัญที่ตำแหน่งฉัน"';
+  $('ptsEmpty').textContent='';{const pc=$('ptsCard');if(pc)pc.style.display=S.pts.length?'':'none'}
 }
 function addPoint(ll){S.pts.push({id:uid(),name:'',type:PTYPES[6][1],ll:ll||'',note:'',t:Date.now(),ph:[]});save();renderMap();const ins=$('pts').querySelectorAll('.pt');if(ins.length)ins[ins.length-1].querySelector('input').focus()}
 // ---- photo report / zip ----
@@ -1127,7 +1124,6 @@ $('lb').onclick=e=>{if(e.target===$('lb'))$('lb').classList.remove('on')};
 $('lbDel').onclick=async()=>{if(!LBCUR||!confirm('ลบรูปนี้?'))return;const{o,id,after}=LBCUR;o.ph=o.ph.filter(x=>x!==id);await pDel(id);save(true);$('lb').classList.remove('on');after&&after()};
 $('mFit').onclick=()=>renderMap(true);
 $('mMe').onclick=async()=>{try{const p=await getPos();if(!window.L||!MAP)return;const ll=[p.coords.latitude,p.coords.longitude];if(ME)MAP.removeLayer(ME);ME=L.circle(ll,{radius:Math.max(p.coords.accuracy,5),color:'#1a73e8',fillOpacity:.2}).addTo(MAP);MAP.setView(ll,17)}catch(e){problem(/ไม่รองรับ/.test(e.message)?'GPS_UNSUPPORTED':'GPS_FAIL',e.message)}};
-$('mAddMe').onclick=async()=>{try{const p=await getPos();addPoint(fmtLL(p.coords.latitude,p.coords.longitude))}catch(e){problem(/ไม่รองรับ/.test(e.message)?'GPS_UNSUPPORTED':'GPS_FAIL',e.message)}};
 window.addEventListener('beforeunload',()=>save(true));
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 // ===================== v12 : PLAN SHEETS (แนวทาง · ทิศ · ความกว้าง · มาตราส่วน · แบ่งแผ่น · รูปตัด) =====================
