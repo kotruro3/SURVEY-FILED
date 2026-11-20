@@ -333,12 +333,10 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
 
 <section class="tab" id="t5">
   <div class="bar">
-    <button class="b" id="mFit">🔍 ดูทั้งหมด</button>
-    <button class="b amber" id="mkMapBtn" title="กำหนดบริเวณสถานที่ก่อสร้างโดยสังเขป (ศูนย์กลาง + รัศมี) แล้วสร้างแผนที่สังเขป">🗺 กำหนดบริเวณก่อสร้าง</button><button class="b ghost" id="mMe">📍 ตำแหน่งฉัน</button>
+    <button class="b amber" id="mkMapBtn" title="กำหนดบริเวณสถานที่ก่อสร้างโดยสังเขป (ศูนย์กลาง + รัศมี) แล้วสร้างแผนที่สังเขป">🗺 กำหนดบริเวณก่อสร้าง</button>
     <button class="b ghost" id="ggOpen" title="เปิด Google Maps ที่บริเวณก่อสร้าง (หรือตำแหน่งปัจจุบัน)">🌐 Google Maps</button>
-    <span class="mute">แผนที่ต้องมีอินเทอร์เน็ต (การจับพิกัดไม่ต้อง) · กำหนดบริเวณและจุดที่ตั้งก่อสร้างที่ปุ่ม "กำหนดบริเวณก่อสร้าง" (การจับพิกัดไม่ต้อง)</span>
+    <span class="mute">เลือกพิกัดและกำหนดบริเวณ/จุดที่ตั้งก่อสร้างที่ปุ่ม "กำหนดบริเวณก่อสร้าง" · แผนที่ต้องมีอินเทอร์เน็ต (การจับพิกัดไม่ต้อง)</span>
   </div>
-  <div id="map"></div>
   <div class="card" style="margin-top:12px"><h3 style="margin:0 0 6px">🗺 แผนที่สังเขปบริเวณก่อสร้าง (A4) — วาดเส้นทาง/หมุด/ข้อความเองได้</h3>
    <div class="mute">กำหนดบริเวณก่อสร้างโดยสังเขป (พิกัดศูนย์กลาง + รัศมี) → ดึงสภาพแวดล้อมจาก OpenStreetMap → <b>ลากเส้นทางก่อสร้าง วางหมุดจุดเริ่ม/สิ้นสุด ข้อความ สัญลักษณ์ รูปทรง ด้วยตนเอง</b> ระบบไม่คำนวณเส้นทางหรือจุดสิ้นสุดให้</div>
    <div class="bar"><button class="b" id="mmFetch">🌐 ดึงข้อมูลสภาพแวดล้อมจาก OSM</button><button class="b ghost" id="mmRe">↻ อัปเดตแผ่น</button><button class="b ghost" id="mmClrSitesB" style="color:#b3261e">🗑 ล้างจุดที่ตั้ง</button><button class="b ghost" id="mmClrAreaB" style="color:#b3261e">↺ ล้างบริเวณ</button><span id="mmExp" style="display:none"><button class="b ghost sm" id="mmPng">⬇ PNG</button> <button class="b ghost sm" id="mmSvgB">⬇ SVG</button> <button class="b ghost sm" id="mmPdf">📄 พิมพ์/PDF (A4)</button></span></div>
@@ -729,6 +727,7 @@ function initMap(){
   MLAYER=L.layerGroup().addTo(MAP);
 }
 async function renderMap(fit){
+  renderPts();return; // v86: ยกเลิกแผนที่หลัก — ใช้ปุ่ม 'กำหนดบริเวณก่อสร้าง' แทน
   if(!window.L){$('map').innerHTML='<div class="mute" style="padding:20px">โหลดแผนที่ไม่ได้ — ต้องต่ออินเทอร์เน็ต (ข้อมูลพิกัดยังบันทึกและส่งออกได้ตามปกติ)</div>';renderPts();return}
   initMap();MAP.invalidateSize();
   await Promise.all(photoIds(S).map(pURL));
@@ -1122,8 +1121,6 @@ $('zipBtn').onclick=zipAll;$('pkgBtn').onclick=pkgZip;
 $('lbClose').onclick=()=>$('lb').classList.remove('on');
 $('lb').onclick=e=>{if(e.target===$('lb'))$('lb').classList.remove('on')};
 $('lbDel').onclick=async()=>{if(!LBCUR||!confirm('ลบรูปนี้?'))return;const{o,id,after}=LBCUR;o.ph=o.ph.filter(x=>x!==id);await pDel(id);save(true);$('lb').classList.remove('on');after&&after()};
-$('mFit').onclick=()=>renderMap(true);
-$('mMe').onclick=async()=>{try{const p=await getPos();if(!window.L||!MAP)return;const ll=[p.coords.latitude,p.coords.longitude];if(ME)MAP.removeLayer(ME);ME=L.circle(ll,{radius:Math.max(p.coords.accuracy,5),color:'#1a73e8',fillOpacity:.2}).addTo(MAP);MAP.setView(ll,17)}catch(e){problem(/ไม่รองรับ/.test(e.message)?'GPS_UNSUPPORTED':'GPS_FAIL',e.message)}};
 window.addEventListener('beforeunload',()=>save(true));
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 // ===================== v12 : PLAN SHEETS (แนวทาง · ทิศ · ความกว้าง · มาตราส่วน · แบ่งแผ่น · รูปตัด) =====================
