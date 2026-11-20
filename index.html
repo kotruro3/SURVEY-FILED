@@ -1598,13 +1598,13 @@ function jxSvg(c){const{g,wf,sta0,P,k,s0,s1,pstr,f1}=c;const o=[],PV='#a9b1ba',S
         o.push(`<path d="${q} L${Cp[0].toFixed(1)},${Cp[1].toFixed(1)} Z" fill="${PV}" stroke="none"/>`,ln(Mp,Cp,PV,3.6),`<path d="${q}" fill="none" stroke="${ST}" stroke-width="1.6"/>`,ln(Bp,E(kk,l.len)))}
       else o.push(ln(E(kk,u0),E(kk,l.len)))});
     const mid=Pm(l.len*.6*dx,l.len*.6*dy);o.push(tx(mid,(li===0&&!isR?(JX_SHORT[j.type]||'ทางแยก')+(bk>0?' (กลางแยกก่อน STA '+fmtSta(ts)+' '+f1(bk)+' ม.)':fk>0?' (กลางแยกหลัง STA '+fmtSta(ts)+' '+f1(fk)+' ม.)':' STA '+fmtSta(ts))+' · ':'')+'กว้าง '+f1(l.w)+' ม.',10.5,'#333'))});
-  if(isR){const mw=wl+wr;const all=[{a:0,w:mw},{a:180,w:mw}].filter(q=>!(fk>0&&q.a===0)&&!(bk>0&&q.a===180)).concat(legs.map(l=>({a:((l.a%360)+360)%360,w:l.w}))).map(l=>({a:l.a,d:Math.asin(Math.min(1,(l.w/2)/Ro))/D})).sort((p,q)=>p.a-q.a);
+  if(isR){const mw=wl+wr;const all=[{a:0,w:mw},{a:180,w:mw}].concat(legs.map(l=>({a:((l.a%360)+360)%360,w:l.w}))).map(l=>({a:l.a,d:Math.asin(Math.min(1,(l.w/2)/Ro))/D})).sort((p,q)=>p.a-q.a);
     const cp=Pm(0,0);o.push(`<circle cx="${cp[0].toFixed(1)}" cy="${cp[1].toFixed(1)}" r="${(Ro*k).toFixed(1)}" fill="${PV}" stroke="none"/>`);
     all.forEach((l,i)=>{const n=all[(i+1)%all.length];const a0=l.a+l.d,a1=n.a-n.d+(i===all.length-1?360:0);if(a1-a0<=.5)return;
       const p0=Pm(Ro*Math.cos(a0*D),Ro*Math.sin(a0*D)),p1=Pm(Ro*Math.cos(a1*D),Ro*Math.sin(a1*D));
       o.push(`<path d="M${p0[0].toFixed(1)},${p0[1].toFixed(1)} A${(Ro*k).toFixed(1)},${(Ro*k).toFixed(1)} 0 ${a1-a0>180?1:0} ${sw} ${p1[0].toFixed(1)},${p1[1].toFixed(1)}" fill="none" stroke="${ST}" stroke-width="1.6"/>`)});
     if(Ri>0)o.push(`<circle cx="${cp[0].toFixed(1)}" cy="${cp[1].toFixed(1)}" r="${(Ri*k).toFixed(1)}" fill="#bcd9a4" stroke="#4d7a2f" stroke-width="1.5"/>`);
-    o.push(tx([cp[0],cp[1]-3],'วงเวียน '+(2+legs.length)+' แยก',11,'#2f5a1b'),tx([cp[0],cp[1]+11],'R '+f1(Ro)+' · เกาะกลาง R '+f1(Ri)+' ม.',10,'#2f5a1b'),tx([cp[0],cp[1]+25],(bk>0||fk>0)?'กลางวงเวียน STA '+fmtSta(ts+(fk>0?fk:0)-(bk>0?bk:0)):'STA '+fmtSta(ts),10,'#2f5a1b'))}
+    o.push(tx([cp[0],cp[1]-3],'วงเวียน '+(2+legs.length)+' แยก',11,'#2f5a1b'),tx([cp[0],cp[1]+11],'R '+f1(Ro)+' · เกาะกลาง R '+f1(Ri)+' ม.',10,'#2f5a1b'),tx([cp[0],cp[1]+25],'STA '+fmtSta(ts),10,'#2f5a1b'))}
  });return o.join('')}
 function pvSvg(c){const{g,P,k,s0,s1,sta0,ang,wf}=c;const o=[];(g.pv||[]).forEach(z=>{const A=Math.max(z.a-sta0,s0),B=Math.min(z.b-sta0,s1);if((B-A)*k<90)return;const m=(A+B)/2,w=wf(m+sta0),p=P(m,w[0]+1.6);
   const txt=(z.o?'ผิวทางเดิม: '+z.o:'')+(z.b2?(z.o?' · ':'')+'รองพื้นทางเดิม: '+z.b2:'')+((z.o||z.b2)&&z.n?'  →  ':'')+(z.n?'ผิวทางใหม่: '+z.n:'');
@@ -1772,17 +1772,23 @@ function plPrep(g){
     g.plm=1;if(parseSta(g.sta0)==null)g.sta0='0+000'}}
   if(g.plm)compilePL(g)}
 function autoEndJx(g){let ch=false;const body=(g.pl||[]).filter(p=>!p.lead&&!p.turn&&p._b>p._a+1e-6);if(!body.length||g._end==null)return false;const last=body[body.length-1];
-  const first=body[0],sa=parseSta(g.sta0)||0;
-  (g.jx||[]).forEach(j=>{if(j.type!=='R'||j.fk||j.bk||j.src)return;const ts=parseSta(j.sta);if(ts==null)return;const Ro=Math.max(3,gnum(j.Ro,15));
-    if(Math.abs(ts-g._end)<=.05&&last.t==='L'&&gnum(last.len,0)>Ro+.5){last.len=Math.round((gnum(last.len,0)-Ro)*100)/100;j.fk=Ro;ch=true;try{toast('✔ จุดสิ้นสุดโครงการอยู่ที่ขอบนอกวงเวียน (ย่นปลายทาง '+Ro+' ม.)')}catch(e){}}
-    else if(Math.abs(ts-sa)<=.05&&first.t==='L'&&gnum(first.len,0)>Ro+.5){first.len=Math.round((gnum(first.len,0)-Ro)*100)/100;j.bk=Ro;ch=true;try{toast('✔ จุดเริ่มต้นโครงการอยู่ที่ขอบนอกวงเวียน (ย่นต้นทาง '+Ro+' ม.)')}catch(e){}}});
+  const sta0=parseSta(g.sta0)||0;
+  (g.jx||[]).forEach(j=>{if(j.fk||j.bk||j.src||j.type!=='R')return;const ts=parseSta(j.sta),Ro=Math.max(1,gnum(j.Ro,15));if(ts==null)return;
+    if(Math.abs(ts-g._end)<=.05){if(last.t==='L'&&gnum(last.len,0)>Ro+.5){last.len=Math.round((gnum(last.len,0)-Ro)*100)/100;j.fk=Ro;j.rOff=1;ch=true;try{toast('✔ จุดสิ้นสุดอยู่ที่ขอบนอกวงเวียน (ย่นปลายทาง '+Ro+' ม.)')}catch(e){}}}
+    else if(Math.abs(ts-sta0)<=.05){j.bk=Ro;j.rOff=1;ch=true;try{toast('✔ จุดเริ่มต้น STA 0+000 อยู่ที่ขอบนอกวงเวียน (ศูนย์กลางวงเวียนอยู่ก่อนจุดเริ่ม '+Ro+' ม.)')}catch(e){}}});
   (g.jx||[]).forEach(j=>{if(j.fk||j.bk||j.src||j.type==='R')return;const ts=parseSta(j.sta);if(ts==null||Math.abs(ts-g._end)>.05)return;
     const lg=(j.legs||[]).filter(l=>Math.abs(Math.sin(gnum(l.a,0)*Math.PI/180))>.5);if(!lg.length)return;const hw=Math.max(...lg.map(l=>gnum(l.w,5)))/2;
     if(last.t!=='L'||!(gnum(last.len,0)>hw+.5))return;
     last.len=Math.round((gnum(last.len,0)-hw)*100)/100;j.fk=hw;j.legs=(j.legs||[]).filter(l=>Math.abs(Math.abs(gnum(l.a,0))-180)>10);ch=true;
     try{toast('✔ ปลายโครงการอยู่ที่ทางแยก — ย้ายจุดสิ้นสุดมาที่ขอบทางแยกด้านในแล้ว (ย่นปลายทาง '+hw+' ม.)')}catch(e){}});
   return ch}
-function compilePL(g){compilePL0(g);if(autoEndJx(g))compilePL0(g)}
+function jxSync(g){let ch=false;const body=(g.pl||[]).filter(p=>!p.lead&&!p.turn&&p._b>p._a+1e-6),last=body[body.length-1];
+  (g.jx||[]).forEach(j=>{const isR=j.type==='R',lg=(j.legs||[]).filter(l=>Math.abs(Math.sin(gnum(l.a,0)*Math.PI/180))>.5),hw=(lg.length?Math.max(...lg.map(l=>gnum(l.w,5))):5)/2;
+    const want=isR?Math.max(1,gnum(j.Ro,15)):(j.rOff?hw:null);if(want==null)return;
+    if(j.bk>0&&Math.abs(j.bk-want)>.005){j.bk=want;if(!isR)delete j.rOff;else j.rOff=1;ch=true}
+    else if(j.fk>0&&Math.abs(j.fk-want)>.005){const d=want-j.fk;if(last&&last.t==='L'&&gnum(last.len,0)-d>.5)last.len=Math.round((gnum(last.len,0)-d)*100)/100;j.fk=want;if(!isR)delete j.rOff;else j.rOff=1;ch=true}});
+  return ch}
+function compilePL(g){compilePL0(g);let n=0;while(n++<3&&(autoEndJx(g)|jxSync(g)))compilePL0(g)}
 function compilePL0(g){
   const pl=g.pl||[];let sta=parseSta(g.sta0);if(sta==null)sta=0;
   g.segs=[];g.ws=[];g.rz=[];g.env=[];g.pv=[];
