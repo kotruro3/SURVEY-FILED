@@ -1249,7 +1249,9 @@ function relabel(str,C){const{g,P,wf,sta0,s0,s1,k,area}=C,RAD=Math.PI/180;
     let fill=(it.at.match(/fill="([^"]+)"/)||[0,'#222'])[1];if(/^#f{3}$|^#ffffff$/i.test(fill))fill='#222';
     const b=best.b,lx=Math.max(b.x0,Math.min(it.ax,b.x1)),ly=Math.max(b.y0,Math.min(it.ay,b.y1));
     const attrs=it.at.replace(/\s*transform="[^"]*"/,'').replace(/\s*\b[xy]="[-\d.]+"/g,'').replace(/\s*text-anchor="\w+"/,'').replace(/\s*dominant-baseline="[^"]*"/,'').replace(/\s*fill="[^"]*"/,'');
-    out[it.idx]=`<g class="lbl"><line x1="${it.ax.toFixed(1)}" y1="${it.ay.toFixed(1)}" x2="${lx.toFixed(1)}" y2="${ly.toFixed(1)}" stroke="#555" stroke-width=".7"/><circle cx="${it.ax.toFixed(1)}" cy="${it.ay.toFixed(1)}" r="1.8" fill="#555"/><text x="${best.cx.toFixed(1)}" y="${(best.cy+Hh*.3).toFixed(1)}" text-anchor="middle" fill="${fill}"${attrs}>${it.tx}</text></g>`});
+    // v91: แบบ CAD — จุดชี้ → เส้นเฉียง → ขา(แขน)แนวนอนใต้ข้อความ
+    const shY=b.y1,sx0=b.x0-2,sx1=b.x1+2,ex=it.ax<best.cx?sx0:sx1;
+    out[it.idx]=`<g class="lbl"><line x1="${it.ax.toFixed(1)}" y1="${it.ay.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${shY.toFixed(1)}" stroke="#555" stroke-width=".7"/><line class="lsh" x1="${sx0.toFixed(1)}" y1="${shY.toFixed(1)}" x2="${sx1.toFixed(1)}" y2="${shY.toFixed(1)}" stroke="#555" stroke-width=".7"/><circle cx="${it.ax.toFixed(1)}" cy="${it.ay.toFixed(1)}" r="1.8" fill="#555"/><text x="${best.cx.toFixed(1)}" y="${(best.cy+Hh*.3).toFixed(1)}" text-anchor="middle" fill="${fill}"${attrs}>${it.tx}</text></g>`});
   return str.replace(/\u0001(\d+)\u0001/g,(m,i)=>out[+i])}
 function sheetSvg(M,idx){
   const sid=M.ov?'ov':idx;const{g,bars,sta0,pts,wf,area,N,chunks,hasSec}=M;const[s0,s1]=chunks[idx];const k=5000/N;
@@ -3269,8 +3271,11 @@ function lblSet(el,o){
   if(hide){el.textContent='';el.setAttribute('display','none')}
   else{el.removeAttribute('display');const t=(o&&o.t!=null&&o.t!=='')?o.t:el.dataset.ot;if(el.textContent!==t&&!(o&&o.t==null&&el.children.length))el.textContent=t}
   // เส้นชี้ของป้ายที่ถูกย้ายออกจากจุดเดิม ให้ปลายเส้นตามข้อความ
-  const par=el.parentNode;if(par&&par.classList&&par.classList.contains('lbl')){const ln=par.querySelector('line');if(ln){if(ln.dataset.ox2===undefined){ln.dataset.ox2=ln.getAttribute('x2');ln.dataset.oy2=ln.getAttribute('y2')}
-    ln.setAttribute('x2',lblNum(+ln.dataset.ox2+dx));ln.setAttribute('y2',lblNum(+ln.dataset.oy2+dy));ln.style.display=hide?'none':''}}
+  const par=el.parentNode;if(par&&par.classList&&par.classList.contains('lbl')){par.querySelectorAll('line').forEach(ln=>{const sh=ln.classList.contains('lsh');
+    if(ln.dataset.ox2===undefined){['x1','y1','x2','y2'].forEach(a=>ln.dataset['o'+a]=ln.getAttribute(a))}
+    if(sh){ln.setAttribute('x1',lblNum(+ln.dataset.ox1+dx));ln.setAttribute('x2',lblNum(+ln.dataset.ox2+dx));ln.setAttribute('y1',lblNum(+ln.dataset.oy1+dy));ln.setAttribute('y2',lblNum(+ln.dataset.oy2+dy))}
+    else{ln.setAttribute('x2',lblNum(+ln.dataset.ox2+dx));ln.setAttribute('y2',lblNum(+ln.dataset.oy2+dy))}
+    ln.style.display=hide?'none':''})}
 }
 function lblApply(){
   const lo=(G().lo)||{};
