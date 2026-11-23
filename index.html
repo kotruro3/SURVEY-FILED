@@ -3537,7 +3537,7 @@ const ucFmt=v=>typeof v==='number'?(Math.round(v*10000)/10000).toLocaleString('e
 function ucInfo(){const e=$('ucInfo');if(e)e.innerHTML='แหล่งข้อมูล: '+esc(UC.src)+(UC.updated?' · บันทึกล่าสุด '+new Date(UC.updated).toLocaleString('th-TH'):'')+' · ใบที่สร้างแล้ว <b>'+Object.keys(UC.tmpl).length+'</b> · ช่วงราคาน้ำมันที่ใช้ <b>'+Math.min(Math.max(Math.floor(UC.oil),25),69)+'</b> ('+(UC.rain?'ฝนชุก':'ปกติ')+')'}
 function ucCost(code){const t=UC.tmpl[code];if(!t)return null;try{return ucEval(t)}catch(e){return{cost:null,err:e.message}}}
 function ucCellHtml(code){try{return ucCellHtml0(code)}catch(e){return '<td class="r"></td>'}}
-function ucCellHtml0(code){const t=UC.tmpl[code];if(!t)return '<td class="r mute"><button class="b ghost sm" onclick="ucGo(\''+esc(code).replace(/'/g,'')+'\')">＋ สร้างใบ</button></td>';const r=ucCost(code);return '<td class="r"><button class="b ghost sm" onclick="ucGo(\''+esc(code).replace(/'/g,'')+'\')" title="เปิดใบ UNIT COST">'+(r.cost!==null?ucFmt(r.cost):'⚠ ผิดพลาด')+'</button></td>'}
+function ucCellHtml0(code){const t=UC.tmpl[code];if(!t)return '<td class="r mute"><button class="b ghost sm" onclick="ucGo(\''+esc(code).replace(/'/g,'')+'\')">＋ ITEM UNIT</button></td>';const r=ucCost(code);return '<td class="r"><button class="b ghost sm" onclick="ucGo(\''+esc(code).replace(/'/g,'')+'\')" title="เปิดใบ UNIT COST">'+(r.cost!==null?ucFmt(r.cost):'⚠ ผิดพลาด')+'</button></td>'}
 function ucGo(code){ucView='jobs';ucSel=code;showTab('t8')}
 function ucRender(){
   ucDl();
@@ -3557,7 +3557,7 @@ function ucJobs(){
 function ucEditor(){
   const box=$('ucEd');if(!ucSel||!BYCODE[ucSel]){box.innerHTML='<div class="mute">เลือกรายการงานด้านบนเพื่อสร้าง/แก้ไขใบ UNIT COST</div>';return}
   const it=BYCODE[ucSel],tm=UC.tmpl[ucSel];
-  if(!tm){box.innerHTML=`<h3 style="margin:4px 0">${esc(it.code)} · ${esc(it.name)} <span class="mute">(${esc(it.unit)})</span></h3><div class="mute">ยังไม่มีใบ UNIT COST ของรายการนี้</div><div class="bar"><button class="b" id="ucNew">＋ สร้างใบใหม่ (ว่าง)</button><select id="ucCopy"><option value="">คัดลอกจากใบอื่น…</option>${Object.keys(UC.tmpl).map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>`;
+  if(!tm){box.innerHTML=`<h3 style="margin:4px 0">${esc(it.code)} · ${esc(it.name)} <span class="mute">(${esc(it.unit)})</span></h3><div class="mute">ยังไม่มีใบ UNIT COST ของรายการนี้</div><div class="bar"><button class="b" id="ucNew">＋ สร้าง ITEM UNIT ใหม่ (ว่าง)</button><select id="ucCopy"><option value="">คัดลอกจากใบอื่น…</option>${Object.keys(UC.tmpl).map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>`;
     $('ucNew').onclick=()=>{UC.tmpl[ucSel]={rows:[{label:'ปริมาณ',f:'1',unit:it.unit,nm:'q'},{label:'ค่างานต้นทุน',f:'',unit:'บาท/'+it.unit,fin:1}],note:''};ucSave(true);ucRender()};
     $('ucCopy').onchange=e=>{const c=e.target.value;if(c){UC.tmpl[ucSel]={rows:ucClone(UC.tmpl[c].rows),note:UC.tmpl[c].note||''};ucSave(true);ucRender()}};return}
   let h=`<h3 style="margin:4px 0">${esc(it.code)} · ${esc(it.name)} <span class="mute">(${esc(it.unit)})</span></h3>
