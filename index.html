@@ -417,13 +417,13 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
 
 <section class="tab" id="t9">
   <div class="card">
-    <h3 style="margin:0 0 6px">⑩ งานระบบระบายน้ำ — ท่อ + บ่อพัก + คืนผิวหลังวางท่อ (ตาม STA)</h3>
-    <div class="mute">ใช้แนวทางเดียวกับแท็บ ③ PLAN: ท่อวางตามแนวและโค้งของถนนโดยอัตโนมัติ · ระยะทั้งหมดวัดขอบถึงขอบ · แสดงบนแปลนเป็นชั้นข้อมูล (เปิด/ปิดได้) และมีแผ่น PROFILE ระบบระบายน้ำแยกต่างหาก</div>
-    <div class="bar"><button class="b" id="drAdd">＋ เพิ่มช่วงงาน</button><label class="mck"><input type="checkbox" id="drLayer" checked><span>แสดงงานระบายน้ำบนแปลน</span></label></div>
-    <div id="drList" style="margin:6px 0"></div>
+    <h3 style="margin:0 0 6px">⑩ งานระบบระบายน้ำ — ท่อ + บ่อพัก + คืนผิวหลังวางท่อ (ตามช่วง STA)</h3>
+    <div class="mute">ตารางช่วง STA ด้านล่างเป็นแนวทางอ้างอิง · กด “＋ เพิ่มงานระบายน้ำในช่วงนี้” แล้วเลือกตำแหน่ง <b>ซ้าย / กลาง / ขวา</b> · <b>ผู้ใช้ระบุ “เริ่มวางที่ STA” และ “ความยาวท่อ” เอง</b> (ระบบไม่คำนวณความยาวจาก STA) · หัว-ท้ายแนวปิดด้วยบ่อพักเป็นค่าตั้งต้น หรือเลือกเป็นท่อได้ · บ่อพักเลือกได้ 2 / 3 / 4 ทาง · ระยะทั้งหมดวัดขอบถึงขอบ · แสดงบนแปลนเป็นชั้นข้อมูล (เปิด/ปิดได้) และมีแผ่น PROFILE แยก</div>
+    <div class="bar"><label class="mck"><input type="checkbox" id="drLayer" checked><span>แสดงงานระบายน้ำบนแปลน</span></label></div>
   </div>
-  <div class="card"><div id="drForm"></div><div id="drSum" style="margin-top:8px"></div><div style="overflow:auto"><table id="drMhT" style="max-width:520px"></table></div></div>
-  <div class="card"><h4 style="margin:0 0 6px">สรุปงานระบายน้ำตาม STA ทุกช่วง</h4><div style="overflow:auto" id="drAll"></div></div>
+  <div class="card" id="drBody"></div>
+  <div class="card"><h4 style="margin:0 0 6px">สรุปงานระบายน้ำตาม STA ทุกรายการ</h4><div style="overflow:auto" id="drAll"></div></div>
+  <datalist id="dlJobDR"></datalist><datalist id="dlStaDR"></datalist>
 </section>
 
 <section class="tab" id="t4">
@@ -1351,7 +1351,7 @@ function sheetSvg(M,idx){
   // v90: สภาพแวดล้อมไม่ทับผิวทาง (ทางหลัก/ทางแยก/วงเวียน/โค้ง) — ตัดด้วยหน้ากากรูปผิวทาง
   if(o.length>envS){const pm=[];o.slice(0,envS).join('').replace(/<(?:polygon|circle|path)\b[^>]*fill="#a9b1ba"[^>]*\/>/g,m=>{pm.push(m.replace(/fill="#a9b1ba"/,'fill="#000"').replace(/\sstroke="[^"]*"/g,''));return m});
     if(pm.length){const mid='emk'+sid;const en=o.length;for(let i=envS;i<en;i++)if(!/^\s*<text\b/.test(o[i]))o[i]=`<g mask="url(#${mid})">${o[i]}</g>`;o.push(`<mask id="${mid}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/>${pm.join('')}</mask>`)}}
-  o.push(obSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1}));o.push(drSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1,sid}));
+  o.push(obSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1}));o.push(drSvg({g,wf,sta0,P,k,s0,s1,pstr,sam,st,ang,f1,sid,pts,tot:pts[pts.length-1].s}));
   const rl0=Math.max(gnum(g.rowl,0),...(g.rz||[]).map(z=>z.l)),rr0=Math.max(gnum(g.rowr,0),...(g.rz||[]).map(z=>z.r));
   // centre items
   inR.filter(b=>b.z==='C').forEach(b=>{const T=sam(b.a-sta0,b.b-sta0,st);if(T.length<2)return;const A=[],B=[];
@@ -1923,7 +1923,7 @@ function jxCards(g,mode){mode=mode||'mid';const jm=j=>j.bk>0?'start':(j.fk>0?'en
   h.push(`<div class="mute" style="margin-top:8px">💡 ปุ่มด้านล่างใช้เพิ่มทางแยกที่อยู่ <b>กลางเส้นทาง</b> (ระบุ STA ตำแหน่งแยก) · ถ้าต้องการ <b>เริ่มโครงการที่ทางแยก</b> ให้ใช้กล่อง "🚩 สร้างจุดเริ่มต้นโครงการ" ด้านบนสุดของขั้น ①</div><div style="font-weight:700;margin-top:8px">เลือกแบบทางแยกที่ต้องการเพิ่ม</div><div class="jxpick">${JX_PICK.concat(['R']).map(t=>`<button class="b ghost" data-act="addJx" data-t="${t}" title="${JX_T[t]}">${jxIcon(t)}<span>${JX_SHORT[t]}</span></button>`).join('')}</div></div>`);
   return h.join('')}
 function secLayerCard(s,i,l,j){const mat=LAYMAT.includes(l.n)?l.n:'__oth';const it=l.code&&BYCODE[String(l.code).toUpperCase()];
-  return `<div class="layr lk-${l.k||'none'}"><div class="jr1"><select data-sl="${i}" data-j="${j}" data-f="k"><option value="new"${l.k==='new'?' selected':''}>ใหม่</option><option value="old"${l.k==='old'?' selected':''}>เดิม</option><option value=""${!l.k?' selected':''}>ไม่ระบุ</option></select><select data-sl="${i}" data-j="${j}" data-f="mat">${LAYMAT.map(m=>`<option${mat===m?' selected':''}>${m}</option>`).join('')}<option value="__oth"${mat==='__oth'?' selected':''}>อื่นๆ (ระบุชื่อเอง)</option></select>${mat==='__oth'?`<input data-sl="${i}" data-j="${j}" data-f="n" value="${esc(l.n)}" placeholder="ชื่อชั้นวัสดุ" style="width:150px">`:''}<input data-sl="${i}" data-j="${j}" data-f="t" type="number" step="any" value="${esc(l.t)}" placeholder="หนา ซม." style="width:92px"><span class="mute">ซม.</span></div>
+  return `<div class="layr lk-${l.k||'none'}"><div class="jr1"><select data-sl="${i}" data-j="${j}" data-f="k"><option value="new"${l.k==='new'?' selected':''}>ใหม่</option><option value="old"${l.k==='old'?' selected':''}>เดิม</option><option value=""${!l.k?' selected':''}>ไม่ระบุ</option></select><select data-sl="${i}" data-j="${j}" data-f="mat">${LAYMAT.map(m=>`<option${mat===m?' selected':''}>${m}</option>`).join('')}<option value="__oth"${mat==='__oth'?' selected':''}>อื่นๆ (ระบุชื่อเอง)</option></select>${mat==='__oth'?`<input data-sl="${i}" data-j="${j}" data-f="n" value="${esc(l.n)}" placeholder="ชื่อชั้นวัสดุ" style="width:175px">`:''}<input data-sl="${i}" data-j="${j}" data-f="t" type="number" step="any" value="${esc(l.t)}" placeholder="หนา ซม." style="width:92px"><span class="mute">ซม.</span></div>
   <div class="jr1"><input class="jcode" data-sl="${i}" data-j="${j}" data-f="code" list="dlJob" value="${esc(l.code||'')}" placeholder="รหัสรายการงาน (เลือกภายหลังได้)" autocomplete="off"></div>
   <div class="jr1"><span class="mute" data-sli="${i}:${j}">${it?'<span class="jname">'+esc(it.code)+' · '+esc(it.name)+'</span>':(l.code?'<span style="color:#b3261e">ไม่พบรหัสงานนี้</span>':'ยังไม่ผูกรหัสรายการงาน')}</span><span class="sp" style="flex:1"></span>${j>0?`<button class="b ghost sm" data-act="upLay" data-i="${i}" data-j="${j}">↑</button>`:''}<button class="b ghost sm" data-act="dnLay" data-i="${i}" data-j="${j}">↓</button><button class="b red sm" data-act="delLay" data-i="${i}" data-j="${j}">✕</button></div></div>`}
 function secEditor(g){const h=[];h.push(`<datalist id="dlJob2"></datalist>`);
@@ -3639,134 +3639,159 @@ function ucTrn(){
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',w);else w()})();
 
-// ===== v94: ⑩ งานระบายน้ำ =====
-// ===== v94: ⑩ งานระบายน้ำ — ตัวคำนวณ (ไม่ผูกกับหน้าจอ) =====
-// ระยะทั้งหมดเป็น "ขอบถึงขอบ" ตามแนวทาง (เมตร) ; รอบ = ท่อ (n ท่อน × ความยาวต่อท่อน) + ตัวบ่อพัก
-function drDefRun(){return{id:'d'+Math.random().toString(36).slice(2,8),name:'ท่อระบายน้ำ',a:'',b:'',side:'R',off:3.5,
+// ===== v96: ⑩ งานระบายน้ำ — ตัวคำนวณ (ความยาวผู้ใช้ระบุเอง · ไม่ผูกกับ STA) =====
+// ความยาวทั้งหมดเป็น "ขอบถึงขอบ" ตามแนวท่อ (เมตร) ; รอบ = ท่อ (n ท่อน × ความยาวต่อท่อน) + ตัวบ่อพัก
+function drDefRun(){return{id:'d'+Math.random().toString(36).slice(2,8),v:96,name:'ท่อระบายน้ำ',sg:'',sides:{R:true},
+  aL:'',aC:'',aR:'',lenL:'',lenC:'',lenR:'',offL:'',offR:'',off:3.5,
   dia:0.6,unit:1,n:10,start:'MH',endMH:true,
   bl:1.1,bw:1.1,tl:1.5,tw:1.5,wall:0.15,depth:1.5,dep:{},
-  cnt:'outer',rw:0.8,rz:[],surf:'',note:''}}
-const drN=(v,d)=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:(d===undefined?0:d)};
+  conn:'2',mhc:{},bln:3,bdia:'',
+  cnt:'outer',rw:0.8,rz:[],surf:'',jp:'',jm:'',jr:'',jb:'',note:''}}
+const drN=(v,d)=>{const x=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(x)?x:(d===undefined?0:d)};
 const drR2=x=>Math.round(x*100)/100;
-// a,b = ระยะสะสม (ม.) ของ STA เริ่ม/สิ้นสุด
-function drLayout(r,a,b){
-  const span=Math.max(0,drN(r.n,10))*Math.max(0.01,drN(r.unit,1)),bl=Math.max(0.01,drN(r.bl,1.1)),E=1e-6,el=[],warn=[];
-  let x=a,exp=r.start!=='P';const endMH=!!r.endMH;
+// วางแนว ท่อ-บ่อพัก ตามความยาว L ที่ผู้ใช้ระบุ (เริ่มที่ 0)
+function drLayout(r,L){
+  const span=Math.max(0,drN(r.n,10))*Math.max(0.01,drN(r.unit,1)),bl=Math.max(0.01,drN(r.bl,1.1)),E=1e-6,el=[],warn=[],b=L;
+  let x=0,exp=r.start!=='P';const endMH=!!r.endMH;
   const mh=()=>{el.push({t:'MH',a:x,b:x+bl});x+=bl};
   const pipe=l=>{if(l>E){el.push({t:'P',a:x,b:x+l});x+=l}};
-  if(!(b>a+E))return{el,warn:['STA สิ้นสุดต้องมากกว่า STA เริ่ม']};
+  if(!(b>E))return{el,warn:['ระบุความยาวท่อ']};
   if(!(span>0))return{el,warn:['ความยาวท่อต่อช่วงเป็นศูนย์']};
   let guard=0;
   while(x<b-E&&guard++<5000){
     if(exp){if(x+bl<=b+E){mh();exp=false;continue}warn.push('เหลือเศษ '+drR2(b-x)+' ม. ไม่พอใส่บ่อพัก — ใส่เป็นท่อสั้น');pipe(b-x);x=b;break}
     const R=b-x;
-    if(endMH&&R<=span+bl+E){const p=R-bl;if(p<-E){warn.push('เหลือเศษ '+drR2(R)+' ม. ไม่พอใส่บ่อพักท้ายช่วง');pipe(R);x=b;break}
-      if(p<span-E)warn.push('ท่อท้ายช่วงสั้นลงเหลือ '+drR2(Math.max(0,p))+' ม. (เศษไม่ลงตัว)');
+    if(endMH&&R<=span+bl+E){const p=R-bl;if(p<-E){warn.push('เหลือเศษ '+drR2(R)+' ม. ไม่พอใส่บ่อพักท้ายแนว');pipe(R);x=b;break}
+      if(p<span-E)warn.push('ท่อท้ายแนวสั้นลงเหลือ '+drR2(Math.max(0,p))+' ม. (เศษไม่ลงตัว)');
       pipe(p);if(x+bl<=b+E)mh();x=Math.max(x,b);break}
-    if(!endMH){const p=Math.min(span,R);pipe(p);if(p<span-E){warn.push('ท่อท้ายช่วงสั้นลงเหลือ '+drR2(p)+' ม.');break}exp=true;continue}
+    if(!endMH){const p=Math.min(span,R);pipe(p);if(p<span-E){warn.push('ท่อท้ายแนวสั้นลงเหลือ '+drR2(p)+' ม.');break}exp=true;continue}
     pipe(span);exp=true}
-  // ดัชนีบ่อพัก + เพื่อนบ้านของท่อ
-  let mi=0;el.forEach((e,i)=>{if(e.t==='MH')e.i=mi++;});
+  let mi=0;el.forEach(e=>{if(e.t==='MH')e.i=mi++});
   el.forEach((e,i)=>{if(e.t==='P'){e.mL=!!(el[i-1]&&el[i-1].t==='MH');e.mR=!!(el[i+1]&&el[i+1].t==='MH')}});
   return{el,warn}}
-// ลึกของบ่อใบที่ i (ถ้าไม่ระบุใช้ค่าเริ่มต้น) ; เตือนถ้าน้อยกว่า 1.20
-function drDepth(r,i){const v=r.dep&&r.dep[i];const d=(v===undefined||v===''||v===null)?drN(r.depth,1.5):drN(v,drN(r.depth,1.5));return d}
-// ปริมาณ + พื้นที่คืนผิว
-function drQty(r,a,b,off){off=off||0;
-  const L=drLayout(r,a,b),el=L.el,wall=drN(r.wall,.15),unit=Math.max(.01,drN(r.unit,1)),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),ov=Math.max(0,(tl-bl)/2);
-  let pipeLen=0,pieces=0,mhs=0,gross=0,net=0,minDepth=1e9;
-  const zones=(r.rz||[]).map(z=>({a:(typeof z.a==='number'?z.a:parseSta(z.a)),b:(typeof z.b==='number'?z.b:parseSta(z.b)),w:drN(z.w,0)})).map(z=>({a:z.a==null?null:z.a-off,b:z.b==null?null:z.b-off,w:z.w})).filter(z=>z.a!=null&&z.b!=null&&z.b>z.a&&z.w>0).sort((p,q)=>p.a-q.a);
-  const wAt=(s0,s1)=>{ // พื้นที่แถบคืนผิวบนช่วง [s0,s1] ตามโซนความกว้าง
-    let area=0,rest=s1-s0;zones.forEach(z=>{const o=Math.max(0,Math.min(s1,z.b)-Math.max(s0,z.a));if(o>0){area+=o*z.w;rest-=o}});
-    return area+Math.max(0,rest)*Math.max(0,drN(r.rw,0))};
+// ความลึกบ่อใบที่ i ของตำแหน่ง side (L/C/R) ; ว่าง = ค่าตั้งต้น
+function drDepth(r,i,side){const d0=drN(r.depth,1.5),m=r.dep||{};let v=m[(side||'')+i];if(v===undefined)v=m[i];return(v===undefined||v===''||v===null)?d0:drN(v,d0)}
+// ทางเชื่อมของบ่อพัก : '2' ตรง | '3L' | '3R' | '4'
+function drConn(r,i,side){const m=r.mhc||{},v=m[(side||'')+i];return(v&&v!=='')?v:(r.conn||'2')}
+const drBrN=c=>c==='4'?2:(c==='3L'||c==='3R')?1:0;
+// ปริมาณ + พื้นที่คืนผิว ของ 1 แนว (ยาว L ม.)
+function drQty(r,L,side){
+  const lay=drLayout(r,L),el=lay.el,wall=drN(r.wall,.15),unit=Math.max(.01,drN(r.unit,1)),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),ov=Math.max(0,(tl-bl)/2),bln=Math.max(0,drN(r.bln,3));
+  let pipeLen=0,pieces=0,mhs=0,gross=0,net=0,minDepth=1e9,brN=0;
+  const zones=(r.rz||[]).map(z=>({a:drN(z.a,NaN),b:drN(z.b,NaN),w:drN(z.w,0)})).filter(z=>isFinite(z.a)&&isFinite(z.b)&&z.b>z.a&&z.w>0).sort((p,q)=>p.a-q.a);
+  const wAt=(s0,s1)=>{let area=0,rest=s1-s0;zones.forEach(z=>{const o=Math.max(0,Math.min(s1,z.b)-Math.max(s0,z.a));if(o>0){area+=o*z.w;rest-=o}});return area+Math.max(0,rest)*Math.max(0,drN(r.rw,0))};
   el.forEach(e=>{
-    if(e.t==='MH'){mhs++;const d=drDepth(r,e.i);if(d<minDepth)minDepth=d;gross+=wAt(e.a,e.b);return}
+    if(e.t==='MH'){mhs++;const d=drDepth(r,e.i,side);if(d<minDepth)minDepth=d;brN+=drBrN(drConn(r,e.i,side));gross+=wAt(e.a,e.b);return}
     const m=(e.mL?1:0)+(e.mR?1:0);let len=e.b-e.a;
     if(r.cnt==='in')len+=m*wall;else if(r.cnt==='ded')len-=m*wall;
     len=Math.max(0,len);pipeLen+=len;pieces+=Math.ceil((e.b-e.a)/unit-1e-6);
     gross+=wAt(e.a,e.b);
     const sa=e.a+(e.mL?ov:0),sb=e.b-(e.mR?ov:0);if(sb>sa)net+=wAt(sa,sb)});
-  return{el,warn:L.warn.concat(minDepth<1.2-1e-9&&mhs?['ความลึกบ่อพักน้อยกว่า 1.20 ม.']:[]),
-    pipeLen:drR2(pipeLen),pieces,mhs,total:drR2(b-a),gross:drR2(gross),net:drR2(net),deduct:drR2(gross-net)}}
+  return{el,warn:lay.warn.concat(minDepth<1.2-1e-9&&mhs?['ความลึกบ่อพักน้อยกว่า 1.20 ม.']:[]),
+    pipeLen:drR2(pipeLen),pieces,mhs,brN,brLen:drR2(brN*bln),brPieces:brN*Math.ceil(bln/unit-1e-6),total:drR2(L),gross:drR2(gross),net:drR2(net),deduct:drR2(gross-net)}}
 
-// ===== v94: ⑩ งานระบายน้ำ — ข้อมูล / หน้าจอ / ชั้นบน PLAN / PROFILE =====
+// ===== v96: ⑩ งานระบายน้ำ — ข้อมูล/แปลน/PROFILE =====
+const DR_SIDE={L:'ซ้ายทาง',C:'กลางทาง',R:'ขวาทาง'};
 function drG(){const g=G();if(!g.dr||!Array.isArray(g.dr.runs))g.dr={runs:[]};return g.dr}
 function drRuns(){return drG().runs}
-function drAB(r){const a=parseSta(r.a),b=parseSta(r.b);return(a==null||b==null||!(b>a))?null:[a,b]}
-const DR_SIDE={L:'ซ้ายทาง',R:'ขวาทาง',C:'กลางทาง'};
-let drSel=null;
+// ตำแหน่งที่เลือก (หลายตำแหน่งได้) ; ข้อมูลเดิมจาก v94 มีตำแหน่งเดียวใน r.side
+function drSides(r){const a=[];if(r.sides){['L','C','R'].forEach(k=>{if(r.sides[k])a.push(k)})}else a.push(r.side||'R');return a}
+function drSegOf(r,g){if(!r.sg)return null;return(g.pl||[]).find(p=>p.id===r.sg&&!p.lead)||null}
+// แปลงข้อมูลรุ่น v94/v95 (ช่วง STA เริ่ม-สิ้นสุด) → ความยาวที่ผู้ใช้ระบุเอง (ทำครั้งเดียว)
+function drMigrate(r,g){if(r.v===96)return;g=g||G();
+  let ab=null;if(r.sg&&!r.fx){const p=drSegOf(r,g);if(p&&p._b>p._a)ab=[p._a,p._b]}else{const a=parseSta(r.a),b=parseSta(r.b);if(a!=null&&b!=null&&b>a)ab=[a,b]}
+  const sd=drSides(r);r.sides={};sd.forEach(k=>r.sides[k]=true);delete r.side;
+  const D=drDefRun();Object.keys(D).forEach(k=>{if(r[k]===undefined&&k!=='id')r[k]=D[k]});
+  if(ab){sd.forEach(k=>{if(!r['a'+k])r['a'+k]=fmtSta(ab[0]);if(!r['len'+k])r['len'+k]=String(Math.round((ab[1]-ab[0])*100)/100)});
+    (r.rz||[]).forEach(z=>{const a=parseSta(z.a),b=parseSta(z.b);if(a!=null&&b!=null){z.a=String(Math.round((a-ab[0])*100)/100);z.b=String(Math.round((b-ab[0])*100)/100)}})}
+  const dep=r.dep||{},nd={};Object.keys(dep).forEach(k=>{if(/^\d+$/.test(k))sd.forEach(s=>{nd[s+k]=dep[k]});else nd[k]=dep[k]});r.dep=nd;
+  r.v=96}
+function drStartOf(r,side,g){const t=parseSta(r['a'+side]);if(t!=null)return t;const p=drSegOf(r,g||G());return p?p._a:null}
+function drLenOf(r,side){const v=drN(r['len'+side],0);return v>0?v:0}
+// ระยะจากกลางทางถึงแนวท่อ ต่อฝั่ง (ว่าง = อัตโนมัติ: ขอบผิวทาง + 1.00 ม. ; ถ้าไม่ผูกช่วงใช้ 3.5)
+function drOff(r,sd,g){if(sd==='C')return 0;const v=parseFloat(String(r['off'+sd]==null?'':r['off'+sd]).replace(',','.'));if(isFinite(v))return Math.abs(v);
+  const p=drSegOf(r,g||G());if(p)return (sd==='L'?(p._wl||0):(p._wr||0))+1;return 3.5}
+// 1 รายการ x ตำแหน่งที่เลือก → รายการวาด/คำนวณ (ต้องมีจุดเริ่มและความยาว)
+function drExpand(noCompile){const g=G();if(!noCompile){try{compilePL(g)}catch(e){}}const out=[];
+  drRuns().forEach(r=>{drMigrate(r,g);const sd=drSides(r);sd.forEach(s=>{const a0=drStartOf(r,s,g),Lm=drLenOf(r,s);if(a0==null||!(Lm>0))return;out.push({r,side:s,a0,Lm,off:drOff(r,s,g),multi:sd.length>1})})});return out}
+// ตารางแปลง ระยะตามแนวท่อ u ↔ ตำแหน่ง s บนกึ่งกลางทาง (วัดตามเส้นขนานที่ระยะเยื้อง o)
+function drMapU(pts,sStart,o,Lm,tot){const S=[sStart],U=[0];let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;const ds=.2;
+  while(u<Lm-1e-9&&s<tot-1e-9&&n++<60000){const sn=Math.min(tot,s+ds),q=offPt(ptAt(pts,sn),o);u+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);s=sn;prev=q;S.push(s);U.push(u)}
+  const interp=(A,B,x)=>{if(x<=A[0])return B[0];const n=A.length-1;if(x>=A[n])return B[n]+(A===U||true?0:0);let lo=0,hi=n;while(hi-lo>1){const m=(lo+hi)>>1;if(A[m]<=x)lo=m;else hi=m}const t=(x-A[lo])/((A[hi]-A[lo])||1);return B[lo]+(B[hi]-B[lo])*t};
+  return{S,U,end:u,sOf:u_=>interp(U,S,u_),uOf:s_=>interp(S,U,s_)}}
 // ---------- ชั้นแสดงบน PLAN ----------
-function drPlanRuns(){const g=G();if(g.hideDR)return[];return drRuns().map(r=>({r,ab:drAB(r)})).filter(x=>x.ab)}
+function drPlanRuns(){const g=G();if(g.hideDR)return[];return drExpand(true)}
 function drLegend(g,o,px,y){const L=drPlanRuns();if(!L.length)return y;
   o.push(`<rect x="${px+12}" y="${y-12}" width="22" height="9" fill="#d6e9f8" stroke="#1565c0" stroke-width="1.5"/><text x="${px+44}" y="${y}" font-size="13">ท่อระบายน้ำใหม่</text>`);y+=22;
   o.push(`<rect x="${px+14}" y="${y-13}" width="18" height="14" fill="#fff" stroke="#0d47a1" stroke-width="2"/><rect x="${px+17}" y="${y-10}" width="12" height="8" fill="none" stroke="#0d47a1" stroke-dasharray="3 2"/><text x="${px+44}" y="${y}" font-size="13">บ่อพัก (ปากบ่อ / ตัวบ่อเส้นประ)</text>`);y+=22;
   o.push(`<rect x="${px+12}" y="${y-12}" width="22" height="10" fill="#f3d9bf" stroke="#b4601d"/><text x="${px+44}" y="${y}" font-size="13">แนวคืนผิวหลังวางท่อ</text>`);y+=22;return y}
 function drSvg(c){
-  const{P,k,s0,s1,sta0,pstr,sam,st,ang,sid}=c,o=[];const L=drPlanRuns();if(!L.length)return'';
+  const{P,k,s0,s1,sta0,pstr,ang,sid,pts,tot}=c,o=[];const L=drPlanRuns();if(!L.length)return'';
   const f2=v=>(Math.round(v*100)/100).toFixed(2);
   o.push(`<pattern id="drh${sid}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f8e9d8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#c0773a" stroke-width="1.2"/></pattern>`);
-  L.forEach(({r,ab})=>{
-    const a=ab[0]-sta0,b=ab[1]-sta0;if(b<s0||a>s1)return;
-    const sg=r.side==='L'?1:r.side==='R'?-1:0,off=sg===0?0:sg*Math.abs(drN(r.off,3.5)),dia=Math.max(.05,drN(r.dia,.6)),tw=drN(r.tw,1.5),bw=drN(r.bw,1.1),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5);
-    const Q=drQty(r,a,b,sta0),side=sg||1;
-    const rect=(sa,sb,o1,o2)=>[P(sa,o1),P(sb,o1),P(sb,o2),P(sa,o2)];
-    const band=(sa,sb,o1,o2)=>{const T=sam(sa,sb,st);if(T.length<2)return null;return T.map(t=>P(t,o1)).concat(T.slice().reverse().map(t=>P(t,o2)))};
+  L.forEach(({r,side:sdk,a0,Lm,off:offm,multi})=>{
+    const sg=sdk==='L'?1:sdk==='R'?-1:0,off=sg===0?0:sg*offm,dia=Math.max(.05,drN(r.dia,.6)),tw=drN(r.tw,1.5),bw=drN(r.bw,1.1),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),wl=drN(r.wall,.15),side=sg||1;
+    const T=drMapU(pts,a0-sta0,off,Lm,tot);if(T.S[T.S.length-1]<s0||T.S[0]>s1)return;
+    const Q=drQty(r,Lm,sdk),sOf=T.sOf;
+    const vis=[T.uOf(Math.max(s0,T.S[0])),T.uOf(Math.min(s1,T.S[T.S.length-1]))];
+    const band=(ua,ub,o1,o2)=>{ua=Math.max(ua,vis[0]);ub=Math.min(ub,vis[1]);if(ub-ua<1e-6)return null;const us=[];for(let u=ua;u<ub;u+=Math.max(.25,3/k*2))us.push(u);us.push(ub);return us.map(u=>P(sOf(u),o1)).concat(us.slice().reverse().map(u=>P(sOf(u),o2)))};
+    const rect=(ua,ub,o1,o2)=>{const sa=sOf(ua),sb=sOf(ub);return[P(sa,o1),P(sb,o1),P(sb,o2),P(sa,o2)]};
+    const inV=(a,b)=>b>=vis[0]-1e-6&&a<=vis[1]+1e-6;
     // แถบคืนผิว (ระหว่างขอบปากบ่อ)
-    const ov=Math.max(0,(tl-bl)/2),zones=(r.rz||[]).map(z=>({a:parseSta(z.a),b:parseSta(z.b),w:drN(z.w,0)})).filter(z=>z.a!=null&&z.b!=null&&z.b>z.a&&z.w>0);
-    Q.el.forEach(e=>{if(e.t!=='P')return;const sa=e.a+(e.mL?ov:0),sb=e.b-(e.mR?ov:0);if(sb<=sa||sb<s0||sa>s1)return;
-      const cuts=[sa,sb];zones.forEach(z=>{[z.a-sta0,z.b-sta0].forEach(v=>{if(v>sa&&v<sb)cuts.push(v)})});cuts.sort((p,q)=>p-q);
-      for(let i=0;i<cuts.length-1;i++){const x0=cuts[i],x1=cuts[i+1];if(x1-x0<1e-6)continue;const m=(x0+x1)/2;let w=drN(r.rw,0);zones.forEach(z=>{if(m>=z.a-sta0&&m<z.b-sta0)w=z.w});if(!(w>0))continue;
+    const ov=Math.max(0,(tl-bl)/2),zones=(r.rz||[]).map(z=>({a:drN(z.a,NaN),b:drN(z.b,NaN),w:drN(z.w,0)})).filter(z=>isFinite(z.a)&&isFinite(z.b)&&z.b>z.a&&z.w>0);
+    Q.el.forEach(e=>{if(e.t!=='P')return;const sa=e.a+(e.mL?ov:0),sb=e.b-(e.mR?ov:0);if(sb<=sa||!inV(sa,sb))return;
+      const cuts=[sa,sb];zones.forEach(z=>{[z.a,z.b].forEach(v=>{if(v>sa&&v<sb)cuts.push(v)})});cuts.sort((p,q)=>p-q);
+      for(let i=0;i<cuts.length-1;i++){const x0=cuts[i],x1=cuts[i+1];if(x1-x0<1e-6)continue;const m=(x0+x1)/2;let w=drN(r.rw,0);zones.forEach(z=>{if(m>=z.a&&m<z.b)w=z.w});if(!(w>0))continue;
         const pg=band(x0,x1,off+w/2,off-w/2);if(pg)o.push(`<polygon points="${pstr(pg)}" fill="url(#drh${sid})" stroke="#b4601d" stroke-width=".8"><title>คืนผิว กว้าง ${f2(w)} ม.</title></polygon>`)}});
     // ท่อ
-    Q.el.forEach(e=>{if(e.t!=='P'||e.b<s0||e.a>s1)return;const pg=band(e.a,e.b,off+dia/2,off-dia/2);if(!pg)return;
+    Q.el.forEach(e=>{if(e.t!=='P'||!inV(e.a,e.b))return;const pg=band(e.a,e.b,off+dia/2,off-dia/2);if(!pg)return;
       o.push(`<polygon points="${pstr(pg)}" fill="#d6e9f8" stroke="#1565c0" stroke-width="1.2"><title>${esc(r.name)} Ø${f2(dia)} ม. L=${f2(e.b-e.a)} ม.</title></polygon>`)});
-    // บ่อพัก
-    Q.el.forEach(e=>{if(e.t!=='MH'||e.b<s0||e.a>s1)return;const cm=(e.a+e.b)/2;
+    // บ่อพัก + ท่อสาขา
+    const bdia=Math.max(.05,drN(r.bdia,dia)),bln=Math.max(0,drN(r.bln,3));
+    Q.el.forEach(e=>{if(e.t!=='MH'||!inV(e.a,e.b))return;const cm=(e.a+e.b)/2;
+      const cn=drConn(r,e.i,sdk),sc=sOf(cm);
+      [['L',1],['R',-1]].forEach(([dk,dsg])=>{const on=cn==='4'||cn==='3'+dk;if(!on||!(bln>0))return;const o1=off+dsg*bw/2,o2=off+dsg*(bw/2+bln);
+        o.push(`<polygon points="${pstr([P(sc-bdia/2,o1),P(sc+bdia/2,o1),P(sc+bdia/2,o2),P(sc-bdia/2,o2)])}" fill="#d6e9f8" stroke="#1565c0" stroke-width="1.2"><title>ท่อสาขา Ø${f2(bdia)} ม. L=${f2(bln)} ม.</title></polygon>`)});
       o.push(`<polygon points="${pstr(rect(e.a,e.b,off+bw/2,off-bw/2))}" fill="#eef5fb" stroke="#0d47a1" stroke-width="1" stroke-dasharray="5 3"/>`);
-      o.push(`<polygon points="${pstr(rect(cm-tl/2,cm+tl/2,off+tw/2,off-tw/2))}" fill="none" stroke="#0d47a1" stroke-width="2"><title>บ่อพัก ${e.i+1} · STA ${fmtSta(e.a+sta0)} – ${fmtSta(e.b+sta0)}</title></polygon>`);
-      const wl=drN(r.wall,.15);o.push(`<polygon points="${pstr(rect(cm-bl/2+wl,cm+bl/2-wl,off+bw/2-wl,off-bw/2+wl))}" fill="#fff" stroke="#0d47a1" stroke-width=".7"/>`)});
+      o.push(`<polygon points="${pstr(rect(cm-tl/2,cm+tl/2,off+tw/2,off-tw/2))}" fill="none" stroke="#0d47a1" stroke-width="2"><title>บ่อพัก ${e.i+1} · ระยะ ${f2(e.a)} – ${f2(e.b)} ม. จากจุดเริ่ม · ${{'2':'2 ทาง','3L':'3 ทาง (แยกซ้าย)','3R':'3 ทาง (แยกขวา)','4':'4 ทาง'}[cn]||''}</title></polygon>`);
+      o.push(`<polygon points="${pstr(rect(cm-bl/2+wl,cm+bl/2-wl,off+bw/2-wl,off-bw/2+wl))}" fill="#fff" stroke="#0d47a1" stroke-width=".7"/>`)});
     // ป้าย
-    const lo=off+side*(Math.max(dia,drN(r.rw,0),tw)/2+1.3);
-    Q.el.forEach(e=>{const A=Math.max(e.a,s0),B=Math.min(e.b,s1);if(B<=A)return;const m=(A+B)/2,p=P(m,lo),len=(e.b-e.a)*k;
-      let t=null;if(e.t==='P'){if(len>=150)t='ท่อ Ø'+f2(dia)+' ม. L='+f2(e.b-e.a)+' ม.';else if(len>=70)t='L='+f2(e.b-e.a)+' ม.'}
-      else if(len>=0)t='MH-'+(e.i+1);
-      if(t)o.push(`<text transform="translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(m).toFixed(1)})" font-size="${e.t==='MH'?11:10.5}" font-weight="${e.t==='MH'?700:600}" fill="${e.t==='MH'?'#0d47a1':'#1565c0'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${esc(t)}</text>`)});
-    // ป้ายสรุปช่วง (STA + จำนวน)
-    const mid=(Math.max(a,s0)+Math.min(b,s1))/2,pp=P(mid,lo+side*1.6);
-    if((Math.min(b,s1)-Math.max(a,s0))*k>=160)o.push(`<text transform="translate(${pp[0].toFixed(1)},${pp[1].toFixed(1)}) rotate(${ang(mid).toFixed(1)})" font-size="11" font-weight="700" fill="#0d47a1" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${esc(r.name)} · STA ${fmtSta(ab[0])} – ${fmtSta(ab[1])} · บ่อพัก ${Q.mhs} แห่ง · คืนผิว ${f2(Q.net)} ตร.ม.</text>`)});
+    const lo=off+side*(Math.max(dia,drN(r.rw,0),tw)/2+1.3+(Q.brN?bln:0));
+    Q.el.forEach(e=>{if(!inV(e.a,e.b))return;const A=Math.max(e.a,vis[0]),B=Math.min(e.b,vis[1]);if(B<=A)return;const m=(A+B)/2,sm=sOf(m),p=P(sm,lo),len=(e.b-e.a)*k;
+      let t=null;if(e.t==='P'){if(len>=150)t='ท่อ Ø'+f2(dia)+' ม. L='+f2(e.b-e.a)+' ม.';else if(len>=70)t='L='+f2(e.b-e.a)+' ม.'}else t='MH-'+(e.i+1);
+      if(t)o.push(`<text transform="translate(${p[0].toFixed(1)},${p[1].toFixed(1)}) rotate(${ang(sm).toFixed(1)})" font-size="${e.t==='MH'?11:10.5}" font-weight="${e.t==='MH'?700:600}" fill="${e.t==='MH'?'#0d47a1':'#1565c0'}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${esc(t)}</text>`)});
+    const mu=(Math.max(0,vis[0])+Math.min(Lm,vis[1]))/2;
+    if((vis[1]-vis[0])*k>=160){const sm=sOf(mu),pp=P(sm,lo+side*1.6);o.push(`<text transform="translate(${pp[0].toFixed(1)},${pp[1].toFixed(1)}) rotate(${ang(sm).toFixed(1)})" font-size="11" font-weight="700" fill="#0d47a1" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">${esc(r.name)}${multi||sdk==='C'?' ('+DR_SIDE[sdk]+')':''} · ยาว ${f2(Lm)} ม. · บ่อพัก ${Q.mhs} แห่ง · คืนผิว ${f2(Q.net)} ตร.ม.</text>`)}});
   return o.join('')}
-// ---------- PROFILE ระบบระบายน้ำ (แผ่นแยก) ----------
+// ---------- PROFILE ระบบระบายน้ำ (แผ่นแยก) : แกนนอน = ระยะตามแนวท่อที่ผู้ใช้ระบุ ----------
+function drPlen(len){const std=[100,200,250];for(const N of std){const k=5000/N;if(len*k<=1300)return{N,len:len}}return{N:250,len:65}}
 function drProfSheets(){
-  const out=[],g=G(),W=1485,H=1050,tb=g.tb||{},P0=S.proj||{};let sheetNo=0;const runs=drRuns().map(r=>({r,ab:drAB(r)})).filter(x=>x.ab);
-  const tot=runs.reduce((n,{r,ab})=>n+Math.max(1,Math.ceil((ab[1]-ab[0])/ (drPlen(ab[1]-ab[0]).len))),0);
-  runs.forEach(({r,ab})=>{
-    const pl=drPlen(ab[1]-ab[0]),Nh=pl.N,kx=5000/Nh,ky=100,nPart=Math.max(1,Math.ceil((ab[1]-ab[0])/pl.len-1e-9));
-    const Q=drQty(r,ab[0],ab[1]),dia=Math.max(.05,drN(r.dia,.6)),wall=drN(r.wall,.15),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),tw0=drN(r.tw,1.5),RT=.15;
-    const mhD=e=>drDepth(r,e.i);
+  const out=[],W=1485,H=1050,P0=S.proj||{};let sheetNo=0;const runs=drExpand();
+  const tot=runs.reduce((n,x)=>n+Math.max(1,Math.ceil(x.Lm/drPlen(x.Lm).len-1e-9)),0);
+  runs.forEach(({r,Lm,side:sdk,a0})=>{
+    const pl=drPlen(Lm),Nh=pl.N,kx=5000/Nh,ky=100,nPart=Math.max(1,Math.ceil(Lm/pl.len-1e-9));
+    const Q=drQty(r,Lm,sdk),dia=Math.max(.05,drN(r.dia,.6)),wall=drN(r.wall,.15),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),RT=.15;
+    const mhD=e=>drDepth(r,e.i,sdk);
     for(let pi=0;pi<nPart;pi++){
-      const ps=ab[0]+pi*pl.len,pe=Math.min(ab[1],ps+pl.len);sheetNo++;
+      const ps=pi*pl.len,pe=Math.min(Lm,ps+pl.len);sheetNo++;
       const X0=90,Y0=260,X=s=>X0+(s-ps)*kx,Y=d=>Y0+d*ky;const o=[],T=(x,y,t,sz,ex)=>o.push(`<text x="${x.toFixed?x.toFixed(1):x}" y="${y.toFixed?y.toFixed(1):y}" font-size="${sz}" ${ex||''}>${esc(t)}</text>`);
-      const id='dp'+sheetNo;
+      const id='dp'+sheetNo,f2=v=>(Math.round(v*100)/100).toFixed(2);
       o.push(`<svg class="sheet secsheet drsheet" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Sarabun,Tahoma,sans-serif"><rect width="${W}" height="${H}" fill="#fff"/><defs><pattern id="e${id}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="#d8c9a8" stroke-width="1"/></pattern><pattern id="c${id}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="6" height="6" fill="#e3e6ea"/><line x1="0" y1="0" x2="0" y2="6" stroke="#9aa3ad" stroke-width="1"/></pattern></defs>
 <rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="#111" stroke-width="3"/><rect x="20" y="20" width="${W-40}" height="${H-40}" fill="none" stroke="#111"/>`);
       T(32,52,'PROFILE ระบบระบายน้ำ (DRAINAGE PROFILE)',24,'font-weight="700" fill="#1f3a5f"');
       T(W-36,52,`แผ่นที่ ${sheetNo} / ${tot}`,16,'text-anchor="end"');
-      T(32,80,`${r.name||'ท่อระบายน้ำ'} · ${DR_SIDE[r.side]||''} · STA ${fmtSta(ps)} – ${fmtSta(pe)} · ท่อ Ø${(Math.round(dia*100)/100).toFixed(2)} ม. · มาตราส่วน แนวนอน 1:${Nh} แนวตั้ง 1:50`,15,'fill="#333"');
+      T(32,80,`${r.name||'ท่อระบายน้ำ'} · ${DR_SIDE[sdk]||''} · เริ่มที่ STA ${fmtSta(a0)} · ความยาวแนวท่อ ${f2(Lm)} ม. (แสดงระยะ ${f2(ps)} – ${f2(pe)} ม.) · ท่อ Ø${f2(dia)} ม. · มาตราส่วน แนวนอน 1:${Nh} แนวตั้ง 1:50`,15,'fill="#333"');
       T(32,100,`${P0.name||''}${P0.route?' · '+P0.route:''}`,13,'fill="#666"');
       const xa=X(ps),xb=X(pe);
       o.push(`<clipPath id="k${id}"><rect x="${(xa-4).toFixed(1)}" y="110" width="${(xb-xa+8).toFixed(1)}" height="700"/></clipPath><g clip-path="url(#k${id})">`);
-      // ดิน
       o.push(`<rect x="${xa}" y="${Y0}" width="${xb-xa}" height="330" fill="url(#e${id})"/>`);
-      // บ่อพัก
-      const mhs=Q.el.filter(e=>e.t==='MH');
-      mhs.forEach(e=>{if(e.b<ps||e.a>pe)return;const D=mhD(e),cm=(e.a+e.b)/2,x1=X(e.a),x2=X(e.b),yb=Y(D);
+      Q.el.filter(e=>e.t==='MH').forEach(e=>{if(e.b<ps||e.a>pe)return;const D=mhD(e),cm=(e.a+e.b)/2,x1=X(e.a),x2=X(e.b),yb=Y(D);
         o.push(`<rect x="${x1.toFixed(1)}" y="${Y0}" width="${(x2-x1).toFixed(1)}" height="${(yb-Y0).toFixed(1)}" fill="url(#c${id})" stroke="#222" stroke-width="1.6"/>`);
         o.push(`<rect x="${X(e.a+wall).toFixed(1)}" y="${Y0}" width="${Math.max(1,(x2-x1)-2*wall*kx).toFixed(1)}" height="${(yb-Y0-wall*ky).toFixed(1)}" fill="#fff" stroke="#222" stroke-width="1"/>`);
-        // ปากบ่อ (ยื่นกว้างกว่าตัวบ่อ)
         const ex=(tl-bl)/2,rx1=X(e.a-ex),rx2=X(e.b+ex),ix1=X(e.a+wall),ix2=X(e.b-wall);
         o.push(`<path d="M${rx1.toFixed(1)} ${Y0-RT*ky} H${ix1.toFixed(1)} V${Y0} H${x1.toFixed(1)} V${Y0+RT*ky} H${rx1.toFixed(1)} Z M${rx2.toFixed(1)} ${Y0-RT*ky} H${ix2.toFixed(1)} V${Y0} H${x2.toFixed(1)} V${Y0+RT*ky} H${rx2.toFixed(1)} Z" fill="#cfd5dc" stroke="#222" stroke-width="1.4"/>`);
-        if(cm>=ps&&cm<=pe){T((x1+x2)/2,Y0-RT*ky-34,'MH-'+(e.i+1),14,'text-anchor="middle" font-weight="700" fill="#0d47a1"');T((x1+x2)/2,Y0-RT*ky-18,'STA '+fmtSta(cm),11,'text-anchor="middle" fill="#333"')}});
-      // ท่อ (เอียงตามความลึกบ่อพักสองฝั่ง)
+        if(cm>=ps&&cm<=pe){T((x1+x2)/2,Y0-RT*ky-34,'MH-'+(e.i+1),14,'text-anchor="middle" font-weight="700" fill="#0d47a1"');
+          const cn=drConn(r,e.i,sdk);T((x1+x2)/2,Y0-RT*ky-18,{'2':'2 ทาง','3L':'3 ทาง (ซ้าย)','3R':'3 ทาง (ขวา)','4':'4 ทาง'}[cn]||'',11,'text-anchor="middle" fill="#333"')}});
       Q.el.forEach((e,i)=>{if(e.t!=='P'||e.b<ps||e.a>pe)return;
         const prev=Q.el[i-1],next=Q.el[i+1];const dl=prev&&prev.t==='MH'?mhD(prev):(next&&next.t==='MH'?mhD(next):drN(r.depth,1.5)),dr=next&&next.t==='MH'?mhD(next):dl;
         const xl=X(e.a)-(prev&&prev.t==='MH'?wall*kx:0),xr=X(e.b)+(next&&next.t==='MH'?wall*kx:0);
@@ -3774,78 +3799,130 @@ function drProfSheets(){
         o.push(`<polygon points="${xl.toFixed(1)},${(bl_-dia*ky).toFixed(1)} ${xr.toFixed(1)},${(br_-dia*ky).toFixed(1)} ${xr.toFixed(1)},${br_.toFixed(1)} ${xl.toFixed(1)},${bl_.toFixed(1)}" fill="#d6e9f8" stroke="#1565c0" stroke-width="1.6"/>`);
         const n=Math.ceil((e.b-e.a)/Math.max(.01,drN(r.unit,1))-1e-6);
         for(let j=1;j<n;j++){const s=e.a+j*(e.b-e.a)/n,f=(s-e.a)/((e.b-e.a)||1),yy=bl_+(br_-bl_)*f;o.push(`<line x1="${X(s).toFixed(1)}" y1="${(yy-dia*ky).toFixed(1)}" x2="${X(s).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#1565c0" stroke-width=".7"/>`)}
-        // งานคืนผิว
         const ov=Math.max(0,(tl-bl)/2),sa=e.a+(e.mL?ov:0),sb=e.b-(e.mR?ov:0);
         if(sb>sa&&sb>ps&&sa<pe)o.push(`<rect x="${X(Math.max(sa,ps)).toFixed(1)}" y="${Y0-RT*ky}" width="${(X(Math.min(sb,pe))-X(Math.max(sa,ps))).toFixed(1)}" height="${RT*ky}" fill="#f3d9bf" stroke="#b4601d" stroke-width="1.2"/>`);
-        const m=(Math.max(e.a,ps)+Math.min(e.b,pe))/2;
-        {const pxw=(Math.min(e.b,pe)-Math.max(e.a,ps))*kx;if(pxw>=60)T(X(m),Y0-RT*ky-34,pxw>=170?'ท่อ Ø'+(Math.round(dia*100)/100).toFixed(2)+' ม. L='+(Math.round((e.b-e.a)*100)/100).toFixed(2)+' ม.':'L='+(Math.round((e.b-e.a)*100)/100).toFixed(2),12,'text-anchor="middle" fill="#1565c0" font-weight="600"');}
-        if((Math.min(e.b,pe)-Math.max(e.a,ps))*kx>=170)T(X(m),Y0-RT*ky-18,'คืนผิวกว้าง '+(Math.round(drN(r.rw,0)*100)/100).toFixed(2)+' ม.'+(r.surf?' · '+r.surf:''),11,'text-anchor="middle" fill="#8a4b0f"')});
-      // ระดับดิน + สเกล STA
+        const m=(Math.max(e.a,ps)+Math.min(e.b,pe))/2,pxw=(Math.min(e.b,pe)-Math.max(e.a,ps))*kx;
+        if(pxw>=60)T(X(m),Y0-RT*ky-34,pxw>=170?'ท่อ Ø'+f2(dia)+' ม. L='+f2(e.b-e.a)+' ม.':'L='+f2(e.b-e.a),12,'text-anchor="middle" fill="#1565c0" font-weight="600"');
+        if(pxw>=170)T(X(m),Y0-RT*ky-18,'คืนผิวกว้าง '+f2(drN(r.rw,0))+' ม.'+(r.surf?' · '+r.surf:''),11,'text-anchor="middle" fill="#8a4b0f"')});
       o.push(`<line x1="${xa}" y1="${Y0}" x2="${xb}" y2="${Y0}" stroke="#222" stroke-width="2"/>`);T(xa+4,Y0+16,'ระดับดินเดิม',11,'fill="#666" paint-order="stroke" stroke="#fff" stroke-width="3"');
       const yA=Y0+365;o.push(`<line x1="${xa}" y1="${yA}" x2="${xb}" y2="${yA}" stroke="#222"/>`);
-      const stp=pl.N<=250?5:10;for(let s=Math.ceil(ps/stp)*stp;s<=pe+1e-6;s+=stp){const x=X(s);o.push(`<line x1="${x.toFixed(1)}" y1="${yA}" x2="${x.toFixed(1)}" y2="${yA+8}" stroke="#c0392b" stroke-width="1.4"/>`);T(x,yA+24,fmtSta(s),11,'text-anchor="middle" transform="rotate(-0)"')}
-      o.push('</g>');T(X0,yA+56,'หมายเหตุ: ระยะทั้งหมดวัดขอบถึงขอบตามแนวทาง · ความลึกบ่อพักวัดจากระดับดินเดิม (ไม่แสดงตัวเลข) · ท่อวางที่พื้นบ่อพัก ลาดตามความลึกบ่อแต่ละใบ',11,'fill="#555"');
+      const stp=Nh<=250?5:10;for(let s=Math.ceil(ps/stp)*stp;s<=pe+1e-6;s+=stp){const x=X(s);o.push(`<line x1="${x.toFixed(1)}" y1="${yA}" x2="${x.toFixed(1)}" y2="${yA+8}" stroke="#c0392b" stroke-width="1.4"/>`);T(x,yA+24,f2(s),11,'text-anchor="middle"')}
+      o.push('</g>');T(X0,yA+56,'หมายเหตุ: แกนนอนคือระยะตามแนวท่อ (ม.) นับจากจุดเริ่มที่ผู้ใช้ระบุ · ระยะทั้งหมดวัดขอบถึงขอบ · ความลึกบ่อพักวัดจากระดับดินเดิม (ไม่แสดงตัวเลข) · ท่อวางที่พื้นบ่อพัก ลาดตามความลึกบ่อแต่ละใบ · ท่อสาขาไม่แสดงในแผ่นนี้',11,'fill="#555"');
       o.push('</svg>');out.push(o.join(''))}});
   return out}
-function drPlen(len){const std=[100,200,250];for(const N of std){const k=5000/N;if(len*k<=1300)return{N,len:len}}return{N:250,len:65}}
-// ---------- หน้าจอ ----------
-const DR_F=[['name','ชื่อช่วงงาน','t'],['a','STA เริ่ม','t'],['b','STA สิ้นสุด','t']];
-function drNewRun(){const r=drDefRun();const g=G();const m=drRuns().length;r.name='ท่อระบายน้ำ '+(m+1);return r}
+
+// ---------- หน้าจอ v96: ผู้ใช้ระบุความยาวเอง (ตาราง STA เป็นแนวทางอ้างอิง) ----------
+const f2d=v=>(Math.round(v*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const DR_CN={'2':'2 ทาง (ตรง)','3L':'3 ทาง (แยกซ้าย)','3R':'3 ทาง (แยกขวา)','4':'4 ทาง (แยกซ้าย+ขวา)'};
+const sdName=k=>({L:'ซ้าย',C:'กลาง',R:'ขวา'}[k]);
+function drNewItem(sg){const r=drDefRun();r.sg=sg||'';return r}
+// ปริมาณรวมของ 1 รายการ (ทุกตำแหน่งที่เลือก ที่ระบุความยาวแล้ว)
+function drItemQ(r){drMigrate(r);const g=G(),per=[];let pipe=0,mh=0,area=0,pieces=0,br=0,brP=0,warn=[],len=0;
+  drSides(r).forEach(k=>{const L=drLenOf(r,k);if(!(L>0)){per.push({k,L:0});return}const q=drQty(r,L,k);per.push({k,L,q,a0:drStartOf(r,k,g)});
+    pipe+=q.pipeLen;mh+=q.mhs;area+=q.net;pieces+=q.pieces;br+=q.brLen;brP+=q.brPieces;len+=L;q.warn.forEach(w=>warn.push(sdName(k)+': '+w))});
+  return{per,pipe:drR2(pipe),mh,area:drR2(area),pieces,br:drR2(br),brPieces:brP,warn,len:drR2(len),ok:per.some(p=>p.L>0)}}
+function drCodeInfo(code,qty){const c=String(code||'').trim().toUpperCase();if(!c)return'<span class="mute">ยังไม่ระบุรหัสงาน (ไม่บังคับ)</span>';const it=BYCODE[c];
+  return it?'<b>'+esc(it.code)+'</b> '+esc(it.name)+(qty!=null?' · ปริมาณ <b>'+f2d(qty)+'</b> '+esc(it.unit||''):''):'<span class="warn">! ไม่พบรหัส '+esc(c)+' ใน JOB LIST</span>'}
+const sdOK=r=>drSides(r).length>0;
+function drQtyHtml(r){if(!sdOK(r))return'<span style="color:var(--warn)">⚠ เลือกตำแหน่ง ซ้าย / กลาง / ขวา อย่างน้อย 1 ตำแหน่ง</span>';
+  const x=drItemQ(r);if(!x.ok)return'<span class="mute">ระบุ “ความยาวท่อ” ของตำแหน่งที่เลือก (ระบบไม่คำนวณความยาวจาก STA ให้)</span>';
+  const one=x.per.filter(p=>p.L>0).map(p=>`<div><b>${sdName(p.k)}</b> ยาว ${f2d(p.L)} ม. → ท่อ <b>${f2d(p.q.pipeLen)}</b> ม. (${p.q.pieces} ท่อน) · บ่อพัก <b>${p.q.mhs}</b> แห่ง${p.q.brN?' · ท่อสาขา <b>'+f2d(p.q.brLen)+'</b> ม. ('+p.q.brN+' ทาง)':''} · คืนผิวสุทธิ <b>${f2d(p.q.net)}</b> ตร.ม.</div>`).join('');
+  const k=x.per.filter(p=>p.L>0).length;
+  return one+(k>1?`<div style="border-top:1px dashed var(--line);margin-top:3px;padding-top:3px">รวม ท่อ <b>${f2d(x.pipe)}</b> ม. · บ่อพัก <b>${x.mh}</b> แห่ง${x.br?' · ท่อสาขา <b>'+f2d(x.br)+'</b> ม.':''} · คืนผิว <b>${f2d(x.area)}</b> ตร.ม.</div>`:'')+(x.warn.length?'<div style="color:var(--warn)">⚠ '+x.warn.map(esc).join('<br>⚠ ')+'</div>':'')}
+function drMhTables(r){const out=[];drSides(r).forEach(k=>{const L=drLenOf(r,k);if(!(L>0))return;const q=drQty(r,L,k),mhs=q.el.filter(e=>e.t==='MH');if(!mhs.length)return;
+  out.push(`<div style="margin-top:4px"><b>${sdName(k)}</b><table class="mjT" style="max-width:640px"><tr><th>บ่อพัก</th><th>ระยะจากจุดเริ่ม (ม.)</th><th>ความลึก (ม.)</th><th>ทางเชื่อม</th></tr>`+mhs.map(e=>{const cv=(r.mhc&&r.mhc[k+e.i])||'';
+    return`<tr><td>MH-${e.i+1}</td><td>${f2d(e.a)} – ${f2d(e.b)}</td><td><input type="number" step="any" data-dr="${r.id}" data-dep="${k}${e.i}" value="${(r.dep&&r.dep[k+e.i]!==undefined&&r.dep[k+e.i]!=='')?esc(r.dep[k+e.i]):''}" placeholder="${drN(r.depth,1.5)}" style="width:80px"></td><td><select data-dr="${r.id}" data-mhc="${k}${e.i}"><option value="">ตามค่าตั้งต้น (${DR_CN[r.conn||'2']})</option>${Object.keys(DR_CN).map(c=>`<option value="${c}"${cv===c?' selected':''}>${DR_CN[c]}</option>`).join('')}</select></td></tr>`}).join('')+'</table></div>')});
+  return out.join('')||'<div class="mute">ระบุความยาวท่อก่อน แล้วรายการบ่อพักจะแสดงที่นี่</div>'}
+function drItemHtml(r,seg){drMigrate(r);
+  const g=G(),sd=drSides(r),I=(f,l,ty,w,ex)=>`<div><label>${l}</label><input data-dr="${r.id}" data-f="${f}" ${ty==='n'?'type="number" step="any" inputmode="decimal"':''} value="${esc(r[f]==null?'':r[f])}" ${w?'style="width:'+w+'"':''} ${ex||''}></div>`;
+  const tg=k=>`<button class="b sm ${sd.includes(k)?'':'ghost'}" data-act="side" data-dr="${r.id}" data-k="${k}">${sdName(k)}</button>`;
+  const segLen=seg?f2d(seg._b-seg._a):'';
+  const rows=sd.map(k=>{const auto=drOff({...r,['off'+k]:''},k,g);
+    return`<tr><td><b>${sdName(k)}</b></td>
+     <td><input data-dr="${r.id}" data-f="a${k}" value="${esc(r['a'+k]||'')}" placeholder="${seg?esc(fmtSta(seg._a)):'STA เริ่มต้น'}" style="width:110px" list="dlStaDR"></td>
+     <td><input data-dr="${r.id}" data-f="len${k}" type="number" step="any" inputmode="decimal" value="${esc(r['len'+k]||'')}" placeholder="${seg?'ช่วงนี้ ≈ '+segLen:'ระบุความยาว'}" style="width:120px"></td>
+     <td>${k==='C'?'<span class="mute">แนวกึ่งกลางทาง</span>':`<input data-dr="${r.id}" data-f="off${k}" type="number" step="any" inputmode="decimal" value="${esc(r['off'+k]||'')}" placeholder="อัตโนมัติ ${f2d(auto)}" style="width:110px">`}</td></tr>`}).join('');
+  const rz=(r.rz||[]).map((z,i)=>`<tr><td><input data-dr="${r.id}" data-z="${i}" data-zf="a" type="number" step="any" value="${esc(z.a||'')}" style="width:90px"></td><td><input data-dr="${r.id}" data-z="${i}" data-zf="b" type="number" step="any" value="${esc(z.b||'')}" style="width:90px"></td><td><input data-dr="${r.id}" data-z="${i}" data-zf="w" type="number" step="any" value="${esc(z.w==null?'':z.w)}" style="width:76px"></td><td><button class="b ghost sm" data-act="zdel" data-dr="${r.id}" data-z="${i}">✕</button></td></tr>`).join('');
+  const x=drItemQ(r);
+  return `<div class="jobr drit" id="dri-${r.id}" data-dr="${r.id}">
+   <div class="jr1"><input data-dr="${r.id}" data-f="name" value="${esc(r.name)}" placeholder="ชื่องาน เช่น ท่อระบายน้ำ Ø0.60" style="flex:1;min-width:180px;font-weight:700">${tg('L')}${tg('C')}${tg('R')}<button class="b ghost sm" data-act="dup" data-dr="${r.id}" title="ทำสำเนา">⎘</button><button class="b red sm" data-act="del" data-dr="${r.id}" title="ลบรายการนี้">✕</button></div>
+   ${sd.length?`<div style="overflow:auto;margin-top:4px"><table class="mjT"><tr><th>ตำแหน่ง</th><th>เริ่มวางที่ STA</th><th>ความยาวท่อ (ม.) · ระบุเอง</th><th>ระยะจากกลางทาง (ม.)</th></tr>${rows}</table></div>`:''}
+   <div class="grid g4" style="margin-top:4px">${I('dia','ท่อ Ø (ม.)','n')}${I('unit','ความยาวต่อท่อน (ม.)','n')}${I('n','ท่อนต่อช่วง (ระหว่างบ่อ)','n')}${I('rw','คืนผิวกว้าง (ม.)','n')}
+    ${I('bl','ตัวบ่อ ยาวตามแนวท่อ (ม.)','n')}${I('bw','ตัวบ่อ กว้างขวางแนว (ม.)','n')}${I('tl','ปากบ่อ ยาวตามแนวท่อ (ม.)','n')}${I('tw','ปากบ่อ กว้างขวางแนว (ม.)','n')}</div>
+   <div class="grid g4" style="margin-top:4px">
+    <div><label>หัวแนว (จุดเริ่ม)</label><select data-dr="${r.id}" data-f="start"><option value="MH"${r.start!=='P'?' selected':''}>เริ่มด้วยบ่อพัก</option><option value="P"${r.start==='P'?' selected':''}>เริ่มด้วยท่อ</option></select></div>
+    <div><label>ท้ายแนว (จุดสิ้นสุด)</label><select data-dr="${r.id}" data-f="endMH"><option value="1"${r.endMH?' selected':''}>ปิดท้ายด้วยบ่อพัก</option><option value="0"${!r.endMH?' selected':''}>ปิดท้ายด้วยท่อ</option></select></div>
+    <div><label>ทางเชื่อมบ่อพัก (ทุกบ่อ · ค่าตั้งต้น)</label><select data-dr="${r.id}" data-f="conn">${Object.keys(DR_CN).map(c=>`<option value="${c}"${(r.conn||'2')===c?' selected':''}>${DR_CN[c]}</option>`).join('')}</select></div>
+    ${I('bln','ท่อสาขา ยาว (ม.) ต่อทาง','n')}</div>
+   <div class="mute" style="margin:4px 0" id="drq-${r.id}">${drQtyHtml(r)}</div>
+   <details class="drmore" ${window._drOpen&&window._drOpen[r.id]?'open':''} data-dr="${r.id}"><summary style="cursor:pointer;font-weight:700;color:var(--brand)">ตั้งค่าเพิ่มเติม · บ่อพักรายใบ · รหัสงาน</summary>
+    <div class="grid g4" style="margin-top:6px">
+     <div><label>วิธีนับความยาวท่อ</label><select data-dr="${r.id}" data-f="cnt"><option value="outer"${r.cnt==='outer'||!r.cnt?' selected':''}>ขอบนอกถึงขอบนอกบ่อ</option><option value="in"${r.cnt==='in'?' selected':''}>ถึงผิวในผนังบ่อ (+ผนัง ปลายละ)</option><option value="ded"${r.cnt==='ded'?' selected':''}>หักส่วนฝังผนัง (−ผนัง ปลายละ)</option></select></div>
+     ${I('wall','ความหนาผนังบ่อ (ม.)','n')}${I('depth','ความลึกบ่อตั้งต้น จากระดับดิน (ม.)','n')}${I('bdia','ท่อสาขา Ø (ม.) ว่าง = เท่าท่อหลัก','n')}${I('surf','ชนิดผิวที่คืน (ข้อความ)','t')}</div>
+    <div class="mute">ท่อสาขา 3 ทาง/4 ทาง: “ซ้าย/ขวา” คือด้านของแนวท่อเมื่อหันไปทางเลข STA เพิ่มขึ้น · ท่อสาขาแสดงบนแปลนและนับปริมาณ แต่ไม่แสดงใน PROFILE และไม่คิดงานคืนผิว</div>
+    <div style="margin-top:6px"><b style="font-size:13px">บ่อพักรายใบ (เว้นว่าง = ใช้ค่าตั้งต้น)</b><div id="drmh-${r.id}">${drMhTables(r)}</div></div>
+    <div style="margin-top:6px"><b style="font-size:13px">ความกว้างคืนผิวแยกตามช่วงย่อย (ไม่บังคับ) · วัดเป็นระยะ (ม.) จากจุดเริ่มวางท่อ</b><table class="mjT" style="max-width:420px">${rz?'<tr><th>ระยะเริ่ม (ม.)</th><th>ระยะถึง (ม.)</th><th>กว้าง (ม.)</th><th></th></tr>'+rz:''}</table><button class="b ghost sm" data-act="zadd" data-dr="${r.id}">＋ เพิ่มช่วงย่อยความกว้าง</button></div>
+    <div style="margin-top:8px"><b style="font-size:13px">รหัสงานจาก JOB LIST (ไม่บังคับ · ใช้ผูกปริมาณภายหลัง)</b>
+     ${[['jp','ท่อ','pipe'],['jm','บ่อพัก','mh'],['jr','คืนผิว','area'],['jb','ท่อสาขา','br']].map(([f,l])=>`<div class="jr1" style="margin-top:3px"><span style="width:60px">${l}</span><input data-dr="${r.id}" data-f="${f}" list="dlJobDR" value="${esc(r[f]||'')}" placeholder="พิมพ์รหัส หรือเลือกจากรายการ เช่น D01" style="width:200px" autocomplete="off"><span class="mute" data-ci="${f}">${drCodeInfo(r[f],x.ok?x[f==='jp'?'pipe':f==='jm'?'mh':f==='jr'?'area':'br']:null)}</span></div>`).join('')}</div>
+   </details></div>`}
 function drRender(){
-  const runs=drRuns();if(!drSel||!runs.find(r=>r.id===drSel))drSel=runs[0]?runs[0].id:null;
-  $('drList').innerHTML=runs.length?runs.map((r,i)=>{const ab=drAB(r);const q=ab?drQty(r,ab[0],ab[1]):null;return`<button class="b ${r.id===drSel?'':'ghost'} sm" data-id="${r.id}">${esc(r.name||'ช่วง '+(i+1))}${ab?' · '+fmtSta(ab[0])+'–'+fmtSta(ab[1]):''}</button>`}).join(' '):'<span class="mute">ยังไม่มีช่วงงานระบายน้ำ — กด “＋ เพิ่มช่วงงาน”</span>';
-  $('drList').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{drSel=b.dataset.id;drRender()});
-  drForm();drSummary()}
-function drForm(){
-  const r=drRuns().find(x=>x.id===drSel),box=$('drForm');if(!r){box.innerHTML='';return}
-  const I=(f,l,ty,w,ex)=>`<div><label>${l}</label><input data-f="${f}" ${ty==='n'?'type="number" step="any"':''} value="${esc(r[f]==null?'':r[f])}" style="${w?'width:'+w:''}" ${ex||''}></div>`;
-  const Sel=(f,l,opts)=>`<div><label>${l}</label><select data-f="${f}">${opts.map(([v,t])=>`<option value="${v}"${String(r[f])===String(v)?' selected':''}>${t}</option>`).join('')}</select></div>`;
-  box.innerHTML=`<div class="gsec"><b>1) ช่วงงาน</b><div class="grid">${I('name','ชื่อช่วงงาน')}${I('a','STA เริ่ม (เช่น 0+000)')}${I('b','STA สิ้นสุด (เช่น 0+150)')}${Sel('side','ฝั่งของแนวท่อ',[['L','ซ้ายทาง'],['R','ขวาทาง'],['C','กลางทาง']])}${I('off','ระยะจากกลางทางถึงแนวท่อ (ม.)','n','90px')}${Sel('start','จุดเริ่มช่วง',[['MH','เริ่มด้วยบ่อพัก'],['P','เริ่มด้วยท่อ']])}
-    <div><label>ท้ายช่วง</label><label class="mck"><input type="checkbox" data-c="endMH"${r.endMH?' checked':''}><span>ปิดท้ายด้วยบ่อพัก (ท่อท้ายสั้นลงถ้าเศษไม่ลงตัว)</span></label></div></div></div>
-  <div class="gsec"><b>2) ท่อ</b><div class="grid">${I('dia','ขนาดท่อ Ø (ม.)','n','90px')}${I('unit','ความยาวต่อท่อน (ม.)','n','90px')}${I('n','จำนวนท่อนต่อช่วง (ระหว่างบ่อ)','n','90px')}${Sel('cnt','วิธีนับความยาวท่อ',[['outer','ขอบนอกถึงขอบนอกบ่อ'],['in','ถึงผิวในผนังบ่อ (+ความหนาผนัง ปลายละ)'],['ded','หักส่วนที่ฝังผนัง (− ความหนาผนัง ปลายละ)']])}</div>
-    <div class="mute">ท่อ ${r.n||0} ท่อน × ${r.unit||0} ม. = <b>${(Math.round(drN(r.n,10)*drN(r.unit,1)*100)/100).toFixed(2)}</b> ม. ต่อช่วง</div></div>
-  <div class="gsec"><b>3) บ่อพัก (สี่เหลี่ยม · ขอบถึงขอบ)</b><div class="grid">${I('bl','ตัวบ่อ ยาวตามแนวทาง (ม.)','n','90px')}${I('bw','ตัวบ่อ กว้างขวางแนว (ม.)','n','90px')}${I('tl','ปากบ่อ ยาวตามแนวทาง (ม.)','n','90px')}${I('tw','ปากบ่อ กว้างขวางแนว (ม.)','n','90px')}${I('wall','ความหนาผนังบ่อ (ม.)','n','90px')}${I('depth','ความลึกบ่อตั้งต้น จากระดับดิน (ม.)','n','90px')}</div>
-    <div class="mute">ความลึกใช้วาด PROFILE เท่านั้น (ไม่แสดงตัวเลขบนแผ่น) · ควรไม่น้อยกว่า 1.20 ม. · ปรับเป็นรายใบได้ในตารางบ่อพักด้านล่าง</div></div>
-  <div class="gsec"><b>4) คืนผิวหลังวางท่อ</b><div class="grid">${I('rw','ความกว้างตั้งต้น (ม.) เช่น 0.50–1.00','n','90px')}${I('surf','ชนิดผิวที่คืน (ข้อความ)','t','200px')}</div>
-    <div style="margin-top:6px"><b style="font-size:13px">ความกว้างแยกตามช่วงย่อย (ไม่บังคับ)</b><table id="drRz"></table><button class="b ghost sm" id="drRzAdd">＋ เพิ่มช่วงย่อย</button></div>
-    <div class="mute">แถบคืนผิวต่อจากขอบปากบ่อ ไปจนถึงขอบปากบ่อใบถัดไป (ไม่ทับปากบ่อ) กว้างตามที่ระบุ วางกึ่งกลางแนวท่อ</div></div>
-  <div class="bar"><button class="b ghost sm" id="drDup">⎘ ทำสำเนาช่วงนี้</button><button class="b red sm" id="drDel">🗑 ลบช่วงนี้</button></div>`;
-  box.querySelectorAll('[data-f]').forEach(el=>{const f=el.dataset.f;const h=()=>{r[f]=el.value;drPostEdit(f==='name')};el.oninput=h;if(el.tagName==='SELECT')el.onchange=h});
-  box.querySelectorAll('[data-c]').forEach(el=>el.onchange=()=>{r[el.dataset.c]=el.checked;drPostEdit()});
-  drRzTable(r);
-  $('drDup').onclick=()=>{const c=JSON.parse(JSON.stringify(r));c.id='d'+Math.random().toString(36).slice(2,8);c.name=(r.name||'')+' (สำเนา)';drRuns().push(c);drSel=c.id;save(true);drRender()};
-  $('drDel').onclick=()=>{if(confirm('ลบช่วงงาน “'+(r.name||'')+'” ?')){const a=drRuns();a.splice(a.findIndex(x=>x.id===r.id),1);drSel=null;save(true);drRender()}}}
-function drRzTable(r){const t=$('drRz');r.rz=r.rz||[];
-  t.innerHTML=(r.rz.length?'<tr><th>STA เริ่ม</th><th>STA สิ้นสุด</th><th>กว้าง (ม.)</th><th></th></tr>':'')+r.rz.map((z,i)=>`<tr data-i="${i}"><td><input data-k="a" value="${esc(z.a||'')}" style="width:100px"></td><td><input data-k="b" value="${esc(z.b||'')}" style="width:100px"></td><td><input data-k="w" type="number" step="any" value="${esc(z.w==null?'':z.w)}" style="width:80px"></td><td><button class="b ghost sm" data-x>✕</button></td></tr>`).join('');
-  t.querySelectorAll('tr[data-i]').forEach(tr=>{const z=r.rz[+tr.dataset.i];tr.querySelectorAll('input').forEach(el=>el.oninput=()=>{z[el.dataset.k]=el.value;drPostEdit()});tr.querySelector('[data-x]').onclick=()=>{r.rz.splice(+tr.dataset.i,1);drRzTable(r);drPostEdit()}});
-  $('drRzAdd').onclick=()=>{r.rz.push({a:r.a,b:r.b,w:r.rw});drRzTable(r);drPostEdit()}}
-function drPostEdit(listToo){save();drSummary();if(listToo){const b=$('drList').querySelector(`[data-id="${drSel}"]`);const r=drRuns().find(x=>x.id===drSel);if(b&&r){const ab=drAB(r);b.textContent=(r.name||'ช่วง')+(ab?' · '+fmtSta(ab[0])+'–'+fmtSta(ab[1]):'')}}}
-function drCard(r,ab){
-  const q=drQty(r,ab[0],ab[1]),f2=v=>(Math.round(v*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  return`<div class="card" style="background:var(--soft)"><b>สรุปปริมาณช่วงนี้</b> · STA ${fmtSta(ab[0])} – ${fmtSta(ab[1])} (ยาว ${f2(q.total)} ม.)<br>ท่อ Ø${f2(drN(r.dia,.6))} ม.: ความยาว <b>${f2(q.pipeLen)}</b> ม. (${q.pieces} ท่อน) · บ่อพัก <b>${q.mhs}</b> แห่ง<br>คืนผิว: พื้นที่แถบเต็มช่วง ${f2(q.gross)} ตร.ม. − ส่วนใต้ปากบ่อ ${f2(q.deduct)} ตร.ม. = <b>${f2(q.net)} ตร.ม.</b>${r.surf?' ('+esc(r.surf)+')':''}${q.warn.length?'<div style="color:var(--warn);margin-top:4px">⚠ '+q.warn.map(esc).join('<br>⚠ ')+'</div>':''}</div>`}
-function drSummary(){
-  const r=drRuns().find(x=>x.id===drSel),sm=$('drSum'),mt=$('drMhT');
-  $('drAll').innerHTML=drAllHtml();
-  if(!r){sm.innerHTML='';mt.innerHTML='';return}
-  const ab=drAB(r);if(!ab){sm.innerHTML='<div class="mute">กรอก STA เริ่ม และ STA สิ้นสุด (สิ้นสุดต้องมากกว่าเริ่ม) เพื่อคำนวณ</div>';mt.innerHTML='';return}
-  sm.innerHTML=drCard(r,ab);
-  const q=drQty(r,ab[0],ab[1]),mhs=q.el.filter(e=>e.t==='MH');
-  if(mt.dataset.key!==r.id+'|'+mhs.length||!mt.querySelector('input')){mt.dataset.key=r.id+'|'+mhs.length;
-    mt.innerHTML=mhs.length?'<tr><th>บ่อพัก</th><th>STA ขอบบ่อ (เริ่ม – สิ้นสุด)</th><th>ความลึกจากระดับดิน (ม.)</th></tr>'+mhs.map(e=>`<tr><td>MH-${e.i+1}</td><td>${fmtSta(e.a)} – ${fmtSta(e.b)}</td><td><input type="number" step="any" data-i="${e.i}" value="${(r.dep&&r.dep[e.i]!==undefined&&r.dep[e.i]!=='')?r.dep[e.i]:''}" placeholder="${drN(r.depth,1.5)}" style="width:90px"></td></tr>`).join(''):'';
-    mt.querySelectorAll('input[data-i]').forEach(el=>el.oninput=()=>{r.dep=r.dep||{};r.dep[el.dataset.i]=el.value;save();sm.innerHTML=drCard(r,ab)})}
-  else{const rows=mt.querySelectorAll('tr');mhs.forEach((e,i)=>{const td=rows[i+1]&&rows[i+1].children[1];if(td)td.textContent=fmtSta(e.a)+' – '+fmtSta(e.b);const inp=rows[i+1]&&rows[i+1].querySelector('input');if(inp)inp.placeholder=drN(r.depth,1.5)})}}
-function drAllHtml(){
-  const f2=v=>(Math.round(v*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const rows=drRuns().map(r=>({r,ab:drAB(r)})).filter(x=>x.ab).sort((p,q)=>p.ab[0]-q.ab[0]);if(!rows.length)return'<div class="mute">ยังไม่มีข้อมูลสรุป</div>';
-  let tp=0,tm=0,tn=0;const byDia={};
-  const body=rows.map(({r,ab})=>{const q=drQty(r,ab[0],ab[1]);tp+=q.pipeLen;tm+=q.mhs;tn+=q.net;const d=f2(drN(r.dia,.6));byDia[d]=(byDia[d]||0)+q.pipeLen;
-    return`<tr><td>${fmtSta(ab[0])} – ${fmtSta(ab[1])}</td><td>${esc(r.name||'')}</td><td>${DR_SIDE[r.side]||''}</td><td>Ø${d}</td><td class="r">${f2(q.pipeLen)}</td><td class="r">${q.mhs}</td><td class="r">${f2(q.net)}</td></tr>`}).join('');
-  return`<table><tr><th>STA</th><th>งาน</th><th>ฝั่ง</th><th>ท่อ</th><th class="r">ท่อ (ม.)</th><th class="r">บ่อพัก (แห่ง)</th><th class="r">คืนผิว (ตร.ม.)</th></tr>${body}<tr style="font-weight:700"><td colspan="4">รวม</td><td class="r">${f2(tp)}</td><td class="r">${tm}</td><td class="r">${f2(tn)}</td></tr></table>`+
-    '<div class="mute" style="margin-top:4px">ท่อแยกตามขนาด: '+Object.keys(byDia).map(d=>'Ø'+d+' = '+f2(byDia[d])+' ม.').join(' · ')+'</div>'}
+  const g=G();try{compilePL(g)}catch(e){}
+  drRuns().forEach(r=>{if(!r.id)r.id='d'+Math.random().toString(36).slice(2,8);drMigrate(r,g)});
+  const segs=(g.pl||[]).filter(p=>!p.lead&&p._b>p._a),runs=drRuns();
+  $('drLayer').checked=!g.hideDR;
+  const dl=$('dlJobDR');if(dl)dl.innerHTML=ITEMS.map(it=>`<option value="${esc(it.code)}" label="${esc(it.code+' — '+it.name)}">${esc(it.name)}</option>`).join('');
+  const ds=$('dlStaDR');if(ds)ds.innerHTML=segs.map(p=>`<option value="${fmtSta(p._a)}">`).join('')+(segs.length?`<option value="${fmtSta(segs[segs.length-1]._b)}">`:'');
+  const segIds=new Set(segs.map(p=>p.id)),free=runs.filter(r=>!r.sg||!segIds.has(r.sg));
+  let h='';
+  if(segs.length){
+    h+=`<div style="overflow:auto"><table class="mjT"><tr><th>#</th><th>ช่วง STA (แนวทางอ้างอิง)</th><th class="r">กว้างรวม (ม.)</th><th>สภาพเดิมที่สำรวจในช่วง</th><th>งานระบายน้ำที่จะก่อสร้าง · ระบุความยาวเอง</th></tr>`+
+    segs.map((p,i)=>{const items=runs.filter(r=>r.sg===p.id),tn={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'}[p.t]||p.t;
+      const ob={};(g.ob||[]).forEach(o=>{const t=parseSta(o.sta);if(t!=null&&t>=p._a-1e-6&&t<p._b+1e-6&&OB[o.k])ob[OB[o.k].n]=(ob[OB[o.k].n]||0)+1});
+      const obT=Object.keys(ob).map(k=>esc(k)+' ×'+ob[k]).join('<br>');
+      return `<tr><td><b>${i+1}</b></td><td>${esc(fmtSta(p._a))} – ${esc(fmtSta(p._b))}<br><span class="mute">${tn} · ยาวตามแนวกึ่งกลาง ${f2d(p._b-p._a)} ม.</span></td><td class="r">${f2d((p._wl||0)+(p._wr||0))}<br><span class="mute">ซ้าย ${f2d(p._wl||0)} / ขวา ${f2d(p._wr||0)}</span></td><td>${obT||'<span class="mute">ไม่ระบุ</span>'}</td>
+       <td>${items.map(r=>drItemHtml(r,p)).join('')}${items.length?'':'<div class="mute" style="margin-bottom:6px">ยังไม่มีงานระบายน้ำในช่วงนี้</div>'}<div class="bar"><button class="b sm" data-act="addSeg" data-sg="${p.id}">＋ เพิ่มงานระบายน้ำในช่วงนี้</button>${i>0?`<button class="b ghost sm" data-act="cpSeg" data-sg="${p.id}" data-from="${segs[i-1].id}">คัดลอกรายการจากช่วงที่ ${i}</button>`:''}</div></td></tr>`}).join('')+'</table></div>'}
+  else h+='<div class="mute" style="padding:8px">ยังไม่มีผังช่วงในแท็บ ③ STA — สร้างผังช่วงก่อน หรือเพิ่มงานโดยระบุ STA เองด้านล่าง</div>';
+  h+=`<div style="margin-top:10px"><b>รายการที่ระบุ STA เอง (ไม่ผูกกับช่วงในผัง)</b>${free.map(r=>drItemHtml(r,null)).join('')}<div class="bar"><button class="b ghost sm" data-act="addFree">＋ เพิ่มงานระบายน้ำโดยระบุ STA เอง</button></div></div>`;
+  $('drBody').innerHTML=h;drAllUpd()}
+function drAllUpd(){const e=$('drAll');if(e)e.innerHTML=drAllHtml()}
+function drAllHtml(){const rows=[];
+  drRuns().forEach(r=>{const x=drItemQ(r);x.per.forEach(p=>{if(p.L>0)rows.push({r,p,a0:p.a0})})});
+  if(!rows.length)return'<div class="mute">ยังไม่มีข้อมูลสรุป</div>';rows.sort((a,b)=>(a.a0==null?1e12:a.a0)-(b.a0==null?1e12:b.a0));
+  let tp=0,tm=0,tn=0,tb=0;const byDia={};
+  const body=rows.map(({r,p,a0})=>{const q=p.q;tp+=q.pipeLen;tm+=q.mhs;tn+=q.net;tb+=q.brLen;const d=f2d(drN(r.dia,.6));byDia[d]=(byDia[d]||0)+q.pipeLen;
+    if(q.brLen>0){const bd=f2d(drN(r.bdia,drN(r.dia,.6)));byDia[bd]=(byDia[bd]||0)+q.brLen}
+    return`<tr><td>${a0==null?'—':esc(fmtSta(a0))}</td><td>${esc(r.name||'')}</td><td>${sdName(p.k)}</td><td>Ø${d}</td><td class="r">${f2d(p.L)}</td><td class="r">${f2d(q.pipeLen)}</td><td class="r">${q.mhs}</td><td class="r">${q.brLen?f2d(q.brLen):'-'}</td><td class="r">${f2d(q.net)}</td></tr>`}).join('');
+  return`<table class="mjT"><tr><th>เริ่มที่ STA</th><th>งาน</th><th>ตำแหน่ง</th><th>ท่อ</th><th class="r">ความยาวแนว (ม.)</th><th class="r">ท่อ (ม.)</th><th class="r">บ่อพัก (แห่ง)</th><th class="r">ท่อสาขา (ม.)</th><th class="r">คืนผิว (ตร.ม.)</th></tr>${body}<tr style="font-weight:700"><td colspan="5">รวม</td><td class="r">${f2d(tp)}</td><td class="r">${tm}</td><td class="r">${f2d(tb)}</td><td class="r">${f2d(tn)}</td></tr></table>`+
+    '<div class="mute" style="margin-top:4px">ท่อแยกตามขนาด (รวมท่อสาขา): '+Object.keys(byDia).map(d=>'Ø'+d+' = '+f2d(byDia[d])+' ม.').join(' · ')+'</div>'}
+function drUpd(id,skipMh){const r=drRuns().find(x=>x.id===id);if(!r)return;save();
+  const q=$('drq-'+id);if(q)q.innerHTML=drQtyHtml(r);
+  const x=drItemQ(r);['jp','jm','jr','jb'].forEach(f=>{const s=document.querySelector('#dri-'+id+' [data-ci="'+f+'"]');if(s)s.innerHTML=drCodeInfo(r[f],x.ok?x[f==='jp'?'pipe':f==='jm'?'mh':f==='jr'?'area':'br']:null)});
+  if(!skipMh){const t=$('drmh-'+id);if(t&&!t.contains(document.activeElement))t.innerHTML=drMhTables(r)}
+  drAllUpd()}
 (function(){const w=()=>{
-  const add=$('drAdd');if(!add)return;
-  add.onclick=()=>{const r=drNewRun();drRuns().push(r);drSel=r.id;save(true);drRender()};
+  const body=$('drBody');if(!body)return;
   $('drLayer').onchange=()=>{G().hideDR=!$('drLayer').checked;save(true)};
+  const find=id=>drRuns().find(x=>x.id===id);
+  const onIn=e=>{const el=e.target,id=el.dataset.dr;if(!id)return;const r=find(id);if(!r)return;
+    if(el.dataset.dep!==undefined){r.dep=r.dep||{};r.dep[el.dataset.dep]=el.value;drUpd(id,true);return}
+    if(el.dataset.mhc!==undefined){r.mhc=r.mhc||{};if(el.value)r.mhc[el.dataset.mhc]=el.value;else delete r.mhc[el.dataset.mhc];drUpd(id);return}
+    if(el.dataset.z!==undefined){const z=(r.rz||[])[+el.dataset.z];if(z){z[el.dataset.zf]=el.value;drUpd(id)}return}
+    const f=el.dataset.f;if(!f)return;
+    if(f==='endMH')r.endMH=el.value==='1';else if(el.type==='checkbox')r[f]=el.checked;else r[f]=(f==='jp'||f==='jm'||f==='jr'||f==='jb')?el.value.trim().toUpperCase():el.value;
+    if(f==='conn'){drUpd(id);const t=$('drmh-'+id);if(t)t.innerHTML=drMhTables(r);return}
+    drUpd(id)};
+  body.addEventListener('input',onIn);body.addEventListener('change',e=>{if(e.target.type==='checkbox'||e.target.tagName==='SELECT')onIn(e)});
+  body.addEventListener('toggle',e=>{const d=e.target;if(d.classList&&d.classList.contains('drmore')){window._drOpen=window._drOpen||{};window._drOpen[d.dataset.dr]=d.open}},true);
+  body.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;e.preventDefault();const d=a.dataset,runs=drRuns();
+    if(d.act==='addSeg'){runs.push(drNewItem(d.sg));save(true);drRender();return}
+    if(d.act==='addFree'){runs.push(drNewItem(''));save(true);drRender();return}
+    if(d.act==='cpSeg'){const src=runs.filter(r=>r.sg===d.from);if(!src.length){toast('ช่วงก่อนหน้ายังไม่มีรายการให้คัดลอก',true);return}src.forEach(r=>{const c=JSON.parse(JSON.stringify(r));c.id='d'+Math.random().toString(36).slice(2,8);c.sg=d.sg;['aL','aC','aR','lenL','lenC','lenR'].forEach(f=>c[f]='');runs.push(c)});save(true);drRender();return}
+    const r=find(d.dr);if(!r)return;
+    if(d.act==='side'){r.sides=r.sides||{};r.sides[d.k]=!r.sides[d.k];save(true);drRender();return}
+    if(d.act==='dup'){const c=JSON.parse(JSON.stringify(r));c.id='d'+Math.random().toString(36).slice(2,8);c.name=(r.name||'')+' (สำเนา)';runs.splice(runs.indexOf(r)+1,0,c);save(true);drRender();return}
+    if(d.act==='del'){if(confirm('ลบรายการ “'+(r.name||'')+'” ?')){runs.splice(runs.indexOf(r),1);save(true);drRender()}return}
+    if(d.act==='zadd'){r.rz=r.rz||[];r.rz.push({a:'',b:'',w:r.rw});save(true);window._drOpen=window._drOpen||{};window._drOpen[r.id]=true;drRender();return}
+    if(d.act==='zdel'){r.rz.splice(+d.z,1);save(true);window._drOpen=window._drOpen||{};window._drOpen[r.id]=true;drRender();return}});
   };if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',w);else w()})();
 
 // ===== v39: ส่งออกแผนที่สังเขป — รูปภาพ (เลือกขนาด/ความละเอียด) + DXF =====
