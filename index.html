@@ -4078,8 +4078,8 @@ function mhOpen(code){
   const tid=MH_CODES[code];if(!tid){toast('ไม่มีแบบบ่อพักของรหัส '+code,1);return}
   try{const c=document.createElement('canvas');if(!(c.getContext('webgl2')||c.getContext('webgl'))){alert('อุปกรณ์/เบราว์เซอร์นี้ไม่รองรับ WebGL จึงแสดง 3D ไม่ได้');return}}catch(e){}
   mhClose();const it=BYCODE[code];
-  const ov=document.createElement('div');ov.id='mhOv';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#fff;display:flex;flex-direction:column';
-  ov.innerHTML=`<div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--brand);color:#fff;flex-wrap:wrap"><b style="flex:1;min-width:200px">${esc(code)} · ${esc(it?it.name:'')}</b><button class="b sm" id="mhApply">⬇ นำต้นทุนจากแบบนี้ไปใช้ใน ITEM UNIT ${esc(code)}</button><button class="b sm" id="mhX">✕ ปิด</button></div><iframe id="mhFr" style="flex:1;border:0;width:100%;min-height:0" title="ฐานข้อมูลแบบบ่อพัก"></iframe>`;
+  const ov=document.createElement('div');ov.id='mhOv';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg,#fff);display:flex;flex-direction:column';
+  ov.innerHTML=`<div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--hdr,var(--brand));color:var(--hdrt,#fff);flex-wrap:wrap"><b style="flex:1;min-width:200px">${esc(code)} · ${esc(it?it.name:'')}</b><button class="ihb" id="mhApply">⬇ นำต้นทุนจากแบบนี้ไปใช้ใน ITEM UNIT ${esc(code)}</button><button class="ihb" id="mhX">✕ ปิด</button></div><iframe id="mhFr" style="flex:1;border:0;width:100%;min-height:0" title="ฐานข้อมูลแบบบ่อพัก"></iframe>`;
   document.body.appendChild(ov);document.body.style.overflow='hidden';
   $('mhX').onclick=mhClose;
   const fr=$('mhFr');fr.onload=()=>{try{fr.contentWindow.__SFMH.select(tid)}catch(e){toast('เลือกแบบอัตโนมัติไม่สำเร็จ — เลือกแบบในรายการด้านซ้ายเอง',1)}};
@@ -4091,6 +4091,7 @@ function mhOpen(code){
     ucSave(true);toast('อัปเดต ITEM UNIT '+code+' แล้ว');if(typeof ucRender==='function'){try{ucSel=code;ucRender()}catch(e){}}}
   ;document.addEventListener('keydown',function k(e){if(e.key==='Escape'){mhClose();document.removeEventListener('keydown',k)}})}
 function m3dOpen(code){mhOpen(code)}
+(function(){const st=document.createElement('style');st.textContent='.ihb{background:var(--card,#fff);color:var(--ink,#111);border:2px solid var(--ink,#111);border-radius:8px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}.ihb.pri{background:var(--btn,var(--brand,#1f4e79));color:var(--onbtn,#fff)}.ihb:hover,.ihb:focus{outline:3px solid var(--focus,#ffb300)}.ihb:disabled{opacity:.5;cursor:default}#ihOv .mute{color:var(--mute)}#ihOv td{color:var(--ink)}';document.head.appendChild(st)})();
 // ===== v107: นำเข้า ITEM UNIT จากไฟล์ HTML (แอปคำนวณต้นทุนรายรายการ) =====
 let IH_SET=new Set(),_ihDb;
 const ihDb=()=>_ihDb||(_ihDb=new Promise((res,rej)=>{if(!window.indexedDB)return rej(new Error('no idb'));const q=indexedDB.open('surveyfield-itemhtml',1);q.onupgradeneeded=()=>q.result.createObjectStore('h',{keyPath:'code'});q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -4114,11 +4115,11 @@ function ihGuess(name){const m=String(name).replace(/\.[^.]+$/,'').match(/^([A-Z
 function ihImportUI(files){
   const old=document.getElementById('ihOv');if(old)old.remove();
   const ov=document.createElement('div');ov.id='ihOv';ov.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:12px';
-  const rows=files.map((f,i)=>`<tr><td style="word-break:break-all">${esc(f.name)}</td><td><input data-ih="${i}" list="ihCodes" value="${esc(ihGuess(f.name))}" placeholder="รหัสงาน เช่น G18" style="width:110px;text-transform:uppercase"></td><td class="mute" data-ihs="${i}"></td></tr>`).join('');
-  ov.innerHTML=`<div class="card" style="background:#fff;max-width:760px;width:100%;max-height:92vh;overflow:auto"><h3 style="margin:0 0 6px">📥 นำเข้า ITEM UNIT จากไฟล์ HTML</h3><div class="mute">ระบุรหัสงาน (ต้องมีใน ⑨ JOB LIST) ให้แต่ละไฟล์ · ระบบอ่านต้นทุนจากไฟล์ สร้างใบ ITEM UNIT และเก็บไฟล์ไว้เปิดดูแบบ/3D ภายหลัง</div>
+  const rows=files.map((f,i)=>`<tr><td style="word-break:break-all;color:var(--ink)">${esc(f.name)}</td><td><input data-ih="${i}" list="ihCodes" value="${esc(ihGuess(f.name))}" placeholder="เช่น G18" style="width:120px;text-transform:uppercase;background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:8px;padding:6px 8px;font-size:15px"></td><td class="mute" data-ihs="${i}"></td></tr>`).join('');
+  ov.innerHTML=`<div class="card" style="background:var(--card);color:var(--ink);border:3px solid var(--ink);max-width:760px;width:100%;max-height:92vh;overflow:auto"><h3 style="margin:0 0 6px;color:var(--ink)">📥 นำเข้า ITEM UNIT จากไฟล์ HTML</h3><div class="mute">ระบุรหัสงาน (ต้องมีใน ⑨ JOB LIST) ให้แต่ละไฟล์ · ระบบอ่านต้นทุนจากไฟล์ สร้างใบ ITEM UNIT และเก็บไฟล์ไว้เปิดดูแบบ/3D ภายหลัง</div>
   <datalist id="ihCodes">${ITEMS.map(x=>`<option value="${esc(x.code)}">${esc(x.name)}</option>`).join('')}</datalist>
   <table class="mjT" style="margin-top:6px"><tr><th>ไฟล์</th><th>รหัสงาน</th><th>ผล</th></tr>${rows}</table>
-  <div class="bar" style="margin-top:8px"><button class="b" id="ihGo">นำเข้า</button><button class="b ghost" id="ihCx">ปิด</button></div></div>`;
+  <div class="bar" style="margin-top:8px"><button class="ihb pri" id="ihGo">นำเข้า</button><button class="ihb" id="ihCx">✕ ปิด</button></div></div>`;
   document.body.appendChild(ov);$('ihCx').onclick=()=>ov.remove();
   $('ihGo').onclick=async()=>{$('ihGo').disabled=true;let ok=0;
     for(let i=0;i<files.length;i++){const st=ov.querySelector(`[data-ihs="${i}"]`),code=ov.querySelector(`[data-ih="${i}"]`).value.trim().toUpperCase();
@@ -4133,8 +4134,8 @@ function ihImportUI(files){
     ucSave(true);toast('นำเข้า ITEM UNIT สำเร็จ '+ok+' รายการ');try{if(typeof ucRender==='function')ucRender()}catch(e){}$('ihGo').disabled=false;$('ihGo').textContent='นำเข้าเพิ่ม'}}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='ihImp'){const fs=[...e.target.files];e.target.value='';if(fs.length)ihImportUI(fs)}});
 async function ihOpen(code){let rec;try{rec=await ihGet(code)}catch(e){}if(!rec){toast('ไม่พบไฟล์แบบที่แนบของรหัส '+code,1);return}
-  mhClose();const it=BYCODE[code];const ov=document.createElement('div');ov.id='mhOv';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#fff;display:flex;flex-direction:column';
-  ov.innerHTML=`<div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--brand);color:#fff;flex-wrap:wrap"><b style="flex:1;min-width:200px">${esc(code)} · ${esc(it?it.name:'')} <span style="font-weight:400;font-size:12px">(${esc(rec.name)})</span></b><button class="b sm" id="ihApply">⬇ นำต้นทุนจากแบบนี้ไปใช้ใน ITEM UNIT ${esc(code)}</button><button class="b sm" id="mhX">✕ ปิด</button></div><iframe id="ihFr" sandbox="allow-scripts allow-downloads allow-modals allow-popups" style="flex:1;border:0;width:100%;min-height:0" title="แบบรายการ"></iframe>`;
+  mhClose();const it=BYCODE[code];const ov=document.createElement('div');ov.id='mhOv';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg,#fff);display:flex;flex-direction:column';
+  ov.innerHTML=`<div style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--hdr,var(--brand));color:var(--hdrt,#fff);flex-wrap:wrap"><b style="flex:1;min-width:200px">${esc(code)} · ${esc(it?it.name:'')} <span style="font-weight:400;font-size:12px">(${esc(rec.name)})</span></b><button class="ihb" id="ihApply">⬇ นำต้นทุนจากแบบนี้ไปใช้ใน ITEM UNIT ${esc(code)}</button><button class="ihb" id="mhX">✕ ปิด</button></div><iframe id="ihFr" sandbox="allow-scripts allow-downloads allow-modals allow-popups" style="flex:1;border:0;width:100%;min-height:0" title="แบบรายการ"></iframe>`;
   document.body.appendChild(ov);document.body.style.overflow='hidden';$('mhX').onclick=()=>{window.removeEventListener('message',on);mhClose()};
   const fr=$('ihFr');let want=0;const on=e=>{if(e.source!==fr.contentWindow||!e.data||e.data.sf!=='snap'||e.data.id!==want)return;const S=e.data.data;
     if(!S||!S.items||!S.items.length){toast('อ่านต้นทุนจากแบบนี้ไม่ได้',1);return}
