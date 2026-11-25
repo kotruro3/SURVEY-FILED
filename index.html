@@ -3704,7 +3704,7 @@ function drRuns(){return drG().runs}
 function drSides(r){const a=[];if(r.sides){['L','C','R'].forEach(k=>{if(r.sides[k])a.push(k)})}else a.push(r.side||'R');return a}
 function drSegOf(r,g){if(!r.sg)return null;return(g.pl||[]).find(p=>p.id===r.sg&&!p.lead)||null}
 // แปลงข้อมูลรุ่น v94/v95 (ช่วง STA เริ่ม-สิ้นสุด) → ความยาวที่ผู้ใช้ระบุเอง (ทำครั้งเดียว)
-function drMigrate(r,g){if(!Array.isArray(r.br))r.br=[];if(r.v===96)return;g=g||G();
+function drMigrate(r,g){if(!Array.isArray(r.br))r.br=[];if(r.v===96){if(r.anc)drAncSync(r);return}g=g||G();
   let ab=null;if(r.sg&&!r.fx){const p=drSegOf(r,g);if(p&&p._b>p._a)ab=[p._a,p._b]}else{const a=parseSta(r.a),b=parseSta(r.b);if(a!=null&&b!=null&&b>a)ab=[a,b]}
   const sd=drSides(r);r.sides={};sd.forEach(k=>r.sides[k]=true);delete r.side;
   const D=drDefRun();Object.keys(D).forEach(k=>{if(r[k]===undefined&&k!=='id')r[k]=D[k]});
@@ -3719,13 +3719,46 @@ function drOff(r,sd,g){if(sd==='C')return 0;const v=parseFloat(String(r['off'+sd
   const p=drSegOf(r,g||G());if(p)return (sd==='L'?(p._wl||0):(p._wr||0))+1;return 3.5}
 // 1 รายการ x ตำแหน่งที่เลือก → รายการวาด/คำนวณ (ต้องมีจุดเริ่มและความยาว)
 function drExpand(noCompile){const g=G();if(!noCompile){try{compilePL(g)}catch(e){}}const out=[];
-  drRuns().forEach(r=>{drMigrate(r,g);const sd=drSides(r);sd.forEach(s=>{const a0=drStartOf(r,s,g),Lm=drLenOf(r,s);if(a0==null||!(Lm>0))return;out.push({r,side:s,a0,Lm,off:drOff(r,s,g),multi:sd.length>1})})});return out}
+  drRuns().forEach(r=>{drMigrate(r,g);const sd=drSides(r);sd.forEach(s=>{const a0=drStartOf(r,s,g),Lm=drLenOf(r,s);if(a0==null||!(Lm>0))return;out.push({r,side:s,a0,Lm,off:drOff(r,s,g),multi:sd.length>1,rev:drRev(r)})})});return out}
 // ตารางแปลง ระยะตามแนวท่อ u ↔ ตำแหน่ง s บนกึ่งกลางทาง (วัดตามเส้นขนานที่ระยะเยื้อง o)
-function drMapU(pts,sStart,o,Lm,tot){const S=[sStart],U=[0];let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;const ds=.2;
+function drMapU(pts,sStart,o,Lm,tot,rev){if(!rev)return drMapU0(pts,sStart,o,Lm,tot);
+  const S=[sStart],U=[0];let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;const ds=.2;
+  while(u<Lm-1e-9&&s>1e-9&&n++<60000){const sn=Math.max(0,s-ds),q=offPt(ptAt(pts,sn),o);u+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);s=sn;prev=q;S.push(s);U.push(u)}
+  const itp=(A,B,x)=>{const n=A.length-1;if(x<=A[0])return B[0];if(x>=A[n])return B[n];let lo=0,hi=n;while(hi-lo>1){const m=(lo+hi)>>1;if(A[m]<=x)lo=m;else hi=m}const t=(x-A[lo])/((A[hi]-A[lo])||1);return B[lo]+(B[hi]-B[lo])*t};
+  const Sa=S.slice().reverse(),Ua=U.slice().reverse();
+  return{S:Sa,U:Ua,end:u,sOf:x=>itp(U,S,x),uOf:x=>itp(Sa,Ua,x)}}
+function drMapU0(pts,sStart,o,Lm,tot){const S=[sStart],U=[0];let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;const ds=.2;
   while(u<Lm-1e-9&&s<tot-1e-9&&n++<60000){const sn=Math.min(tot,s+ds),q=offPt(ptAt(pts,sn),o);u+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);s=sn;prev=q;S.push(s);U.push(u)}
   const interp=(A,B,x)=>{if(x<=A[0])return B[0];const n=A.length-1;if(x>=A[n])return B[n]+(A===U||true?0:0);let lo=0,hi=n;while(hi-lo>1){const m=(lo+hi)>>1;if(A[m]<=x)lo=m;else hi=m}const t=(x-A[lo])/((A[hi]-A[lo])||1);return B[lo]+(B[hi]-B[lo])*t};
   return{S,U,end:u,sOf:u_=>interp(U,S,u_),uOf:s_=>interp(S,U,s_)}}
 
+// ---------- ท่อขนานทางหลัก: เริ่มจากบ่อพัก/ปลายของท่อแขนง ----------
+const drRev=r=>r.rev===true||r.rev==='1';
+let _ancBusy=0,_ancC={k:'',pts:null,tot:0};
+function drAlign(){const g=G();try{compilePL(g)}catch(e){}const s0=parseSta(g.sta0)||0,len=Math.max(0,(g._end!=null?g._end:s0)-s0);if(!(len>0))return null;
+  const key=JSON.stringify([g.segs,g.hd,len]);if(_ancC.k!==key){const pts=buildAlign(g,len);_ancC={k:key,pts,tot:pts[pts.length-1].s}}return{pts:_ancC.pts,tot:_ancC.tot,sta0:s0}}
+function drAncPos(r){if(!r.anc||_ancBusy>3)return null;const p=String(r.anc).split(':');if(p.length!==3)return null;
+  const or=drRuns().find(x=>x.id===p[0]);if(!or||or===r)return null;const b=(or.br||[]).find(x=>x.id===p[1]);if(!b)return null;
+  _ancBusy++;try{const Lb=drN(b.len,0);if(!(Lb>0))return null;const pi=drBrParent(or,b);if(!pi)return null;const A=drAlign();if(!A)return null;
+    const g=G(),pr=pi.pr,a0p=drStartOf(pr,pi.k,g);if(a0p==null)return null;
+    const sg=pi.k==='L'?1:pi.k==='R'?-1:0,offP=sg*drOff(pr,pi.k,g),T=drMapU(A.pts,a0p-A.sta0,offP,pi.L,A.tot,drRev(pr)),e=pi.e,sc=T.sOf((e.a+e.b)/2);
+    const pt=ptAt(A.pts,sc),pc=offPt(pt,offP),n=[-Math.sin(pt.a),Math.cos(pt.a)],t=[Math.cos(pt.a),Math.sin(pt.a)];
+    const sgn=b.dir==='L'?1:-1,an=drN(b.ang,0)*Math.PI/180,d=[sgn*Math.cos(an)*n[0]+Math.sin(an)*t[0],sgn*Math.cos(an)*n[1]+Math.sin(an)*t[1]];
+    const u0=drN(pr.bw,1.1)/2;let x;
+    if(p[2]==='E')x=Lb;else{const m=drBrQty(or,b,Lb).el.find(z=>z.t==='MH'&&z.i===+p[2]);if(!m)return null;x=(m.a+m.b)/2}
+    const W=[pc[0]+d[0]*(u0+x),pc[1]+d[1]*(u0+x)];let bi=0,bd=1e18;
+    for(let i=0;i<A.pts.length;i++){const q=A.pts[i],dd=(q.x-W[0])**2+(q.y-W[1])**2;if(dd<bd){bd=dd;bi=i}}
+    const q=A.pts[bi],dx=W[0]-q.x,dy=W[1]-q.y;return{s:q.s+dx*Math.cos(q.a)+dy*Math.sin(q.a),o:-dx*Math.sin(q.a)+dy*Math.cos(q.a),sta0:A.sta0}}
+  finally{_ancBusy--}}
+function drAncSync(r){const a=drAncPos(r);r._ai=!!a;if(!a)return;const K=Math.abs(a.o)<.05?'C':a.o>0?'L':'R',old=drSides(r)[0];
+  if(old&&old!==K&&!r['len'+K]&&r['len'+old]){r['len'+K]=r['len'+old]}
+  r.sides={};r.sides[K]=true;r['a'+K]=fmtSta(a.sta0+a.s);if(K!=='C')r['off'+K]=String(Math.round(Math.abs(a.o)*100)/100)}
+function drAncOpts(r){const o=[],g=G();drRuns().forEach(or=>{if(or===r)return;(or.br||[]).forEach(b=>{const Lb=drN(b.len,0);if(!(Lb>0))return;const pi=drBrParent(or,b);if(!pi)return;
+  const nm=(or.name||'รายการ')+' · '+(b.name||'แขนง');drBrQty(or,b,Lb).el.filter(x=>x.t==='MH').forEach(x=>o.push({v:or.id+':'+b.id+':'+x.i,t:nm+' · MH-'+(pi.e.i+1)+'.'+(x.i+1)}));o.push({v:or.id+':'+b.id+':E',t:nm+' · ปลายแขนง (ปลายท่อ)'})})});return o}
+function drAncBlock(r){const op=drAncOpts(r),has=!r.anc||op.some(o=>o.v===r.anc),lock=!!(r.anc&&r._ai);
+  return`<div class="grid g3" style="margin-top:4px;border-left:3px solid #2e7d32;padding-left:6px"><div><label>เริ่มแนวท่อจาก (วางขนานทางหลัก)</label><select data-dr="${r.id}" data-f="anc"><option value="">ตามปกติ — ระบุ STA/ระยะเอง</option>${has?'':'<option value="'+esc(r.anc)+'" selected>— ไม่พบจุดต้นทาง —</option>'}${op.map(o=>`<option value="${o.v}"${o.v===r.anc?' selected':''}>${esc(o.t)}</option>`).join('')}</select></div>
+   <div><label>ทิศการวางท่อ</label><select data-dr="${r.id}" data-f="rev"><option value="0"${drRev(r)?'':' selected'}>ไปทาง STA เพิ่ม</option><option value="1"${drRev(r)?' selected':''}>ไปทาง STA ลด</option></select></div>
+   <div class="mute" style="align-self:end">${r.anc?(lock?'✔ ล็อก STA/ระยะจากกลางทางตามจุดต้นทาง (ปรับอัตโนมัติ) — กรอกความยาว ท่อ บ่อพัก ได้เอง':'<span class="warn">⚠ ไม่พบจุดต้นทาง — เลือกใหม่ หรือแขนงต้นทางยังไม่มีความยาว</span>'):(op.length?'เลือกบ่อ/ปลายท่อแขนง เพื่อวางท่อขนานไปกับทางหลักต่อจากท่อลอด':'ยังไม่มีท่อแขนงให้เลือก — สร้างท่อแขนงที่รายการอื่นก่อน')}</div></div>`}
 // ---------- ท่อแขนง (แยกจากบ่อพักทุกจุด · กำหนดเอง · ไม่มี PROFILE) ----------
 // แขนง b: {id,name,k(ตำแหน่ง L/C/R ของแนวหลัก),i(ลำดับบ่อพักต้นทาง เริ่ม 0),dir('L'|'R'),ang(มุมเอียงจากแนวตั้งฉาก องศา),len,dia,unit,n,end('MH'|'P'),rw,depth}
 function drBrRun(r,b){const nz=v=>drN(v,0)>0;
@@ -3743,11 +3776,11 @@ function drSvg(c){
   const{P,k,s0,s1,sta0,pstr,ang,sid,pts,tot}=c,o=[];const L=drPlanRuns();if(!L.length)return'';
   const f2=v=>(Math.round(v*100)/100).toFixed(2);
   o.push(`<pattern id="drh${sid}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f8e9d8"/><line x1="0" y1="0" x2="0" y2="6" stroke="#c0773a" stroke-width="1.2"/></pattern>`);
-  L.forEach(({r,side:sdk,a0,Lm,off:offm,multi})=>{
+  L.forEach(({r,side:sdk,a0,Lm,off:offm,multi,rev})=>{
     const sg=sdk==='L'?1:sdk==='R'?-1:0,off=sg===0?0:sg*offm,dia=Math.max(.05,drN(r.dia,.6)),tw=drN(r.tw,1.5),bw=drN(r.bw,1.1),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),wl=drN(r.wall,.15),side=sg||1;
-    const T=drMapU(pts,a0-sta0,off,Lm,tot);if(T.S[T.S.length-1]<s0||T.S[0]>s1)return;
+    const T=drMapU(pts,a0-sta0,off,Lm,tot,rev);if(T.S[T.S.length-1]<s0||T.S[0]>s1)return;
     const Q=drQty(r,Lm,sdk),sOf=T.sOf;
-    const vis=[T.uOf(Math.max(s0,T.S[0])),T.uOf(Math.min(s1,T.S[T.S.length-1]))];
+    const vis=[T.uOf(Math.max(s0,T.S[0])),T.uOf(Math.min(s1,T.S[T.S.length-1]))].sort((p,q)=>p-q);
     const band=(ua,ub,o1,o2)=>{ua=Math.max(ua,vis[0]);ub=Math.min(ub,vis[1]);if(ub-ua<1e-6)return null;const us=[];for(let u=ua;u<ub;u+=Math.max(.25,3/k*2))us.push(u);us.push(ub);return us.map(u=>P(sOf(u),o1)).concat(us.slice().reverse().map(u=>P(sOf(u),o2)))};
     const rect=(ua,ub,o1,o2)=>{const sa=sOf(ua),sb=sOf(ub);return[P(sa,o1),P(sb,o1),P(sb,o2),P(sa,o2)]};
     const inV=(a,b)=>b>=vis[0]-1e-6&&a<=vis[1]+1e-6;
@@ -3893,13 +3926,14 @@ function drItemHtml(r,seg){drMigrate(r);
   const segLen=seg?f2d(seg._b-seg._a):'';
   const rows=sd.map(k=>{const auto=drOff({...r,['off'+k]:''},k,g);
     return`<tr><td><b>${sdName(k)}</b></td>
-     <td><input data-dr="${r.id}" data-f="a${k}" value="${esc(r['a'+k]||'')}" placeholder="${seg?esc(fmtSta(seg._a)):'STA เริ่มต้น'}" style="width:110px" list="dlStaDR"></td>
+     <td><input data-dr="${r.id}" data-f="a${k}" ${r.anc&&r._ai?'disabled':''} value="${esc(r['a'+k]||'')}" placeholder="${seg?esc(fmtSta(seg._a)):'STA เริ่มต้น'}" style="width:110px" list="dlStaDR"></td>
      <td><input data-dr="${r.id}" data-f="len${k}" type="number" step="any" inputmode="decimal" value="${esc(r['len'+k]||'')}" placeholder="${seg?'ช่วงนี้ ≈ '+segLen:'ระบุความยาว'}" style="width:120px"></td>
-     <td>${k==='C'?'<span class="mute">แนวกึ่งกลางทาง</span>':`<input data-dr="${r.id}" data-f="off${k}" type="number" step="any" inputmode="decimal" value="${esc(r['off'+k]||'')}" placeholder="อัตโนมัติ ${f2d(auto)}" style="width:110px">`}</td></tr>`}).join('');
+     <td>${k==='C'?'<span class="mute">แนวกึ่งกลางทาง</span>':`<input data-dr="${r.id}" data-f="off${k}" ${r.anc&&r._ai?'disabled':''} type="number" step="any" inputmode="decimal" value="${esc(r['off'+k]||'')}" placeholder="อัตโนมัติ ${f2d(auto)}" style="width:110px">`}</td></tr>`}).join('');
   const rz=(r.rz||[]).map((z,i)=>`<tr><td><input data-dr="${r.id}" data-z="${i}" data-zf="a" type="number" step="any" value="${esc(z.a||'')}" style="width:90px"></td><td><input data-dr="${r.id}" data-z="${i}" data-zf="b" type="number" step="any" value="${esc(z.b||'')}" style="width:90px"></td><td><input data-dr="${r.id}" data-z="${i}" data-zf="w" type="number" step="any" value="${esc(z.w==null?'':z.w)}" style="width:76px"></td><td><button class="b ghost sm" data-act="zdel" data-dr="${r.id}" data-z="${i}">✕</button></td></tr>`).join('');
   const x=drItemQ(r);
   return `<div class="jobr drit" id="dri-${r.id}" data-dr="${r.id}">
    <div class="jr1"><input data-dr="${r.id}" data-f="name" value="${esc(r.name)}" placeholder="ชื่องาน เช่น ท่อระบายน้ำ Ø0.60" style="flex:1;min-width:180px;font-weight:700">${tg('L')}${tg('C')}${tg('R')}<button class="b ghost sm" data-act="dup" data-dr="${r.id}" title="ทำสำเนา">⎘</button><button class="b red sm" data-act="del" data-dr="${r.id}" title="ลบรายการนี้">✕</button></div>
+   <div id="dranc-${r.id}">${drAncBlock(r)}</div>
    ${sd.length?`<div style="overflow:auto;margin-top:4px"><table class="mjT"><tr><th>ตำแหน่ง</th><th>เริ่มวางที่ STA</th><th>ความยาวท่อ (ม.) · ระบุเอง</th><th>ระยะจากกลางทาง (ม.)</th></tr>${rows}</table></div>`:''}
    <div class="grid g4" style="margin-top:4px">${I('dia','ท่อ Ø (ม.)','n')}${I('unit','ความยาวต่อท่อน (ม.)','n')}${I('n','ท่อนต่อช่วง (ระหว่างบ่อ)','n')}${I('rw','คืนผิวกว้าง (ม.)','n')}
     ${I('bl','ตัวบ่อ ยาวตามแนวท่อ (ม.)','n')}${I('bw','ตัวบ่อ กว้างขวางแนว (ม.)','n')}${I('tl','ปากบ่อ ยาวตามแนวท่อ (ม.)','n')}${I('tw','ปากบ่อ กว้างขวางแนว (ม.)','n')}</div>
@@ -3969,6 +4003,8 @@ function drUpd(id,skipMh){const r=drRuns().find(x=>x.id===id);if(!r)return;save(
     if(el.dataset.mhc!==undefined){r.mhc=r.mhc||{};if(el.value)r.mhc[el.dataset.mhc]=el.value;else delete r.mhc[el.dataset.mhc];drUpd(id);return}
     if(el.dataset.z!==undefined){const z=(r.rz||[])[+el.dataset.z];if(z){z[el.dataset.zf]=el.value;drUpd(id)}return}
     const f=el.dataset.f;if(!f)return;
+    if(f==='anc'){r.anc=el.value;if(el.value)r.start='P';r._ai=false;drMigrate(r);save(true);drRender();return}
+    if(f==='rev'){r.rev=el.value==='1';drUpd(id);return}
     if(f==='endMH')r.endMH=el.value==='1';else if(el.type==='checkbox')r[f]=el.checked;else r[f]=(f==='jp'||f==='jm'||f==='jr'||f==='jb')?el.value.trim().toUpperCase():el.value;
     if(f==='conn'){drUpd(id);const t=$('drmh-'+id);if(t)t.innerHTML=drMhTables(r);return}
     drUpd(id)};
