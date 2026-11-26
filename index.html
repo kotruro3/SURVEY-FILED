@@ -3656,7 +3656,7 @@ function drDefRun(){return{id:'d'+Math.random().toString(36).slice(2,8),v:96,nam
 const drN=(v,d)=>{const x=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(x)?x:(d===undefined?0:d)};
 const drR2=x=>Math.round(x*100)/100;
 // วางแนว ท่อ-บ่อพัก ตามความยาว L ที่ผู้ใช้ระบุ (เริ่มที่ 0)
-function drLayout(r,L){
+function drLayoutFix(r,L){
   const span=Math.max(0,drN(r.n,10))*Math.max(0.01,drN(r.unit,1)),bl=Math.max(0.01,drN(r.bl,1.1)),E=1e-6,el=[],warn=[],b=L;
   let x=0,exp=r.start!=='P';const endMH=!!r.endMH;
   const mh=()=>{el.push({t:'MH',a:x,b:x+bl});x+=bl};
@@ -3676,6 +3676,57 @@ function drLayout(r,L){
   el.forEach((e,i)=>{if(e.t==='P'){e.mL=!!(el[i-1]&&el[i-1].t==='MH');e.mR=!!(el[i+1]&&el[i+1].t==='MH')}});
   if(r._mL0&&el[0]&&el[0].t==='P')el[0].mL=true;
   return{el,warn}}
+// ===== แบ่งช่วงบ่อพักอัตโนมัติ : เป้าหมาย n ท่อน (ตั้งต้น 10 ม.), ปรับได้ 7–13 ม., มุม/โค้งเป็นบ่อพักเสมอ, ปรับจำนวนท่อนรายช่วงได้ =====
+function drLayout(r,L,side){if(r.mode==='fix'){const o=drLayoutFix(r,L);o.spans=[];o.cor=[];return o}return drLayoutAuto(r,L,side)}
+const _cuC=new Map();
+function drCornerU(r,side,L,smin,bl){if(!side||side==='B'||!(L>0))return[];let A;try{A=drAlign()}catch(e){return[]}if(!A)return[];const g=G();
+  const a0=drStartOf(r,side,g);if(a0==null)return[];const off=(side==='L'?1:side==='R'?-1:0)*drOff(r,side,g),rev=drRev(r);
+  const key=JSON.stringify([g.segs,g.hd,A.sta0,a0,off,L,rev,smin,bl]);if(_cuC.has(key))return _cuC.get(key);
+  const T=drMapU(A.pts,a0-A.sta0,off,L,A.tot,rev),lo=Math.min(T.S[0],T.S[T.S.length-1]),hi=Math.max(T.S[0],T.S[T.S.length-1]),raw=[],ok=x=>x>=lo-1e-6&&x<=hi+1e-6;
+  (g.pl||[]).forEach(p=>{if((p.t||'L')==='L'||!(p._b>p._a))return;const s1=p._a-A.sta0,s2=p._b-A.sta0,i1=ok(s1),i2=ok(s2);if(!i1&&!i2)return;
+    const u1=i1?T.uOf(s1):null,u2=i2?T.uOf(s2):null;
+    if(i1&&i2){const ua=Math.min(u1,u2),ub=Math.max(u1,u2);if(ub-ua<smin)raw.push((ua+ub)/2);else{raw.push(ua);raw.push(ub)}}else raw.push(i1?u1:u2)});
+  raw.sort((a,b)=>a-b);const out=[];raw.forEach(u=>{const c=Math.max(bl/2,Math.min(L-bl/2,u));if(!out.length||c-out[out.length-1]>=bl+1e-6)out.push(c)});
+  if(_cuC.size>300)_cuC.clear();_cuC.set(key,out);return out}
+function drLayoutAuto(r,L,side){
+  const unit=Math.max(.01,drN(r.unit,1)),bl=Math.max(.01,drN(r.bl,1.1)),E=1e-6,el=[],warn=[],spans=[];
+  const tg=Math.max(.01,drN(r.n,10))*unit;let smin=drN(r.smin,7),smax=drN(r.smax,13);if(!(smin>0))smin=7;if(!(smax>=smin))smax=Math.max(13,smin);
+  if(!(L>E))return{el,warn:['ระบุความยาวท่อ'],spans,cor:[]};
+  const startMH=r.start!=='P',endMH=!!r.endMH,gapMin=1;
+  const nodes=[{mh:startMH,r:startMH?bl:0,l:0,cor:false}];
+  drCornerU(r,side,L,smin,bl).forEach(c=>{const last=nodes[nodes.length-1];if(c-bl/2-last.r<gapMin)return;if((endMH?L-bl:L)-(c+bl/2)<gapMin)return;nodes.push({mh:true,l:c-bl/2,r:c+bl/2,cor:true})});
+  nodes.push({mh:endMH,l:endMH?L-bl:L,r:L,cor:false});
+  const ov=r.spn||{},pick=gap=>{let best=null;const nMax=Math.min(300,Math.max(1,Math.ceil(gap/Math.max(.5,smin))+2));
+    for(let N=1;N<=nMax;N++){const g=(gap-(N-1)*bl)/N;if(g<=E)break;const sc=(g>=smin-E&&g<=smax+E)?Math.abs(g-tg):1000+(g<smin?smin-g:g-smax);if(!best||sc<best.sc-1e-9)best={N,sc}}return best?best.N:1};
+  let x=0,j=0;const mh=(c)=>{el.push({t:'MH',a:x,b:x+bl,cor:!!c});x+=bl},pipe=(l)=>{if(l>E){el.push({t:'P',a:x,b:x+l});x+=l}};
+  if(startMH)mh(false);
+  for(let n=0;n<nodes.length-1;n++){const A=nodes[n],B=nodes[n+1],lo=A.r,hi=B.l,gap=hi-lo;
+    if(gap<=E){if(gap<-E)warn.push('บ่อพักชนกัน ที่ระยะ '+drR2(hi)+' ม.');if(B.mh){x=Math.max(x,hi);mh(B.cor)}continue}
+    const N=pick(gap),room=gap-(N-1)*bl,fixed=[];let fsum=0;
+    for(let i=0;i<N;i++){const v=parseFloat(ov[(side||'')+(j+i)]);fixed.push(v>0?v*unit:null);if(v>0&&i<N-1)fsum+=v*unit}
+    // ช่วงสุดท้ายของแต่ละท่อนใหญ่ รับส่วนต่างเสมอ เพื่อให้บ่อพักอยู่ที่มุม/ปลายแนว
+    const free=[];for(let i=0;i<N;i++)if(fixed[i]==null||i===N-1)free.push(i);
+    const left=room-fsum,gf=Math.max(0,left/free.length);
+    if(left<-E)warn.push('ท่อนที่กำหนดเองรวมเกินช่วงระหว่างบ่อพัก '+drR2(-left)+' ม.');
+    // ช่วงอัตโนมัติ: จำนวนท่อนเต็ม (ปัดเศษกระจาย) ; ช่วงท้ายรับเศษที่เหลือ
+    const gAuto={};let used=0;free.forEach((fi,m)=>{if(m===free.length-1){gAuto[fi]=Math.max(0,left-used);return}const q=gf/unit,kk=Math.max(1,Math.round((m+1)*q)-Math.round(m*q)),g=kk*unit;gAuto[fi]=g;used+=g});
+    for(let i=0;i<N;i++){const isFree=free.includes(i),g=isFree?gAuto[i]:fixed[i];const a=x;pipe(g);spans.push({j:j+i,a,b:x,g,k:Math.ceil(g/unit-1e-6),fixed:!isFree,absorb:i===N-1&&fixed[i]!=null});
+      if(i<N-1)mh(false)}
+    j+=N;
+    if(B.mh){x=Math.max(x,hi);mh(B.cor)}else x=Math.max(x,hi)}
+  spans.forEach(s=>{if(!s.fixed&&(s.g<smin-.005||s.g>smax+.005))warn.push('ช่วงที่ '+(s.j+1)+' ยาว '+drR2(s.g)+' ม. อยู่นอก '+drR2(smin)+'–'+drR2(smax)+' ม.')});
+  let mi=0;el.forEach(e=>{if(e.t==='MH')e.i=mi++});
+  el.forEach((e,i)=>{if(e.t==='P'){e.mL=!!(el[i-1]&&el[i-1].t==='MH');e.mR=!!(el[i+1]&&el[i+1].t==='MH')}});
+  if(r._mL0&&el[0]&&el[0].t==='P')el[0].mL=true;
+  return{el,warn,spans,cor:el.filter(e=>e.cor).map(e=>e.i)}}
+function drSpBlock(r){if(r.mode==='fix')return'<div class="mute" style="margin-top:4px">วิธีแบ่งช่วง: คงที่ (แบบเดิม) — เปลี่ยนเป็น “อัตโนมัติ” เพื่อปรับจำนวนท่อนรายช่วงและบังคับบ่อพักที่มุม</div>';
+  const out=[],unit=Math.max(.01,drN(r.unit,1)),smin=drN(r.smin,7)||7,smax=drN(r.smax,13)||13;
+  drSides(r).forEach(k=>{const L=drLenOf(r,k);if(!(L>0))return;const q=drQty(r,L,k),sp=q.spans||[];if(!sp.length)return;const mhs=q.el.filter(e=>e.t==='MH'),ov=r.spn||{};
+    const rows=sp.map(p=>{const pv=mhs.filter(m=>m.b<=p.a+1e-6).length,nx=pv+1,hasNx=mhs.some(m=>m.a>=p.b-1e-6),cn=i=>(q.cor||[]).includes(i-1)?' <b style="color:#b3261e" title="บ่อพักที่มุม/โค้ง">●มุม</b>':'';
+      const fx=ov[k+p.j],bad=!p.fixed&&(p.g<smin-.005||p.g>smax+.005);
+      return`<tr><td>${p.j+1}</td><td>${pv?'MH-'+pv+cn(pv):'ต้นแนว'} → ${hasNx?'MH-'+nx+cn(nx):'ปลายแนว'}</td><td class="r" style="${bad?'color:var(--warn);font-weight:700':''}">${f2d(p.g)}</td><td><input data-spn="${r.id}" data-sk="${k}${p.j}" type="number" step="any" min="0" inputmode="decimal" value="${fx==null||fx===''?'':esc(fx)}" placeholder="${p.absorb||!p.fixed?'อัตโนมัติ '+p.k:p.k}" style="width:135px;${fx?'border-width:3px':''}"></td><td class="mute">${p.absorb?'รับส่วนต่าง':(p.fixed?'กำหนดเอง':'')}</td></tr>`}).join('');
+    out.push(`<div style="margin-top:6px"><b>${DR_SIDE[k]}</b> · บ่อพัก ${mhs.length} แห่ง${(q.cor||[]).length?' (มุม/โค้ง '+q.cor.length+')':''}<div style="overflow:auto"><table class="mjT"><tr><th>ช่วง</th><th>จาก → ถึง</th><th class="r">ท่อยาว (ม.)</th><th>จำนวนท่อน (กำหนดเอง)</th><th></th></tr>${rows}</table></div></div>`)});
+  return out.length?`<details open style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">ช่วงท่อระหว่างบ่อพัก · ปรับจำนวนท่อนรายช่วงได้</summary><div class="mute">ตั้งต้นช่วงละ ~${f2d(drN(r.n,10)*unit)} ม. ปรับอัตโนมัติให้อยู่ใน ${f2d(smin)}–${f2d(smax)} ม. · มุม/โค้งเป็นบ่อพักเสมอ · กรอกจำนวนท่อนเพื่อกำหนดเอง (ช่วงท้ายของแต่ละท่อนใหญ่รับส่วนต่างให้บ่อพักไม่เลื่อนจากมุม) · ลบค่าเพื่อกลับเป็นอัตโนมัติ</div>${out.join('')}</details>`:''}
 // ความลึกบ่อใบที่ i ของตำแหน่ง side (L/C/R) ; ว่าง = ค่าตั้งต้น
 function drDepth(r,i,side){const d0=drN(r.depth,1.5),m=r.dep||{};let v=m[(side||'')+i];if(v===undefined)v=m[i];return(v===undefined||v===''||v===null)?d0:drN(v,d0)}
 // ทางเชื่อมของบ่อพัก : '2' ตรง | '3L' | '3R' | '4'
@@ -3683,7 +3734,7 @@ function drConn(r,i,side){const m=r.mhc||{},v=m[(side||'')+i];return(v&&v!=='')?
 const drBrN=c=>c==='4'?2:(c==='3L'||c==='3R')?1:0;
 // ปริมาณ + พื้นที่คืนผิว ของ 1 แนว (ยาว L ม.)
 function drQty(r,L,side){
-  const lay=drLayout(r,L),el=lay.el,wall=drN(r.wall,.15),unit=Math.max(.01,drN(r.unit,1)),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),ov=Math.max(0,(tl-bl)/2),bln=Math.max(0,drN(r.bln,3));
+  const lay=drLayout(r,L,side),el=lay.el,wall=drN(r.wall,.15),unit=Math.max(.01,drN(r.unit,1)),bl=drN(r.bl,1.1),tl=drN(r.tl,1.5),ov=Math.max(0,(tl-bl)/2),bln=Math.max(0,drN(r.bln,3));
   let pipeLen=0,pieces=0,mhs=0,gross=0,net=0,minDepth=1e9,brN=0;
   const zones=(r.rz||[]).map(z=>({a:drN(z.a,NaN),b:drN(z.b,NaN),w:drN(z.w,0)})).filter(z=>isFinite(z.a)&&isFinite(z.b)&&z.b>z.a&&z.w>0).sort((p,q)=>p.a-q.a);
   const wAt=(s0,s1)=>{let area=0,rest=s1-s0;zones.forEach(z=>{const o=Math.max(0,Math.min(s1,z.b)-Math.max(s0,z.a));if(o>0){area+=o*z.w;rest-=o}});return area+Math.max(0,rest)*Math.max(0,drN(r.rw,0))};
@@ -3694,7 +3745,7 @@ function drQty(r,L,side){
     len=Math.max(0,len);pipeLen+=len;pieces+=Math.ceil((e.b-e.a)/unit-1e-6);
     gross+=wAt(e.a,e.b);
     const sa=e.a+(e.mL?ov:0),sb=e.b-(e.mR?ov:0);if(sb>sa)net+=wAt(sa,sb)});
-  return{el,warn:lay.warn.concat(minDepth<1.2-1e-9&&mhs?['ความลึกบ่อพักน้อยกว่า 1.20 ม.']:[]),
+  return{el,spans:lay.spans||[],cor:lay.cor||[],warn:lay.warn.concat(minDepth<1.2-1e-9&&mhs?['ความลึกบ่อพักน้อยกว่า 1.20 ม.']:[]),
     pipeLen:drR2(pipeLen),pieces,mhs,brN,brLen:drR2(brN*bln),brPieces:brN*Math.ceil(bln/unit-1e-6),total:drR2(L),gross:drR2(gross),net:drR2(net),deduct:drR2(gross-net)}}
 
 // ===== v96: ⑩ งานระบายน้ำ — ข้อมูล/แปลน/PROFILE =====
@@ -3803,7 +3854,7 @@ function drOverlapHtml(){let o;try{o=drOverlaps()}catch(e){return''}if(!o.length
 // ---------- ท่อแขนง (แยกจากบ่อพักทุกจุด · กำหนดเอง · ไม่มี PROFILE) ----------
 // แขนง b: {id,name,k(ตำแหน่ง L/C/R ของแนวหลัก),i(ลำดับบ่อพักต้นทาง เริ่ม 0),dir('L'|'R'),ang(มุมเอียงจากแนวตั้งฉาก องศา),len,dia,unit,n,end('MH'|'P'),rw,depth}
 function drBrRun(r,b){const nz=v=>drN(v,0)>0;
-  return Object.assign({},r,{id:r.id+'_'+b.id,n:(b.n!==''&&b.n!=null&&drN(b.n,-1)>=0)?b.n:r.n,unit:nz(b.unit)?b.unit:r.unit,dia:nz(b.dia)?b.dia:r.dia,start:'P',endMH:b.end!=='P',
+  return Object.assign({},r,{id:r.id+'_'+b.id,n:(b.n!==''&&b.n!=null&&drN(b.n,-1)>=0)?b.n:r.n,unit:nz(b.unit)?b.unit:r.unit,dia:nz(b.dia)?b.dia:r.dia,start:'P',endMH:b.end!=='P',spn:{},
     bl:r.bw,bw:r.bl,tl:r.tw,tw:r.tl,rw:(b.rw!==''&&b.rw!=null&&isFinite(parseFloat(b.rw)))?b.rw:r.rw,rz:[],dep:{},conn:'2',mhc:{},br:[],_mL0:true,depth:nz(b.depth)?b.depth:r.depth})}
 function drBrParent(r,b){const pr=(b.pr&&b.pr!==r.id&&drRuns().find(x=>x.id===b.pr))||r;drMigrate(pr);const L=drLenOf(pr,b.k);if(!drSides(pr).includes(b.k)||!(L>0))return null;const q=drQty(pr,L,b.k),e=q.el.find(x=>x.t==='MH'&&x.i===+b.i);return e?{k:b.k,L,e,q,pr}:null}
 function drBrQty(r,b,L){return drQty(drBrRun(r,b),L,'B')}
@@ -3978,7 +4029,9 @@ function drItemHtml(r,seg){drMigrate(r);
    <div class="jr1"><input data-dr="${r.id}" data-f="name" value="${esc(r.name)}" placeholder="ชื่องาน เช่น ท่อระบายน้ำ Ø0.60" style="flex:1;min-width:180px;font-weight:700">${tg('L')}${tg('C')}${tg('R')}<button class="b ghost sm" data-act="dup" data-dr="${r.id}" title="ทำสำเนา">⎘</button><button class="b red sm" data-act="del" data-dr="${r.id}" title="ลบรายการนี้">✕</button></div>
    <div id="dranc-${r.id}">${drAncBlock(r)}</div>
    ${sd.length?`<div style="overflow:auto;margin-top:4px"><table class="mjT"><tr><th>ตำแหน่ง</th><th>เริ่มวางที่ STA</th><th>ความยาวท่อ (ม.) · ระบุเอง</th><th>ระยะจากกลางทาง (ม.)</th></tr>${rows}</table></div>`:''}
-   <div class="grid g4" style="margin-top:4px">${I('dia','ท่อ Ø (ม.)','n')}${I('unit','ความยาวต่อท่อน (ม.)','n')}${I('n','ท่อนต่อช่วง (ระหว่างบ่อ)','n')}${I('rw','คืนผิวกว้าง (ม.)','n')}
+   <div class="grid g4" style="margin-top:4px"><div><label>วิธีแบ่งช่วงบ่อพัก</label><select data-dr="${r.id}" data-f="mode"><option value="auto"${r.mode==='fix'?'':' selected'}>อัตโนมัติ (มุม=บ่อพัก, 7–13 ม.)</option><option value="fix"${r.mode==='fix'?' selected':''}>คงที่ ท่อนต่อช่วงเท่ากัน (แบบเดิม)</option></select></div><div><label>ช่วงสั้นสุด (ม.)</label><input data-dr="${r.id}" data-f="smin" type="number" step="any" inputmode="decimal" value="${esc(r.smin==null?'':r.smin)}" placeholder="7"></div><div><label>ช่วงยาวสุด (ม.)</label><input data-dr="${r.id}" data-f="smax" type="number" step="any" inputmode="decimal" value="${esc(r.smax==null?'':r.smax)}" placeholder="13"></div></div>
+   <div id="drsp-${r.id}">${drSpBlock(r)}</div>
+   <div class="grid g4" style="margin-top:4px">${I('dia','ท่อ Ø (ม.)','n')}${I('unit','ความยาวต่อท่อน (ม.)','n')}${I('n','ท่อนต่อช่วง เป้าหมาย (ระหว่างบ่อ)','n')}${I('rw','คืนผิวกว้าง (ม.)','n')}
     ${I('bl','ตัวบ่อ ยาวตามแนวท่อ (ม.)','n')}${I('bw','ตัวบ่อ กว้างขวางแนว (ม.)','n')}${I('tl','ปากบ่อ ยาวตามแนวท่อ (ม.)','n')}${I('tw','ปากบ่อ กว้างขวางแนว (ม.)','n')}</div>
    <div class="grid g4" style="margin-top:4px">
     <div><label>หัวแนว (จุดเริ่ม)</label><select data-dr="${r.id}" data-f="start"><option value="MH"${r.start!=='P'?' selected':''}>เริ่มด้วยบ่อพัก</option><option value="P"${r.start==='P'?' selected':''}>เริ่มด้วยท่อ</option></select></div>
@@ -4030,10 +4083,12 @@ function drAllHtml(){const rows=[];
     return`<tr><td>${a0==null?'—':esc(fmtSta(a0))}</td><td>${esc(r.name||'')}</td><td>${sdName(p.k)}</td><td>Ø${d}</td><td class="r">${f2d(p.L)}</td><td class="r">${f2d(q.pipeLen)}</td><td class="r">${q.mhs}</td><td class="r">${q.brLen?f2d(q.brLen):'-'}</td><td class="r">${f2d(q.net)}</td></tr>`}).join('');
   return`<table class="mjT"><tr><th>เริ่มที่ STA</th><th>งาน</th><th>ตำแหน่ง</th><th>ท่อ</th><th class="r">ความยาวแนว (ม.)</th><th class="r">ท่อ (ม.)</th><th class="r">บ่อพัก (แห่ง)</th><th class="r">ท่อสาขา (ม.)</th><th class="r">คืนผิว (ตร.ม.)</th></tr>${body}<tr style="font-weight:700"><td colspan="5">รวม (รวมท่อแขนง)</td><td class="r">${f2d(tp)}</td><td class="r">${tm}</td><td class="r">${f2d(tb)}</td><td class="r">${f2d(tn)}</td></tr></table>`+
     '<div class="mute" style="margin-top:4px">ท่อแยกตามขนาด (รวมท่อแขนงและท่อสาขา): '+Object.keys(byDia).map(d=>'Ø'+d+' = '+f2d(byDia[d])+' ม.').join(' · ')+'</div>'}
+document.addEventListener('change',e=>{const el=e.target;if(!el||!el.dataset||el.dataset.spn==null)return;const r=drRuns().find(x=>x.id===el.dataset.spn);if(!r)return;r.spn=r.spn||{};const v=parseFloat(el.value);
+  if(el.value===''||!(v>0))delete r.spn[el.dataset.sk];else r.spn[el.dataset.sk]=String(v);save(true);drUpd(r.id);setTimeout(()=>{const c=$('drsp-'+r.id);if(c){try{if(document.activeElement&&c.contains(document.activeElement))document.activeElement.blur()}catch(x){}c.innerHTML=drSpBlock(r)}},0)});
 function drUpd(id,skipMh){const r=drRuns().find(x=>x.id===id);if(!r)return;save();
   const q=$('drq-'+id);if(q)q.innerHTML=drQtyHtml(r);
   const x=drItemQ(r);['jp','jm','jr','jb'].forEach(f=>{const s=document.querySelector('#dri-'+id+' [data-ci="'+f+'"]');if(s)s.innerHTML=drCodeInfo(r[f],x.ok?x[f==='jp'?'pipe':f==='jm'?'mh':f==='jr'?'area':'br']:null)});
-  (r.br||[]).forEach(b=>{const e=$('drbq-'+id+'-'+b.id);if(e)e.innerHTML=drBrRowQ(r,b)});{const c=$('drbr-'+id);if(c&&!c.contains(document.activeElement))c.innerHTML=drBrBlock(r)}
+  (r.br||[]).forEach(b=>{const e=$('drbq-'+id+'-'+b.id);if(e)e.innerHTML=drBrRowQ(r,b)});{const c=$('drsp-'+id);if(c&&!c.contains(document.activeElement))c.innerHTML=drSpBlock(r)}{const c=$('drbr-'+id);if(c&&!c.contains(document.activeElement))c.innerHTML=drBrBlock(r)}
   if(!skipMh){const t=$('drmh-'+id);if(t&&!t.contains(document.activeElement))t.innerHTML=drMhTables(r)}
   drAllUpd()}
 (function(){const w=()=>{
