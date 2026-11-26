@@ -750,7 +750,9 @@ function renderPlanStrip(){
   box.innerHTML=svg+'</svg>';
   $('legend').innerHTML=un?`<span class="warn">ไม่แสดงใน PLAN ${un} รายการ (ยังไม่ระบุ STA หรือ L/C/R)</span>`:'';
 }
-function renderPlan(){return G().mode==="strip"?renderPlanStrip():renderSheets()}
+function renderPlan0(){return G().mode==="strip"?renderPlanStrip():renderSheets()}
+// v112: คำนวณแนวผัง 1 ครั้งต้นรอบ แล้วพักไว้ระหว่างวาด (เดิมคำนวณซ้ำทุกครั้งที่อ่านข้อมูล → หน่วง)
+function renderPlan(){G();window._plHold=1;try{return renderPlan0()}finally{window._plHold=0}}
 // ---- map ----
 let MAP=null,MLAYER=null,ME=null,mapReady=false;
 function pointIcon(p){const t=PTYPES.find(x=>x[1]===p.type)||PTYPES[6];return L.divIcon({className:'',html:`<div style="font-size:22px;line-height:22px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))">${t[0]}</div>`,iconSize:[24,24],iconAnchor:[12,12]})}
@@ -1247,7 +1249,13 @@ function relabel(str,C){const{g,P,wf,sta0,s0,s1,k,area}=C,RAD=Math.PI/180;
   const step=Math.max(1,6/k),S=[];for(let t=s0;t<=s1+1e-6;t+=step){const c=P(t,0),q=P(t,1);let nx=q[0]-c[0],ny=q[1]-c[1];const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
     const w=wf(t+sta0),ex=extentAt(g,t+sta0,w);S.push({x:c[0],y:c[1],nx,ny,tx:ny,ty:-nx,cl:ex[0]*k+3,cr:ex[1]*k+3})}
   if(!S.length)return str;
-  const near=(x,y)=>{let b=null,bd=1e18;for(const s of S){const d=(s.x-x)**2+(s.y-y)**2;if(d<bd){bd=d;b=s}}return b};
+  // v112: หาจุดใกล้สุดด้วยตารางกริด (ผลเท่าเดิมทุกประการ แต่ไม่ไล่ตรวจทุกจุด)
+  const NC=40,nG=new Map(),nk=(a,b)=>a*100003+b;let nxMin=1e18,nxMax=-1e18,nyMin=1e18,nyMax=-1e18;
+  S.forEach(s=>{const a=Math.floor(s.x/NC),b=Math.floor(s.y/NC),k=nk(a,b);let l=nG.get(k);if(!l)nG.set(k,l=[]);l.push(s);nxMin=Math.min(nxMin,a);nxMax=Math.max(nxMax,a);nyMin=Math.min(nyMin,b);nyMax=Math.max(nyMax,b)});
+  const near=(x,y)=>{const a0=Math.floor(x/NC),b0=Math.floor(y/NC);let b=null,bd=1e18;const rMax=Math.max(Math.abs(a0-nxMin),Math.abs(a0-nxMax),Math.abs(b0-nyMin),Math.abs(b0-nyMax))+1;
+    for(let r=0;r<=rMax;r++){if(b&&bd<=((r-1)*NC)**2&&r>0)break;
+      for(let a=a0-r;a<=a0+r;a++)for(let c=b0-r;c<=b0+r;c++){if(r>0&&a>a0-r&&a<a0+r&&c>b0-r&&c<b0+r)continue;const l=nG.get(nk(a,c));if(l)for(const s of l){const d=(s.x-x)**2+(s.y-y)**2;if(d<bd){bd=d;b=s}}}}
+    return b};
   const bad=(x,y)=>{const s=near(x,y);const dx=x-s.x,dy=y-s.y,al=dx*s.tx+dy*s.ty;if(Math.abs(al)>step*k*1.2+4)return false;const d=dx*s.nx+dy*s.ny;return d>=0?d<s.cl:-d<s.cr};
   const pts=b=>{const xs=[b.x0,(b.x0+b.x1)/2,b.x1],ys=[b.y0,(b.y0+b.y1)/2,b.y1],o=[];xs.forEach(x=>ys.forEach(y=>o.push([x,y])));return o};
   const inRoad0=b=>pts(b).some(p=>bad(p[0],p[1]));let inRoad=b=>inRoad0(b)||polyHit(b);
@@ -1536,7 +1544,7 @@ function renderSheets(){
 function planSvgs(){return [...$('planbox').querySelectorAll('svg.sheet')]}
 
 // ===================== v12 UI: ตั้งค่าแปลน =====================
-let geoTmr=null;const geoRedraw=()=>{clearTimeout(geoTmr);geoTmr=setTimeout(()=>{save();renderPlan()},140)};
+let geoTmr=null;const geoRedraw=()=>{clearTimeout(geoTmr);geoTmr=setTimeout(()=>{save();renderPlan()},450)};
 const HD8=[['N',0],['NE',45],['E',90],['SE',135],['S',180],['SW',225],['W',270],['NW',315]];
 function geoUIOld(){
   const g=G(),h=[];
@@ -1808,7 +1816,7 @@ function plPrep(g){
     g.pl=g.segs.map((q,i)=>{const L=q.t==='L'?gnum(q.len):gnum(q.R)*gnum(q.ang)*DEG;const m=s+L/2;const z=zs.find(z=>m>=z.a&&m<z.b);s+=L;
       return{id:uid(),t:q.t,len:q.len,ang:q.ang,R:q.R,hd:'',wl:z?z.l:(i===0&&g.w0!==''?gnum(g.w0,5)/2:''),wr:z?z.r:(i===0&&g.w0!==''?gnum(g.w0,5)/2:''),rowl:i===0?(g.rowl||''):'',rowr:i===0?(g.rowr||''):'',eL:{t:'',w:'',n:''},eR:{t:'',w:'',n:''}}});
     g.plm=1;if(parseSta(g.sta0)==null)g.sta0='0+000'}}
-  if(g.plm)compilePL(g)}
+  if(g.plm&&!window._plHold)compilePL(g)}
 function autoEndJx(g){let ch=false;const body=(g.pl||[]).filter(p=>!p.lead&&!p.turn&&p._b>p._a+1e-6);if(!body.length||g._end==null)return false;const last=body[body.length-1];
   const sta0=parseSta(g.sta0)||0;
   (g.jx||[]).forEach(j=>{if(j.fk||j.bk||j.src||j.type!=='R')return;const ts=parseSta(j.sta),Ro=Math.max(1,gnum(j.Ro,15));if(ts==null)return;
@@ -3320,6 +3328,7 @@ function lblApply(){
   const lo=(G().lo)||{};
   document.querySelectorAll('#planbox svg.sheet').forEach((svg,si)=>{const cnt={};
     svg.querySelectorAll('text[data-ub]').forEach(e=>e.remove());
+    try{ushDraw(svg,si)}catch(e){console.error(e)}
     (G().utb||[]).filter(b=>b.sh===si).forEach(b=>{const el=document.createElementNS('http://www.w3.org/2000/svg','text');el.setAttribute('x',b.x);el.setAttribute('y',b.y);el.setAttribute('font-size',b.fs||14);el.setAttribute('font-weight','700');el.setAttribute('fill',b.c||'#c0392b');el.setAttribute('paint-order','stroke');el.setAttribute('stroke','#fff');el.setAttribute('stroke-width','3');el.setAttribute('font-family','Sarabun,Tahoma,sans-serif');el.textContent=b.t;el.dataset.ub=b.id;el.dataset.ot=b.t;el.dataset.ox=String(b.x);el.dataset.oy=String(b.y);el.dataset.otr='';el.dataset.ofs=String(b.fs||14);el.dataset.ofill=b.c||'#c0392b';el.dataset.lk=si+'|ub|'+b.id;svg.appendChild(el);const o=(G().lo||{})[el.dataset.lk];if(o)lblSet(el,o);el.classList.toggle('lbe',LBL.on)});
     svg.querySelectorAll('text').forEach(el=>{
       if(el.dataset.ot===undefined){el.dataset.ot=el.textContent;el.dataset.ox=el.getAttribute('x')||'';el.dataset.oy=el.getAttribute('y')||'';el.dataset.otr=el.getAttribute('transform')||'';el.dataset.ofs=el.getAttribute('font-size')||'';el.dataset.ofill=el.getAttribute('fill')||''}
@@ -3363,7 +3372,7 @@ function lblPanelFill(){const p=lblPanel(),el=LBL.sel;p.style.display=LBL.on?'bl
   ['lblTxt','lblFs','lblFm','lblFp','lblHide','lblReset','lblCol'].forEach(i=>$(i).disabled=!el);$('lblDel').style.display=(el&&el.dataset.ub)?'':'none';if(!el)return;
   const o=lblOv()[el.dataset.lk]||{};if(document.activeElement!==$('lblTxt'))$('lblTxt').value=(o.t!=null&&o.t!=='')?o.t:el.dataset.ot;
   $('lblFs').value=o.fs>0?o.fs:(parseFloat(el.dataset.ofs)||10);$('lblHide').checked=!!o.h;$('lblCol').value=/^#[0-9a-f]{6}$/i.test(o.c||el.dataset.ofill||'')?(o.c||el.dataset.ofill):'#222222'}
-function lblMode(on){LBL.on=on;const b=$('lblTog');if(b){b.classList.toggle('ghost',!on);b.textContent=on?'✔ ปิดโหมดปรับข้อความ':'✏ ปรับข้อความบนแผ่น (ย้าย / ขนาด / แก้ข้อความ)'}
+function lblMode(on){LBL.on=on;if(on&&typeof SH!=='undefined'&&SH.on)shMode(false);const b=$('lblTog');if(b){b.classList.toggle('ghost',!on);b.textContent=on?'✔ ปิดโหมดปรับข้อความ':'✏ ปรับข้อความบนแผ่น (ย้าย / ขนาด / แก้ข้อความ)'}
   document.querySelectorAll('#planbox svg.sheet').forEach(s=>s.classList.toggle('lbmode',on));
   document.querySelectorAll('#planbox text').forEach(t=>t.classList.toggle('lbe',on));
   if(!on&&LBL.sel){LBL.sel.classList.remove('lbsel');LBL.sel=null}lblPanelFill()}
@@ -3391,6 +3400,118 @@ function lblMode(on){LBL.on=on;const b=$('lblTog');if(b){b.classList.toggle('gho
   box.addEventListener('touchmove',e=>{if(LBL.drag&&LBL.drag.moved)e.preventDefault()},{passive:false});
   const st=document.createElement('style');st.textContent='#zmBar{position:sticky;top:0;z-index:5;background:var(--card);padding:4px 0;flex-wrap:wrap}.card.zfs{position:fixed;inset:0;z-index:700;margin:0;border-radius:0;display:flex;flex-direction:column;padding:6px 8px;overflow:hidden}.card.zfs #planbox{flex:1 1 auto;min-height:0;max-height:none!important}.card.zfs #legend,.card.zfs #zmHint{display:none}svg.lbmode text.lbe{cursor:move}svg.lbmode text.lbe:hover{fill:#e67e00}svg.lbmode text.lbsel{fill:#e67e00;stroke:#e67e00;stroke-width:.5}';document.head.appendChild(st);
   const _rs=renderSheets;renderSheets=function(){const r=_rs.apply(this,arguments);try{lblApply();if(LBL.on){document.querySelectorAll('#planbox svg.sheet').forEach(s=>s.classList.add('lbmode'));LBL.sel=null;lblPanelFill()}}catch(e){console.error(e)}return r};
+})();
+
+// ===== v112: สัญลักษณ์พื้นฐานบนแผ่นผัง (ลูกศร/กล่อง/วงกลม/วงรี/สามเหลี่ยม/เส้นต่อเนื่อง) =====
+const SH={on:false,tool:'sel',sel:null,drag:null,cur:null,c:'#c0392b',w:1,f:false,d:false};
+const SH_T=[['sel','↖','เลือก/ย้าย'],['arrow','➜','ลูกศร'],['rect','▭','กล่องสี่เหลี่ยม'],['circ','◯','วงกลม'],['ell','⬭','วงรี'],['tri','△','สามเหลี่ยม'],['poly','⟋','เส้นต่อเนื่อง'],['pg','⬠','รูปหลายเหลี่ยม']];
+const SH_CLOSED=['rect','circ','ell','tri','pg'];
+const shNS='http://www.w3.org/2000/svg';
+function shEl(n,a){const e=document.createElementNS(shNS,n);for(const k in a)e.setAttribute(k,a[k]);return e}
+const shN=v=>Math.round(v*100)/100;
+const shGet=()=>(G().ush||[]).find(s=>s.id===SH.sel);
+const shSvgs=()=>[...document.querySelectorAll('#planbox svg.sheet')];
+function shGeom(s){const p=s.pts,a=p[0],b=p[1]||p[0];
+  switch(s.k){
+    case 'rect':return['rect',{x:shN(Math.min(a.x,b.x)),y:shN(Math.min(a.y,b.y)),width:shN(Math.abs(b.x-a.x)),height:shN(Math.abs(b.y-a.y))}];
+    case 'circ':return['circle',{cx:a.x,cy:a.y,r:shN(Math.hypot(b.x-a.x,b.y-a.y))}];
+    case 'ell':return['ellipse',{cx:shN((a.x+b.x)/2),cy:shN((a.y+b.y)/2),rx:shN(Math.abs(b.x-a.x)/2),ry:shN(Math.abs(b.y-a.y)/2)}];
+    case 'tri':{const x0=Math.min(a.x,b.x),x1=Math.max(a.x,b.x),y0=Math.min(a.y,b.y),y1=Math.max(a.y,b.y);return['polygon',{points:shN((x0+x1)/2)+','+shN(y0)+' '+shN(x1)+','+shN(y1)+' '+shN(x0)+','+shN(y1)}]}
+    case 'pg':return['polygon',{points:p.map(q=>shN(q.x)+','+shN(q.y)).join(' ')}];
+    default:return['polyline',{points:p.map(q=>shN(q.x)+','+shN(q.y)).join(' ')}]}}
+function ushDraw(svg,si){
+  svg.querySelectorAll('[data-us],[data-hnd]').forEach(e=>e.remove());
+  const vbw=svg.viewBox.baseVal.width||1000;
+  (G().ush||[]).filter(s=>s.sh===si&&s.pts&&s.pts.length).forEach(s=>{
+    const g=shEl('g',{'data-us':s.id,'data-k':s.k}),sw=shN(vbw/450*(s.w||1)),col=s.c||'#c0392b',closed=SH_CLOSED.indexOf(s.k)>=0;
+    const st={stroke:col,'stroke-width':sw,fill:'none','stroke-linejoin':'round','stroke-linecap':'round'};
+    if(s.d)st['stroke-dasharray']=shN(sw*4)+' '+shN(sw*3);
+    const hw=Math.max(sw,vbw/70),hit={stroke:'transparent','stroke-width':hw,fill:closed?'transparent':'none'};
+    if(s.k==='arrow'){const a=s.pts[0],b=s.pts[1]||a,L=Math.hypot(b.x-a.x,b.y-a.y)||1,ux=(b.x-a.x)/L,uy=(b.y-a.y)/L,h=Math.min(Math.max(sw*5,vbw/80),L*0.7),bx=b.x-ux*h,by=b.y-uy*h,w2=h*0.4;
+      const ln={x1:a.x,y1:a.y,x2:shN(bx),y2:shN(by)};
+      g.appendChild(shEl('line',Object.assign({},hit,{fill:'none'},ln)));
+      g.appendChild(shEl('line',Object.assign({},st,ln)));
+      g.appendChild(shEl('polygon',{points:shN(b.x)+','+shN(b.y)+' '+shN(bx-uy*w2)+','+shN(by+ux*w2)+' '+shN(bx+uy*w2)+','+shN(by-ux*w2),fill:col,stroke:col,'stroke-width':sw*0.5,'stroke-linejoin':'round'}))}
+    else{const[tag,at]=shGeom(s);g.appendChild(shEl(tag,Object.assign({},hit,at)));
+      const v=shEl(tag,Object.assign({},st,at));if(closed&&s.f){v.setAttribute('fill',col);v.setAttribute('fill-opacity','0.22')}g.appendChild(v)}
+    svg.appendChild(g)});
+  const s=shGet();if(s&&s.sh===si&&SH.on&&!SH.cur){const r=vbw/110;s.pts.forEach((q,i)=>svg.appendChild(shEl('circle',{cx:q.x,cy:q.y,r:shN(r),fill:'#fff',stroke:'#e67e00','stroke-width':shN(r/3),'data-hnd':'1','data-hi':i})))}}
+function shRedraw(){shSvgs().forEach((s,i)=>ushDraw(s,i))}
+function shPanel(){let p=$('shPanel');if(p)return p;p=document.createElement('div');p.id='shPanel';
+  p.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:761;background:var(--card);color:var(--ink);border:2px solid var(--brand);border-radius:12px;padding:8px 10px;box-shadow:0 4px 18px #0006;display:none;max-height:46vh;overflow:auto';
+  p.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="color:var(--brand)">🔷 วาดสัญลักษณ์</b><span class="mute" id="shInfo" style="flex:1 1 100%"></span>'+
+   SH_T.map(t=>'<button class="b ghost sm" data-shtool="'+t[0]+'" title="'+t[2]+'">'+t[1]+' '+t[2]+'</button>').join('')+
+   '<span style="flex:1 1 100%;height:0"></span><input type="color" id="shCol" value="#c0392b" title="สีเส้น" style="width:42px;height:38px;padding:2px"><span>เส้น</span><select id="shW" style="width:86px"><option value="0.5">บาง</option><option value="1" selected>กลาง</option><option value="2">หนา</option><option value="3.5">หนามาก</option></select>'+
+   '<label class="mck"><input type="checkbox" id="shF"><span>ระบายสี</span></label><label class="mck"><input type="checkbox" id="shD"><span>เส้นประ</span></label>'+
+   '<button class="b sm" id="shFin" style="display:none">✔ จบเส้น</button><button class="b ghost sm" id="shDup">⧉ ทำสำเนา</button><button class="b red sm" id="shDel">🗑 ลบ</button><button class="b sm" id="shDone">✔ เสร็จ</button></div>';
+  document.body.appendChild(p);
+  p.querySelectorAll('[data-shtool]').forEach(b=>b.onclick=()=>shTool(b.dataset.shtool));
+  const upd=patch=>{Object.assign(SH,patch.sh||{});const s=shGet();if(s&&patch.s){Object.assign(s,patch.s);save(true);shRedraw()}};
+  $('shCol').oninput=e=>upd({sh:{c:e.target.value},s:{c:e.target.value}});
+  $('shW').onchange=e=>upd({sh:{w:+e.target.value},s:{w:+e.target.value}});
+  $('shF').onchange=e=>upd({sh:{f:e.target.checked},s:{f:e.target.checked}});
+  $('shD').onchange=e=>upd({sh:{d:e.target.checked},s:{d:e.target.checked}});
+  $('shDel').onclick=shDelete;$('shDone').onclick=()=>shMode(false);$('shFin').onclick=shFinish;
+  $('shDup').onclick=()=>{const s=shGet();if(!s)return;const g=G(),svg=shSvgs()[s.sh],d=(svg?svg.viewBox.baseVal.width:1000)/60;const n=JSON.parse(JSON.stringify(s));n.id=Date.now().toString(36)+Math.floor(Math.random()*99);n.pts.forEach(q=>{q.x=shN(q.x+d);q.y=shN(q.y+d)});g.ush.push(n);SH.sel=n.id;save(true);shRedraw();shPanelFill()};
+  return p}
+function shDelete(){const s=shGet();if(!s)return;const g=G();g.ush=(g.ush||[]).filter(x=>x.id!==s.id);SH.sel=null;SH.cur=null;save(true);shRedraw();shPanelFill()}
+function shFinish(){const s=SH.cur;if(!s)return;const p=s.pts;
+  const sv=shSvgs()[s.sh],tol=((sv&&sv.viewBox.baseVal.width)||1000)/150;while(p.length>1&&Math.hypot(p[p.length-1].x-p[p.length-2].x,p[p.length-1].y-p[p.length-2].y)<tol)p.pop();
+  SH.cur=null;if(p.length<2||(s.k==='pg'&&p.length<3)){G().ush=(G().ush||[]).filter(x=>x!==s);SH.sel=null;toast(s.k==='pg'?'รูปหลายเหลี่ยมต้องมีอย่างน้อย 3 จุด':'เส้นต้องมีอย่างน้อย 2 จุด',true)}save(true);shRedraw();shPanelFill()}
+function shTool(t){if(SH.cur)shFinish();SH.tool=t;if(t!=='sel')SH.sel=null;shSvgs().forEach(s=>s.classList.toggle('shdraw',t!=='sel'));shRedraw();shPanelFill()}
+function shPanelFill(){const p=shPanel();p.style.display=SH.on?'block':'none';if(!SH.on)return;
+  p.querySelectorAll('[data-shtool]').forEach(b=>b.classList.toggle('ghost',b.dataset.shtool!==SH.tool));
+  const s=shGet(),cur=s||SH;if(s){$('shCol').value=/^#[0-9a-f]{6}$/i.test(s.c||'')?s.c:'#c0392b';$('shW').value=String(s.w||1);$('shF').checked=!!s.f;$('shD').checked=!!s.d}
+  else{$('shCol').value=SH.c;$('shW').value=String(SH.w);$('shF').checked=SH.f;$('shD').checked=SH.d}
+  $('shDel').style.display=$('shDup').style.display=s?'':'none';$('shFin').style.display=SH.cur?'':'none';
+  $('shInfo').textContent=SH.tool==='sel'?(s?'ลากรูปเพื่อย้าย · ลากจุดวงกลมสีส้มเพื่อปรับขนาด/รูปทรง':'แตะรูปที่วาดไว้เพื่อเลือก หรือเลือกเครื่องมือด้านล่างแล้วลากบนแผ่นผัง'):
+   (SH.tool==='poly'||SH.tool==='pg')?'แตะทีละจุดบนแผ่น · แตะจุดสุดท้ายซ้ำ (หรือดับเบิลคลิก) หรือกด "จบเส้น" เมื่อครบ':'ลากบนแผ่นผังเพื่อวาด (แตะเฉยๆ = ขนาดมาตรฐาน)'}
+function shMode(on){SH.on=on;if(on&&typeof LBL!=='undefined'&&LBL.on)lblMode(false);
+  const b=$('shTog');if(b){b.classList.toggle('ghost',!on);b.textContent=on?'✔ ปิดโหมดวาดสัญลักษณ์':'🔷 วาดสัญลักษณ์ (ลูกศร/กล่อง/วงกลม/เส้น)'}
+  shSvgs().forEach(s=>{s.classList.toggle('shmode',on);s.classList.toggle('shdraw',on&&SH.tool!=='sel')});
+  if(!on){SH.sel=null;SH.cur=null;SH.drag=null}shRedraw();shPanelFill()}
+(function(){
+  const box=$('planbox');$('tbAdd').insertAdjacentHTML('afterend','<button class="b ghost sm" id="shTog">🔷 วาดสัญลักษณ์ (ลูกศร/กล่อง/วงกลม/เส้น)</button>');
+  $('shTog').onclick=()=>shMode(!SH.on);
+  const st=document.createElement('style');st.textContent='[data-us]{pointer-events:none}svg.shmode [data-us]{pointer-events:auto;cursor:move}svg.shmode [data-hnd]{cursor:pointer;touch-action:none}svg.shmode [data-us] *{touch-action:none}svg.shdraw{cursor:crosshair;touch-action:none}';document.head.appendChild(st);
+  const pt=(svg,e)=>{const m=svg.getScreenCTM();if(!m)return null;const q=svg.createSVGPoint();q.x=e.clientX;q.y=e.clientY;const r=q.matrixTransform(m.inverse());return{x:shN(r.x),y:shN(r.y)}};
+  const nid=()=>Date.now().toString(36)+Math.floor(Math.random()*99);
+  box.addEventListener('pointerdown',e=>{if(!SH.on)return;const svg=e.target.closest&&e.target.closest('svg.sheet');if(!svg)return;
+    const si=shSvgs().indexOf(svg),p=pt(svg,e);if(!p||si<0)return;const g=G();if(!g.ush)g.ush=[];const vbw=svg.viewBox.baseVal.width||1000;
+    const hnd=e.target.closest('[data-hnd]'),s0=shGet();
+    if(hnd&&s0&&!SH.cur){e.preventDefault();SH.drag={m:'h',svg,si,s:s0,i:+hnd.dataset.hi,moved:false};try{svg.setPointerCapture(e.pointerId)}catch(_){}return}
+    if(SH.tool==='sel'){const hit=e.target.closest('[data-us]');e.preventDefault();
+      if(hit){SH.sel=hit.dataset.us;const s=shGet();SH.drag={m:'m',svg,si,s,sx:p.x,sy:p.y,o:JSON.parse(JSON.stringify(s.pts)),moved:false};try{svg.setPointerCapture(e.pointerId)}catch(_){}}else SH.sel=null;
+      shRedraw();shPanelFill();return}
+    e.preventDefault();
+    if(SH.tool==='poly'||SH.tool==='pg'){
+      if(SH.cur&&SH.cur.sh!==si)return;
+      if(!SH.cur){const s={id:nid(),sh:si,k:SH.tool,pts:[p,{x:p.x,y:p.y}],c:SH.c,w:SH.w,f:SH.f,d:SH.d};g.ush.push(s);SH.cur=s;SH.sel=s.id}
+      else{const q=SH.cur.pts,pv=q[q.length-2];q[q.length-1]={x:p.x,y:p.y};
+        if(pv&&q.length>=3&&Math.hypot(p.x-pv.x,p.y-pv.y)<vbw/120){shFinish();return} // แตะซ้ำจุดเดิม = จบเส้น (ใช้ได้ทั้งเมาส์และนิ้ว)
+        q.push({x:p.x,y:p.y})}
+      shRedraw();shPanelFill();return}
+    const s={id:nid(),sh:si,k:SH.tool,pts:[p,{x:p.x,y:p.y}],c:SH.c,w:SH.w,f:SH.f,d:SH.d};g.ush.push(s);SH.sel=s.id;
+    SH.drag={m:'c',svg,si,s,sx:p.x,sy:p.y,moved:false,vbw};try{svg.setPointerCapture(e.pointerId)}catch(_){}ushDraw(svg,si)});
+  box.addEventListener('pointermove',e=>{if(!SH.on)return;const d=SH.drag;
+    if(!d){if(SH.cur){const svg=shSvgs()[SH.cur.sh],p=svg&&pt(svg,e);if(p){const q=SH.cur.pts;q[q.length-1]={x:p.x,y:p.y};ushDraw(svg,SH.cur.sh)}}return}
+    const p=pt(d.svg,e);if(!p)return;e.preventDefault();
+    if(d.m==='c'){d.s.pts[1]={x:p.x,y:p.y};d.moved=true}
+    else if(d.m==='h'){d.s.pts[d.i]={x:p.x,y:p.y};d.moved=true}
+    else{const dx=p.x-d.sx,dy=p.y-d.sy;if(!d.moved&&Math.hypot(dx,dy)<1.5)return;d.moved=true;d.s.pts=d.o.map(q=>({x:shN(q.x+dx),y:shN(q.y+dy)}))}
+    ushDraw(d.svg,d.si)});
+  const end=()=>{const d=SH.drag;SH.drag=null;if(!d)return;
+    if(d.m==='c'){const s=d.s,a=s.pts[0],b=s.pts[1];if(Math.hypot(b.x-a.x,b.y-a.y)<d.vbw/200){ // แตะเฉยๆ = ขนาดมาตรฐาน
+        const w=d.vbw/14,h=d.vbw/20;s.pts[1]=s.k==='arrow'?{x:a.x+w,y:a.y}:s.k==='circ'?{x:a.x+h,y:a.y}:{x:a.x+w,y:a.y+h}}
+      save(true);ushDraw(d.svg,d.si);shPanelFill()}
+    else if(d.moved){save(true)}shPanelFill()};
+  box.addEventListener('pointerup',end);box.addEventListener('pointercancel',end);
+  box.addEventListener('dblclick',e=>{if(SH.on&&SH.cur){e.preventDefault();shFinish()}});
+  box.addEventListener('touchmove',e=>{if(SH.on&&SH.drag&&SH.drag.moved)e.preventDefault()},{passive:false});
+  document.addEventListener('keydown',e=>{if(!SH.on||document.activeElement.matches('input,select,textarea'))return;
+    if(e.key==='Enter'&&SH.cur){shFinish()}else if(e.key==='Escape'){if(SH.cur){const s=SH.cur;SH.cur=null;G().ush=G().ush.filter(x=>x!==s);SH.sel=null;shRedraw();shPanelFill()}else if(SH.sel){SH.sel=null;shRedraw();shPanelFill()}}
+    else if((e.key==='Delete'||e.key==='Backspace')&&SH.sel){e.preventDefault();shDelete()}});
+  const _rs2=renderSheets;renderSheets=function(){const r=_rs2.apply(this,arguments);try{SH.sel=null;SH.cur=null;SH.drag=null;shSvgs().forEach(s=>{s.classList.toggle('shmode',SH.on);s.classList.toggle('shdraw',SH.on&&SH.tool!=='sel')});shRedraw();shPanelFill()}catch(e){console.error(e)}return r};
 })();
 
 // ===== v93: ⑨ UNIT COST =====
@@ -3778,12 +3899,20 @@ function drMapU(pts,sStart,o,Lm,tot,rev){return drBuildMap(pts,sStart,o,Lm,tot,!
 function drTrimLoops(pts,o,S){const Q=S.map(x=>offPt(ptAt(pts,x),o)),N=S.length;if(N<3)return{S,Q};
   const W=Math.min(N-2,400),oS=[S[0]],oQ=[Q[0]];let i=0;
   const seg=(a,b,c,d)=>{const r=[b[0]-a[0],b[1]-a[1]],q=[d[0]-c[0],d[1]-c[1]],den=r[0]*q[1]-r[1]*q[0];if(Math.abs(den)<1e-12)return null;const w=[c[0]-a[0],c[1]-a[1]],t=(w[0]*q[1]-w[1]*q[0])/den,u=(w[0]*r[1]-w[1]*r[0])/den;return(t>1e-9&&t<1-1e-9&&u>1e-9&&u<1-1e-9)?[t,u]:null};
-  while(i<N-1){let hit=null;for(let j=Math.min(N-2,i+W);j>=i+2;j--){const h=seg(Q[i],Q[i+1],Q[j],Q[j+1]);if(h){hit={j,t:h[0],u:h[1]};break}}
+  // v112: ใช้ตารางกริดหาเส้นที่อยู่ใกล้กันเท่านั้น (เดิมไล่ตรวจ 400 เส้นต่อจุด → ช้ามากในโครงการยาว)
+  const CS=2,gr=new Map(),ck=(cx,cy)=>cx*1000003+cy,cells=(a,b,fn)=>{const x0=Math.floor(Math.min(a[0],b[0])/CS),x1=Math.floor(Math.max(a[0],b[0])/CS),y0=Math.floor(Math.min(a[1],b[1])/CS),y1=Math.floor(Math.max(a[1],b[1])/CS);for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++)fn(ck(x,y))};
+  for(let j=0;j<N-1;j++)cells(Q[j],Q[j+1],k=>{let a=gr.get(k);if(!a)gr.set(k,a=[]);a.push(j)});
+  while(i<N-1){let hit=null;const cand=new Set(),jmax=Math.min(N-2,i+W);
+    cells(Q[i],Q[i+1],k=>{const a=gr.get(k);if(a)for(let q=0;q<a.length;q++){const j=a[q];if(j>=i+2&&j<=jmax)cand.add(j)}});
+    if(cand.size){const js=[...cand].sort((a,b)=>b-a);for(const j of js){const h=seg(Q[i],Q[i+1],Q[j],Q[j+1]);if(h){hit={j,t:h[0],u:h[1]};break}}}
     if(hit){const s1=S[i]+(S[i+1]-S[i])*hit.t,s2=S[hit.j]+(S[hit.j+1]-S[hit.j])*hit.u,x=[Q[i][0]+(Q[i+1][0]-Q[i][0])*hit.t,Q[i][1]+(Q[i+1][1]-Q[i][1])*hit.t];
       oQ.cusp=(oQ.cusp||[]);oQ.cusp.push(oS.length);oS.push(s1);oQ.push(x);oS.push(s2);oQ.push(x);i=hit.j+1;if(i<N){oS.push(S[i]);oQ.push(Q[i])}else break}
     else{i++;oS.push(S[i]);oQ.push(Q[i])}}
   return{S:oS,Q:oQ,cusp:oQ.cusp||[]}}
-function drBuildMap(pts,sStart,o,Lm,tot,rev){
+const _bmC=new WeakMap();
+function drBuildMap(pts,sStart,o,Lm,tot,rev){ // v112: เก็บผลไว้ใช้ซ้ำภายในผังชุดเดียวกัน (ทุกแผ่นเรียกซ้ำด้วยค่าเดิม)
+  let m=_bmC.get(pts);if(!m){m=new Map();_bmC.set(pts,m)}const key=sStart+'|'+o+'|'+Lm+'|'+tot+'|'+(rev?1:0);let r=m.get(key);if(!r){r=drBuildMap0(pts,sStart,o,Lm,tot,rev);m.set(key,r)}return r}
+function drBuildMap0(pts,sStart,o,Lm,tot,rev){
   const S0=[sStart],ds=.2,ext=Lm+4*Math.abs(o)+2;let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;
   while(u<ext&&(rev?s>1e-9:s<tot-1e-9)&&n++<80000){const sn=rev?Math.max(0,s-ds):Math.min(tot,s+ds),q=offPt(ptAt(pts,sn),o);u+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);s=sn;prev=q;S0.push(s)}
   const T=drTrimLoops(pts,o,S0),S=[T.S[0]],U=[0],J=[];let L=0;
