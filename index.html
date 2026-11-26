@@ -3572,7 +3572,7 @@ function ucEditor(){
   <input id="ucMatPick" list="ucMatDl" placeholder="พิมพ์ค้นหาวัสดุ…" style="width:220px"><button class="b ghost sm" id="ucAddMat">＋ วัสดุ+ขนส่ง</button>
   <input id="ucMchPick" list="ucMchDl" placeholder="พิมพ์ค้นหาเครื่องจักร…" style="width:220px"><button class="b ghost sm" id="ucAddMch">＋ ค่าเครื่องจักร</button></div>
   <div class="bar"><select id="ucTCar"><option>6 ล้อ</option><option>10 ล้อ</option><option>10 ล้อ+พ่วง</option></select><select id="ucTUnit"><option>ตัน</option><option>ลบ.ม.</option></select><input id="ucTKm" type="number" value="10" style="width:80px"><button class="b ghost sm" id="ucAddTrn">＋ ค่าขนส่งตามราคาน้ำมัน</button>
-  ${M3_CODES.includes(ucSel)?'<button class="b sm" id="m3dBtn">🧊 ฐานข้อมูลบ่อพัก 3D / BOQ</button> ':''}${IH_SET.has(ucSel)?'<button class="b sm" id="ihOpen">🧊 เปิดแบบ / โมเดล 3D (จากไฟล์ HTML)</button><button class="b ghost sm" id="ihDel">✕ ลบแบบที่แนบ</button> ':''}<button class="b ghost sm" id="ucDupTo">⎘ คัดลอกใบนี้ไปรหัสงานอื่น</button><button class="b red sm" id="ucDelSheet">🗑 ลบใบนี้</button></div>
+  ${M3_CODES.includes(ucSel)?'<button class="b sm" id="m3dBtn">🧊 ฐานข้อมูลบ่อพัก 3D / BOQ</button> ':''}${IH_SET.has(ucSel)?'<button class="b sm" id="ihOpen">🧊 เปิดแบบ / โมเดล 3D (จากไฟล์ HTML)</button><button class="b ghost sm" id="ihDel">✕ ลบแบบที่แนบ</button> ':''}<button class="b sm" id="lnBtn">🔗 ผูกราคากับตารางกลาง (วัสดุ/เครื่องจักร/ขนส่ง)</button><button class="b ghost sm" id="ucDupTo">⎘ คัดลอกใบนี้ไปรหัสงานอื่น</button><button class="b red sm" id="ucDelSheet">🗑 ลบใบนี้</button></div>
   <div class="card" style="background:var(--soft)" id="ucCostBox"></div>
   <details><summary><b>วิธีเขียนสมการ</b></summary><div class="mute" style="line-height:1.7">ขึ้นต้นด้วย = หรือไม่ก็ได้ · อ้างแถวด้วย <code>r3</code> หรือชื่อที่ตั้งไว้ (เช่น <code>q</code>) · ช่วง <code>r7:r14</code><br>
   ฟังก์ชัน: ROUND ROUNDDOWN ROUNDUP INT ABS SQRT POWER MAX MIN SUM AVERAGE IF AND OR NOT<br>
@@ -3595,7 +3595,7 @@ function ucEditor(){
   $('ucAddMch').onclick=()=>{const m=ucMchFind(code($('ucMchPick').value));if(!m){toast('ไม่พบรหัสเครื่องจักร — เลือกจากรายการที่แนะนำ',1);return}rows.push({label:m[1]+' ('+m[0]+')',f:'=MCH("'+m[0]+'")',unit:'บาท/'+m[2]});redo()};
   $('ucAddTrn').onclick=()=>{rows.push({label:'ค่าขนส่ง '+$('ucTCar').value+' ต่อ'+$('ucTUnit').value,f:'=TRN("'+$('ucTCar').value+'","'+$('ucTUnit').value+'",'+(+$('ucTKm').value||1)+')',unit:'บาท/'+$('ucTUnit').value});redo()};
   $('ucDelSheet').onclick=()=>{if(confirm('ลบใบ UNIT COST ของ '+ucSel+' ?')){delete UC.tmpl[ucSel];redo()}};
-  if($('m3dBtn'))$('m3dBtn').onclick=()=>mhOpen(ucSel);if($('ihOpen'))$('ihOpen').onclick=()=>ihOpen(ucSel);if($('ihDel'))$('ihDel').onclick=()=>ihRemove(ucSel);$('ucDupTo').onclick=()=>{const c=(prompt('คัดลอกไปรหัสงาน (ต้องมีใน ⑧ JOB LIST) เช่น G19')||'').trim().toUpperCase();if(!c)return;if(!BYCODE[c]){alert('ไม่พบรหัสงาน '+c);return}if(UC.tmpl[c]&&!confirm(c+' มีใบอยู่แล้ว — แทนที่?'))return;UC.tmpl[c]={rows:ucClone(rows),note:tm.note||''};ucSel=c;redo()}}
+  if($('m3dBtn'))$('m3dBtn').onclick=()=>mhOpen(ucSel);if($('lnBtn'))$('lnBtn').onclick=()=>lnOpen(ucSel);if($('ihOpen'))$('ihOpen').onclick=()=>ihOpen(ucSel);if($('ihDel'))$('ihDel').onclick=()=>ihRemove(ucSel);$('ucDupTo').onclick=()=>{const c=(prompt('คัดลอกไปรหัสงาน (ต้องมีใน ⑧ JOB LIST) เช่น G19')||'').trim().toUpperCase();if(!c)return;if(!BYCODE[c]){alert('ไม่พบรหัสงาน '+c);return}if(UC.tmpl[c]&&!confirm(c+' มีใบอยู่แล้ว — แทนที่?'))return;UC.tmpl[c]={rows:ucClone(rows),note:tm.note||''};ucSel=c;redo()}}
 // --- วัสดุ ---
 function ucMat(){
   const q=$('ucMQ').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -3722,17 +3722,25 @@ function drOff(r,sd,g){if(sd==='C')return 0;const v=parseFloat(String(r['off'+sd
 function drExpand(noCompile){const g=G();if(!noCompile){try{compilePL(g)}catch(e){}}const out=[];
   drRuns().forEach(r=>{drMigrate(r,g);const sd=drSides(r);sd.forEach(s=>{const a0=drStartOf(r,s,g),Lm=drLenOf(r,s);if(a0==null||!(Lm>0))return;out.push({r,side:s,a0,Lm,off:drOff(r,s,g),multi:sd.length>1,rev:drRev(r)})})});return out}
 // ตารางแปลง ระยะตามแนวท่อ u ↔ ตำแหน่ง s บนกึ่งกลางทาง (วัดตามเส้นขนานที่ระยะเยื้อง o)
-function drMapU(pts,sStart,o,Lm,tot,rev){if(!rev)return drMapU0(pts,sStart,o,Lm,tot);
-  const S=[sStart],U=[0];let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;const ds=.2;
-  while(u<Lm-1e-9&&s>1e-9&&n++<60000){const sn=Math.max(0,s-ds),q=offPt(ptAt(pts,sn),o);u+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);s=sn;prev=q;S.push(s);U.push(u)}
+function drMapU(pts,sStart,o,Lm,tot,rev){return drBuildMap(pts,sStart,o,Lm,tot,!!rev)}
+// ตัดห่วง (loop) ของแนวออฟเซ็ตด้านในโค้ง/มุมเลี้ยว: ต่อเส้นที่จุดตัด (mitre) แทนการวิ่งทะลุเข้าไปในผิวทาง
+function drTrimLoops(pts,o,S){const Q=S.map(x=>offPt(ptAt(pts,x),o)),N=S.length;if(N<3)return{S,Q};
+  const W=Math.min(N-2,400),oS=[S[0]],oQ=[Q[0]];let i=0;
+  const seg=(a,b,c,d)=>{const r=[b[0]-a[0],b[1]-a[1]],q=[d[0]-c[0],d[1]-c[1]],den=r[0]*q[1]-r[1]*q[0];if(Math.abs(den)<1e-12)return null;const w=[c[0]-a[0],c[1]-a[1]],t=(w[0]*q[1]-w[1]*q[0])/den,u=(w[0]*r[1]-w[1]*r[0])/den;return(t>1e-9&&t<1-1e-9&&u>1e-9&&u<1-1e-9)?[t,u]:null};
+  while(i<N-1){let hit=null;for(let j=Math.min(N-2,i+W);j>=i+2;j--){const h=seg(Q[i],Q[i+1],Q[j],Q[j+1]);if(h){hit={j,t:h[0],u:h[1]};break}}
+    if(hit){const s1=S[i]+(S[i+1]-S[i])*hit.t,s2=S[hit.j]+(S[hit.j+1]-S[hit.j])*hit.u,x=[Q[i][0]+(Q[i+1][0]-Q[i][0])*hit.t,Q[i][1]+(Q[i+1][1]-Q[i][1])*hit.t];
+      oQ.cusp=(oQ.cusp||[]);oQ.cusp.push(oS.length);oS.push(s1);oQ.push(x);oS.push(s2);oQ.push(x);i=hit.j+1;if(i<N){oS.push(S[i]);oQ.push(Q[i])}else break}
+    else{i++;oS.push(S[i]);oQ.push(Q[i])}}
+  return{S:oS,Q:oQ,cusp:oQ.cusp||[]}}
+function drBuildMap(pts,sStart,o,Lm,tot,rev){
+  const S0=[sStart],ds=.2,ext=Lm+4*Math.abs(o)+2;let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;
+  while(u<ext&&(rev?s>1e-9:s<tot-1e-9)&&n++<80000){const sn=rev?Math.max(0,s-ds):Math.min(tot,s+ds),q=offPt(ptAt(pts,sn),o);u+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);s=sn;prev=q;S0.push(s)}
+  const T=drTrimLoops(pts,o,S0),S=[T.S[0]],U=[0],J=[];let L=0;
+  for(let i=1;i<T.S.length;i++){const d=Math.hypot(T.Q[i][0]-T.Q[i-1][0],T.Q[i][1]-T.Q[i-1][1]);if(L+d>=Lm-1e-9){const t=d>0?(Lm-L)/d:0;S.push(T.S[i-1]+(T.S[i]-T.S[i-1])*t);U.push(Lm);L=Lm;break}L+=d;S.push(T.S[i]);U.push(L);if(T.cusp.includes(i-1))J.push(L)}
   const itp=(A,B,x)=>{const n=A.length-1;if(x<=A[0])return B[0];if(x>=A[n])return B[n];let lo=0,hi=n;while(hi-lo>1){const m=(lo+hi)>>1;if(A[m]<=x)lo=m;else hi=m}const t=(x-A[lo])/((A[hi]-A[lo])||1);return B[lo]+(B[hi]-B[lo])*t};
-  const Sa=S.slice().reverse(),Ua=U.slice().reverse();
-  return{S:Sa,U:Ua,end:u,sOf:x=>itp(U,S,x),uOf:x=>itp(Sa,Ua,x)}}
-function drMapU0(pts,sStart,o,Lm,tot){const S=[sStart],U=[0];let u=0,s=sStart,prev=offPt(ptAt(pts,s),o),n=0;const ds=.2;
-  while(u<Lm-1e-9&&s<tot-1e-9&&n++<60000){const sn=Math.min(tot,s+ds),q=offPt(ptAt(pts,sn),o);u+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);s=sn;prev=q;S.push(s);U.push(u)}
-  const interp=(A,B,x)=>{if(x<=A[0])return B[0];const n=A.length-1;if(x>=A[n])return B[n]+(A===U||true?0:0);let lo=0,hi=n;while(hi-lo>1){const m=(lo+hi)>>1;if(A[m]<=x)lo=m;else hi=m}const t=(x-A[lo])/((A[hi]-A[lo])||1);return B[lo]+(B[hi]-B[lo])*t};
-  return{S,U,end:u,sOf:u_=>interp(U,S,u_),uOf:s_=>interp(S,U,s_)}}
-
+  if(!rev)return{S,U,J,end:L,sOf:x=>itp(U,S,x),uOf:x=>itp(S,U,x)};
+  const Sa=S.slice().reverse(),Ua=U.slice().reverse();return{S:Sa,U:Ua,J,end:L,sOf:x=>itp(U,S,x),uOf:x=>itp(Sa,Ua,x)}}
+function drMapU0(pts,sStart,o,Lm,tot){return drBuildMap(pts,sStart,o,Lm,tot,false)}
 // ---------- ท่อขนานทางหลัก: เริ่มจากบ่อพัก/ปลายของท่อแขนง ----------
 const drRev=r=>r.rev===true||r.rev==='1';
 let _ancBusy=0,_ancC={k:'',pts:null,tot:0};
@@ -3815,7 +3823,9 @@ function drSvg(c){
     const Q=drQty(r,Lm,sdk),sOf=T.sOf;
     const vis=[T.uOf(Math.max(s0,T.S[0])),T.uOf(Math.min(s1,T.S[T.S.length-1]))].sort((p,q)=>p-q);
     const band=(ua,ub,o1,o2)=>{ua=Math.max(ua,vis[0]);ub=Math.min(ub,vis[1]);if(ub-ua<1e-6)return null;const us=[];for(let u=ua;u<ub;u+=Math.max(.25,3/k*2))us.push(u);us.push(ub);return us.map(u=>P(sOf(u),o1)).concat(us.slice().reverse().map(u=>P(sOf(u),o2)))};
-    const rect=(ua,ub,o1,o2)=>{const sa=sOf(ua),sb=sOf(ub);return[P(sa,o1),P(sb,o1),P(sb,o2),P(sa,o2)]};
+    const rect=(ua,ub,o1,o2)=>{if((T.J||[]).some(j=>j>ua+1e-6&&j<ub-1e-6)){const sc=sOf((ua+ub)/2),oc=(o1+o2)/2,C=P(sc,oc),A=P(sc-.5,oc),B=P(sc+.5,oc),N0=P(sc,oc+1),tl=Math.hypot(B[0]-A[0],B[1]-A[1])||1,t=[(B[0]-A[0])/tl,(B[1]-A[1])/tl],nl=Math.hypot(N0[0]-C[0],N0[1]-C[1])||1,n=[(N0[0]-C[0])/nl,(N0[1]-C[1])/nl],h=(ub-ua)/2*k,w1=(o1-oc)*k,w2=(o2-oc)*k;
+      return[[C[0]-t[0]*h+n[0]*w1,C[1]-t[1]*h+n[1]*w1],[C[0]+t[0]*h+n[0]*w1,C[1]+t[1]*h+n[1]*w1],[C[0]+t[0]*h+n[0]*w2,C[1]+t[1]*h+n[1]*w2],[C[0]-t[0]*h+n[0]*w2,C[1]-t[1]*h+n[1]*w2]]}
+    const sa=sOf(ua),sb=sOf(ub);return[P(sa,o1),P(sb,o1),P(sb,o2),P(sa,o2)]};
     const inV=(a,b)=>b>=vis[0]-1e-6&&a<=vis[1]+1e-6;
     // แถบคืนผิว (ระหว่างขอบปากบ่อ)
     const ov=Math.max(0,(tl-bl)/2),zones=(r.rz||[]).map(z=>({a:drN(z.a,NaN),b:drN(z.b,NaN),w:drN(z.w,0)})).filter(z=>isFinite(z.a)&&isFinite(z.b)&&z.b>z.a&&z.w>0);
@@ -4091,7 +4101,7 @@ function mhOpen(code){
     ucSave(true);toast('อัปเดต ITEM UNIT '+code+' แล้ว');if(typeof ucRender==='function'){try{ucSel=code;ucRender()}catch(e){}}}
   ;document.addEventListener('keydown',function k(e){if(e.key==='Escape'){mhClose();document.removeEventListener('keydown',k)}})}
 function m3dOpen(code){mhOpen(code)}
-(function(){const st=document.createElement('style');st.textContent='.ihb{background:var(--card,#fff);color:var(--ink,#111);border:2px solid var(--ink,#111);border-radius:8px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}.ihb.pri{background:var(--btn,var(--brand,#1f4e79));color:var(--onbtn,#fff)}.ihb:hover,.ihb:focus{outline:3px solid var(--focus,#ffb300)}.ihb:disabled{opacity:.5;cursor:default}#ihOv .mute{color:var(--mute)}#ihOv td{color:var(--ink)}';document.head.appendChild(st)})();
+(function(){const st=document.createElement('style');st.textContent='.ihb{background:var(--card,#fff);color:var(--ink,#111);border:2px solid var(--ink,#111);border-radius:8px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}.ihb.pri{background:var(--btn,var(--brand,#1f4e79));color:var(--onbtn,#fff)}.ihb:hover,.ihb:focus{outline:3px solid var(--focus,#ffb300)}.ihb:disabled{opacity:.5;cursor:default}#ihOv .mute{color:var(--mute)}#ihOv td,#lnOv td{color:var(--ink)}#lnOv .mute{color:var(--mute)}#lnOv .warn{color:var(--warn)}.lnI{background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:6px;padding:4px 6px;font-size:14px;font-family:inherit}';document.head.appendChild(st)})();
 // ===== v107: นำเข้า ITEM UNIT จากไฟล์ HTML (แอปคำนวณต้นทุนรายรายการ) =====
 let IH_SET=new Set(),_ihDb;
 const ihDb=()=>_ihDb||(_ihDb=new Promise((res,rej)=>{if(!window.indexedDB)return rej(new Error('no idb'));const q=indexedDB.open('surveyfield-itemhtml',1);q.onupgradeneeded=()=>q.result.createObjectStore('h',{keyPath:'code'});q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -4130,8 +4140,9 @@ function ihImportUI(files){
       if(S&&S.items&&S.items.length){UC.tmpl[code]={rows:ihRows(S,it),note:'นำเข้าจากไฟล์ '+files[i].name+' · เมื่อ '+new Date().toLocaleString('th-TH')};let c='';try{c=(ucCost(code)||{}).cost}catch(e){}msg='✔ สร้างใบแล้ว'+(typeof c==='number'?' · ต้นทุน '+c.toLocaleString('en-US',{minimumFractionDigits:2})+' บาท/'+it.unit:'');ok++}
       else msg='⚠ อ่านต้นทุนอัตโนมัติไม่ได้ (โครงสร้างไฟล์ต่างจากที่รองรับ หรือโหลดไม่ทัน) — เก็บไฟล์ไว้เปิดดู แล้วกด “นำต้นทุนไปใช้” ในหน้าแบบ';
       try{await ihPut(code,files[i].name,html);IH_SET.add(code)}catch(e){msg+=' · เก็บไฟล์ไม่สำเร็จ'}
-      st.innerHTML=msg}
+      st.innerHTML=msg+(UC.tmpl[code]?' <button class="ihb" data-ln="'+esc(code)+'">🔗 ผูกราคา</button>':'')}
     ucSave(true);toast('นำเข้า ITEM UNIT สำเร็จ '+ok+' รายการ');try{if(typeof ucRender==='function')ucRender()}catch(e){}$('ihGo').disabled=false;$('ihGo').textContent='นำเข้าเพิ่ม'}}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ln]');if(b)lnOpen(b.dataset.ln)});
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='ihImp'){const fs=[...e.target.files];e.target.value='';if(fs.length)ihImportUI(fs)}});
 async function ihOpen(code){let rec;try{rec=await ihGet(code)}catch(e){}if(!rec){toast('ไม่พบไฟล์แบบที่แนบของรหัส '+code,1);return}
   mhClose();const it=BYCODE[code];const ov=document.createElement('div');ov.id='mhOv';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:var(--bg,#fff);display:flex;flex-direction:column';
@@ -4144,6 +4155,47 @@ async function ihOpen(code){let rec;try{rec=await ihGet(code)}catch(e){}if(!rec)
     UC.tmpl[code]={rows,note:'ดึงจากไฟล์ '+rec.name+' · เมื่อ '+new Date().toLocaleString('th-TH')};ucSave(true);toast('อัปเดต ITEM UNIT '+code+' แล้ว');try{ucSel=code;ucRender()}catch(x){}};
   window.addEventListener('message',on);$('ihApply').onclick=()=>{want=Date.now();fr.contentWindow.postMessage({sf:'snap',id:want},'*')};
   fr.srcdoc=ihPrep(rec.html);document.addEventListener('keydown',function k(e){if(e.key==='Escape'){window.removeEventListener('message',on);mhClose();document.removeEventListener('keydown',k)}})}
+// ===== v109: ผูกราคาของแถวใน ITEM UNIT กับตารางกลาง (วัสดุ / เครื่องจักร+ค่าเสื่อม / ขนส่งตามราคาน้ำมัน) =====
+const LN_ELIG=r=>{const f=String(r.f==null?'':r.f).trim();return !r.fin&&!r.nm&&(/^=ROUND\(\s*[0-9.eE+\-]+\s*\*/.test(f)||/^[-+]?\d+(\.\d+)?$/.test(f)||(r.ln&&true))&&!/SUM\(|\bdc\b/.test(f)}
+function lnInit(r){if(r.ln)return Object.assign({},r.ln);const f=String(r.f||''),m=/^=ROUND\(\s*([0-9.eE+\-]+)\s*\*/.exec(f),lab=String(r.label||'');
+  let k='C';if(/ขนทิ้ง|ขนส่ง|ขนย้าย/.test(lab))k='TRN';else if(/ค่าเสื่อม|เครื่องจักร|ดัน|ตัก|ดำเนินการ/.test(lab))k='MCH';
+  const km=/([0-9]+(?:\.[0-9]+)?)\s*กม/.exec(lab);return{k,c:'',q:m?+m[1]:1,car:'6 ล้อ',unit:'ลบ.ม.',km:km?+km[1]:10,f0:f}}
+function lnF(l){const q=String(+Number(l.q||0).toPrecision(10));
+  if(l.k==='MAT'&&ucMatFind(l.c))return'=ROUND('+q+'*MAT("'+l.c+'"),2)';
+  if(l.k==='MCH'&&ucMchFind(l.c))return'=ROUND('+q+'*MCH("'+l.c+'"),2)';
+  if(l.k==='TRN')return'=ROUND('+q+'*TRN("'+l.car+'","'+l.unit+'",'+(+l.km||1)+'),2)';
+  return l.f0}
+function lnBuild(rows,L){return rows.map((r,i)=>{if(!L[i])return r;const o=Object.assign({},r);o.ln=L[i];o.f=lnF(L[i]);return o})}
+function lnOpen(code){const tm=UC.tmpl[code];if(!tm){toast('ยังไม่มีใบ ITEM UNIT ของรหัส '+code,1);return}
+  const old=document.getElementById('lnOv');if(old)old.remove();try{ucDl()}catch(e){}
+  const base=ucClone(tm.rows),L=base.map(r=>LN_ELIG(r)?lnInit(r):null);const it=BYCODE[code];
+  const ov=document.createElement('div');ov.id='lnOv';ov.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:10px';
+  const sel=(a,v)=>`<select data-a="${a}" class="lnI" style="min-width:185px">${[['C','ค่าคงที่ (ตามไฟล์)'],['MAT','วัสดุ (ตารางวัสดุ)'],['MCH','เครื่องจักร / ค่าเสื่อม'],['TRN','ขนส่งตามราคาน้ำมัน']].map(x=>`<option value="${x[0]}"${x[0]===v?' selected':''}>${x[1]}</option>`).join('')}</select>`;
+  const rowH=i=>{const l=L[i],r=base[i];if(!l)return`<tr><td class="mute">r${i+1}</td><td>${esc(r.label)}</td><td colspan="3" class="mute">แถวสรุป/ผลรวม — ไม่ต้องผูก</td><td class="r" data-n="${i}"></td></tr>`;
+    return`<tr data-i="${i}"><td class="mute">r${i+1}</td><td style="min-width:200px">${esc(r.label)}</td><td><input class="lnI" data-a="q" type="number" step="any" value="${l.q}" style="width:80px"></td><td>${sel('k',l.k)}</td><td data-tg></td><td class="r" data-n="${i}"></td></tr>`};
+  ov.innerHTML=`<div class="card" style="background:var(--card);color:var(--ink);border:3px solid var(--ink);max-width:980px;width:100%;max-height:94vh;overflow:auto"><h3 style="margin:0 0 4px;color:var(--ink)">🔗 ผูกราคากับตารางกลาง · ${esc(code)} ${esc(it?it.name:'')}</h3>
+  <div class="mute">เลือกชนิดของแต่ละแถว: วัสดุ / เครื่องจักร+ค่าเสื่อม / ขนส่ง (คิดตามราคาน้ำมันที่ตั้งไว้) — ปริมาณต่อ 1 หน่วยงานคงไว้ตามไฟล์ แก้ได้ · “ค่าคงที่” = ใช้ตัวเลขเดิมจากไฟล์</div>
+  <div style="overflow:auto"><table class="mjT" style="margin-top:6px"><tr><th>#</th><th>รายการ</th><th>ปริมาณ</th><th>ผูกกับ</th><th>เลือกรายการ</th><th class="r">ผลลัพธ์ (บาท)</th></tr>${base.map((r,i)=>rowH(i)).join('')}</table></div>
+  <div class="card" id="lnSum" style="margin:8px 0;border:2px solid var(--ink)"></div>
+  <div class="bar"><button class="ihb pri" id="lnSave">💾 บันทึกลงใบ ITEM UNIT</button><button class="ihb" id="lnCx">✕ ปิด (ไม่บันทึก)</button></div></div>`;
+  document.body.appendChild(ov);
+  const fmt=x=>typeof x==='number'?x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  const tgt=i=>{const tr=ov.querySelector(`tr[data-i="${i}"]`),td=tr.querySelector('[data-tg]'),l=L[i];
+    if(l.k==='C')td.innerHTML='<span class="mute">—</span>';
+    else if(l.k==='TRN')td.innerHTML=`<select class="lnI" data-a="car">${['6 ล้อ','10 ล้อ','10 ล้อ+พ่วง'].map(x=>`<option${x===l.car?' selected':''}>${x}</option>`).join('')}</select> <select class="lnI" data-a="unit">${['ตัน','ลบ.ม.'].map(x=>`<option${x===l.unit?' selected':''}>${x}</option>`).join('')}</select> <input class="lnI" data-a="km" type="number" step="any" value="${l.km}" style="width:70px"> กม.`;
+    else{const f=l.k==='MAT'?ucMatFind(l.c):ucMchFind(l.c),dl=l.k==='MAT'?'ucMatDl':'ucMchDl';td.innerHTML=`<input class="lnI" data-a="c" list="${dl}" placeholder="พิมพ์ค้นหา…" value="${esc(f?(l.k==='MAT'?l.c+' · '+f[2]:l.c+' · '+f[1]):l.c)}" style="min-width:230px">${l.c&&!f?' <span class="warn">ไม่พบรหัส</span>':''}`}};
+  const upd=()=>{const nr=lnBuild(base,L);let res;try{res=ucEval({rows:nr})}catch(e){res=null}const r0=(()=>{try{return ucEval({rows:base})}catch(e){return null}})();
+    nr.forEach((r,i)=>{const c=ov.querySelector(`[data-n="${i}"]`);if(c&&res&&res.rows[i])c.textContent=res.rows[i].err?'⚠ '+res.rows[i].err:fmt(res.rows[i].v)});
+    $('lnSum').innerHTML=`ต้นทุนตามไฟล์เดิม: <b>${fmt(r0&&r0.cost)}</b> · หลังผูกราคา: <b>${fmt(res&&res.cost)}</b> บาท/${esc(it?it.unit:'หน่วย')}${(r0&&res&&typeof r0.cost==='number'&&typeof res.cost==='number')?' · ส่วนต่าง <b>'+(res.cost-r0.cost>=0?'+':'')+fmt(res.cost-r0.cost)+'</b>':''}`};
+  base.forEach((r,i)=>{if(L[i])tgt(i)});upd();
+  ov.addEventListener('input',e=>{const tr=e.target.closest('tr[data-i]');if(!tr)return;const i=+tr.dataset.i,a=e.target.dataset.a,l=L[i];if(!a)return;
+    if(a==='c'){l.c=String(e.target.value).split(' · ')[0].trim();upd();return}
+    l[a]=(a==='q'||a==='km')?(parseFloat(e.target.value)||0):e.target.value;if(a==='k'){tgt(i)}upd()});
+  ov.addEventListener('change',e=>{const tr=e.target.closest('tr[data-i]');if(!tr)return;const i=+tr.dataset.i,a=e.target.dataset.a;if(a==='c'||a==='k'){tgt(i);upd()}});
+  $('lnCx').onclick=()=>ov.remove();
+  $('lnSave').onclick=()=>{const bad=L.map((l,i)=>l&&((l.k==='MAT'&&!ucMatFind(l.c))||(l.k==='MCH'&&!ucMchFind(l.c)))?i+1:0).filter(x=>x);
+    if(bad.length&&!confirm('แถว r'+bad.join(', r')+' ยังไม่ได้เลือกรหัสจากตาราง — จะใช้ค่าคงที่เดิมของแถวเหล่านั้น ดำเนินการต่อ?'))return;
+    UC.tmpl[code].rows=lnBuild(base,L);ucSave(true);ov.remove();toast('ผูกราคาใน ITEM UNIT '+code+' แล้ว');try{ucSel=code;ucRender()}catch(e){}}}
 async function ihRemove(code){if(!confirm('ลบไฟล์แบบที่แนบของรหัส '+code+' ? (ใบ ITEM UNIT ยังอยู่)'))return;try{await ihDelDb(code)}catch(e){}IH_SET.delete(code);try{ucRender()}catch(e){}}
 
 
