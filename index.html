@@ -428,7 +428,14 @@ input.ovr{border-color:#e08a00!important;background:#fff6e0!important}.mjtop{mar
   <datalist id="dlJobDR"></datalist><datalist id="dlStaDR"></datalist>
 </section>
 
-<section class="tab" id="t10"><div class="card" id="mrBox"></div></section>
+<section class="tab" id="t10"><div class="card" id="mrBox"></div>
+<div class="card" id="mrMapCard" style="margin-top:12px"><h3 style="margin:0 0 6px">🗺 วางจุดบนแผนที่ → ได้ระยะทางและ STA</h3>
+ <div class="mute">แตะบนแผนที่เพื่อวางจุดตามแนวถนน (จุดแรก = เริ่มต้น STA) · ลากหมุดเพื่อปรับตำแหน่ง · ตัวเลขระยะ (ม.) และ STA แสดงบนแผนที่ทันที (ต้องต่ออินเทอร์เน็ตเพื่อโหลดภาพแผนที่)</div>
+ <div class="bar" style="flex-wrap:wrap"><button class="b amber sm" data-mr="mode" id="mrMode">✋ หยุดวางจุด (เลื่อนแผนที่)</button><button class="b ghost sm" data-mr="undo">↶ ลบจุดล่าสุด</button><button class="b ghost sm" data-mr="clear">🗑 ล้างจุดทั้งหมด</button><button class="b ghost sm" data-mr="gps">📍 ไปตำแหน่งปัจจุบัน</button><button class="b ghost sm" data-mr="gpsadd">＋ วางจุดที่ตำแหน่งปัจจุบัน</button><button class="b ghost sm" data-mr="fit">⤢ ดูทั้งแนว</button></div>
+ <div class="bar" style="flex-wrap:wrap"><input id="mrGo" placeholder="วางพิกัดจาก Google Maps เช่น 13.7563, 100.5018" style="max-width:340px"><button class="b ghost sm" data-mr="go">ไปที่พิกัดนี้</button><span class="mute">รัศมีโค้งตั้งต้น (ม.)</span><input id="mrR" type="number" min="0" step="1" style="width:80px"></div>
+ <div id="mrMap" style="height:62vh;min-height:340px;border-radius:8px;border:1px solid var(--line);margin-top:6px"></div>
+ <div id="mrInfo" style="font-weight:700;margin-top:6px"></div><div id="mrAct" style="margin-top:6px"></div></div>
+<div class="card" id="mrTbl" style="margin-top:12px"></div></section>
 <section class="tab" id="t4">
   <div class="card">
     <h3 style="margin:0 0 8px">📤 ปลายทางการบันทึกไฟล์</h3>
@@ -3519,33 +3526,96 @@ function shMode(on){SH.on=on;if(on&&typeof LBL!=='undefined'&&LBL.on)lblMode(fal
 
 // ===== v113: ④ MAP ROUTE — แนวทาง/STA จากแผนที่ออนไลน์ (ขั้นประมาณการ) แยกจากขั้นสำรวจจริง =====
 const MR_ST={map:['MAP','ประมาณการจากแผนที่ (ยังไม่ได้ลงสำรวจ)','#b36b00'],field:['FIELD','สำรวจจริงภาคสนาม','#1e7a3c']};
-function mrRender(){const box=$('mrBox');if(!box)return;const g=G();try{compilePL(g)}catch(e){}
-  const st=S.stage||'',s0=parseSta(g.sta0),end=g._end,tot=(s0!=null&&end!=null)?Math.max(0,end-s0):0;
-  const segs=(g.pl||[]).filter(p=>!p.lead&&!p.turn&&p._b>p._a+1e-6),ty={L:'ทางตรง',CL:'โค้งซ้าย',CR:'โค้งขวา'};
-  const nCur=segs.filter(p=>p.t!=='L').length;
+function mrData(){const g=G();if(!g.mr)g.mr={pts:[],R:''};if(!g.mr.pts)g.mr.pts=[];if(!g.mr.br)g.mr.br=[];return g.mr}
+let MR={map:null,lay:null,add:true,sel:null,cur:null};
+const MR_COL=['#8e44ad','#16a085','#2980b9','#c0392b','#7f8c8d','#d4ac0d'];
+const mrLet=n=>String.fromCharCode(65+n%26)+(n>=26?Math.floor(n/26):'');
+function mrCalc(){const d=mrData(),p=d.pts,s0=parseSta(G().sta0),base=s0==null?0:s0;let cum=0;
+  return p.map((q,i)=>{if(!q.id)q.id=uid();let seg=0;if(i>0){const[x,y]=llToXY(q,p[i-1]);seg=Math.hypot(x,y)}cum+=seg;return{i,q,seg,cum,sta:base+cum}})}
+// แขนง: จุดแยก = หมุดบนสายหลัก (อ้างด้วย id) แล้วต่อด้วยจุดของแขนงเอง
+function mrBr(rows){const d=mrData();rows=rows||mrCalc();
+  return d.br.map((b,k)=>{const jr=rows.find(r=>r.q.id===b.ref);if(!jr)return{b,k,jr:null,rows:[],len:0,col:MR_COL[k%MR_COL.length]};
+    const base=b.mode==='cont'?jr.sta:0;let cum=0,prev=jr.q;
+    const rs=[{i:-1,q:jr.q,seg:0,cum:0,sta:base,j:true}].concat(b.pts.map((q,i)=>{const[x,y]=llToXY(q,prev);const seg=Math.hypot(x,y);cum+=seg;prev=q;return{i,q,seg,cum,sta:base+cum}}));
+    return{b,k,jr,rows:rs,len:cum,col:MR_COL[k%MR_COL.length]}})}
+function mrDraw(){if(!MR.map||!MR.lay)return;MR.lay.clearLayers();const rows=mrCalc(),d=mrData(),brs=mrBr(rows);
+  if(rows.length>1)L.polyline(rows.map(r=>[r.q.lat,r.q.lon]),{color:'#d35400',weight:4,opacity:.9}).addTo(MR.lay);
+  rows.forEach(r=>{if(r.i>0){const a=rows[r.i-1].q,q=r.q;L.marker([(a.lat+q.lat)/2,(a.lon+q.lon)/2],{interactive:false,icon:L.divIcon({className:'mrSeg',html:'<span>'+nf(r.seg,1)+' ม.</span>',iconSize:[0,0]})}).addTo(MR.lay)}
+    const hasBr=d.br.some(b=>b.ref===r.q.id),sel=MR.sel===r.q.id,bg=r.i===0?'#27ae60':r.i===rows.length-1&&rows.length>1?'#c0392b':'#d35400';
+    const mk=L.marker([r.q.lat,r.q.lon],{draggable:true,icon:L.divIcon({className:'mrPt',html:'<b style="background:'+bg+(sel?';outline:3px solid #f1c40f':'')+(hasBr?';border-radius:6px':'')+'">'+(r.i+1)+'</b>',iconSize:[26,26],iconAnchor:[13,13]})}).addTo(MR.lay);
+    mk.bindTooltip(fmtSta(r.sta),{permanent:true,direction:'top',offset:[0,-14],className:'mrTip'});
+    mk.on('click',()=>{MR.sel=MR.sel===r.q.id?null:r.q.id;mrDraw();mrAct()});
+    mk.on('drag',e=>{r.q.lat=e.latlng.lat;r.q.lon=e.latlng.lng});
+    mk.on('dragend',()=>{save(true);mrDraw();mrTable()})});
+  brs.forEach(B=>{if(!B.jr)return;const rs=B.rows;
+    if(rs.length>1)L.polyline(rs.map(r=>[r.q.lat,r.q.lon]),{color:B.col,weight:4,opacity:.95,dashArray:'8 5'}).addTo(MR.lay);
+    rs.forEach((r,idx)=>{if(idx>0){const a=rs[idx-1].q;L.marker([(a.lat+r.q.lat)/2,(a.lon+r.q.lon)/2],{interactive:false,icon:L.divIcon({className:'mrSeg',html:'<span style="border-color:'+B.col+'">'+nf(r.seg,1)+' ม.</span>',iconSize:[0,0]})}).addTo(MR.lay);
+      const act=MR.cur===B.b.id,mk=L.marker([r.q.lat,r.q.lon],{draggable:true,icon:L.divIcon({className:'mrPt',html:'<b style="background:'+B.col+';width:22px;height:22px;font-size:10px'+(act?';outline:3px solid #f1c40f':'')+'">'+mrLet(B.k)+r.i+1+'</b>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(MR.lay);
+      mk.bindTooltip(fmtSta(r.sta),{permanent:true,direction:'top',offset:[0,-12],className:'mrTip'});
+      mk.on('drag',e=>{r.q.lat=e.latlng.lat;r.q.lon=e.latlng.lng});mk.on('dragend',()=>{save(true);mrDraw();mrTable()})}})});
+  const t=rows.length?rows[rows.length-1].cum:0;
+  $('mrInfo').textContent=rows.length?`สายหลัก ${rows.length} จุด · ความยาวรวม ${nf(t,1)} ม. (${nf(t/1000,3)} กม.) · STA ปลายทาง ${fmtSta(rows[rows.length-1].sta)}`+(d.br.length?` · แขนง ${d.br.length} สาย`:''):'ยังไม่มีจุด — แตะบนแผนที่เพื่อวางจุดแรก (จุดเริ่มต้น)'}
+function mrAct(){const box=$('mrAct');if(!box)return;const d=mrData(),rows=mrCalc();
+  if(MR.cur){const B=mrBr(rows).find(x=>x.b.id===MR.cur);if(!B||!B.jr){MR.cur=null;return mrAct()}
+    box.innerHTML=`<div style="border:2px solid ${B.col};border-radius:8px;padding:6px 8px"><b style="color:${B.col}">กำลังวางแขนง ${esc(B.b.name)}</b> · แตะแผนที่เพื่อเพิ่มจุดต่อออกจากจุดแยก (STA สายหลัก ${fmtSta(B.jr.sta)}) · ยาว ${nf(B.len,1)} ม.
+      <div class="bar" style="margin-top:4px"><button class="b ghost sm" data-mr="bundo">↶ ลบจุดล่าสุดของแขนง</button><button class="b sm" data-mr="bdone">✔ จบแขนง (กลับไปวางสายหลัก)</button></div></div>`;return}
+  const r=rows.find(x=>x.q.id===MR.sel);
+  if(r){const n=d.br.filter(b=>b.ref===r.q.id).length;
+    box.innerHTML=`<div style="border:2px solid #f1c40f;border-radius:8px;padding:6px 8px">จุดที่ <b>${r.i+1}</b> บนสายหลัก · STA <b>${fmtSta(r.sta)}</b>${n?` · มีแขนงอยู่แล้ว ${n} สาย`:''}
+      <div class="bar" style="margin-top:4px"><button class="b amber sm" data-mr="mkbr">⑂ สร้างทางแยกที่จุดนี้</button><button class="b ghost sm" data-mr="unsel">ยกเลิกการเลือก</button></div></div>`}
+  else box.innerHTML=d.pts.length?'<div class="mute">แตะหมุดบนสายหลักเพื่อเลือก แล้วกด "สร้างทางแยกที่จุดนี้" เพื่อวางแนวแขนง</div>':''}
+function mrTable(){const box=$('mrTbl');if(!box)return;const rows=mrCalc(),g=G(),d=mrData(),brs=mrBr(rows);
+  box.innerHTML=`<h3 style="margin:0 0 6px">รายการจุดและระยะ — สายหลัก</h3>`+(rows.length?`<div style="overflow:auto"><table><thead><tr><th>จุด</th><th>ละติจูด, ลองจิจูด</th><th>ระยะช่วง (ม.)</th><th>ระยะสะสม (ม.)</th><th>STA</th><th></th></tr></thead><tbody>${rows.map(r=>{const bs=d.br.filter(b=>b.ref===r.q.id).map(b=>b.name);return`<tr><td>${r.i+1}${bs.length?` <span style="color:#8e44ad;font-weight:700">⑂ ${esc(bs.join(', '))}</span>`:''}</td><td>${r.q.lat.toFixed(6)}, ${r.q.lon.toFixed(6)}</td><td>${r.i?nf(r.seg,1):'-'}</td><td>${nf(r.cum,1)}</td><td>${fmtSta(r.sta)}</td><td style="white-space:nowrap"><button class="b ghost sm" data-mr="goto" data-i="${r.i}" title="เลื่อนแผนที่ไปที่จุดนี้">🔍</button><button class="b ghost sm" data-mr="sel" data-i="${r.i}" title="เลือกจุดนี้ (เพื่อสร้างทางแยก)">⑂</button>${r.i<rows.length-1?`<button class="b ghost sm" data-mr="ins" data-i="${r.i}" title="แทรกจุดตรงกลางระหว่างจุดนี้กับจุดถัดไป">＋</button>`:''}<button class="b ghost sm" data-mr="del" data-i="${r.i}" style="color:#b3261e" title="ลบจุดนี้">✕</button></td></tr>`}).join('')}</tbody></table></div>`:'<div class="mute">ยังไม่มีจุด</div>')+
+  `<h3 style="margin:14px 0 6px">แขนง / ทางแยก</h3>`+(d.br.length?`<div style="overflow:auto"><table><thead><tr><th>แขนง</th><th>จุดแยกที่ STA (สายหลัก)</th><th>จำนวนจุด</th><th>ความยาว (ม.)</th><th>STA ของแขนง</th><th>STA ปลายแขนง</th><th></th></tr></thead><tbody>${brs.map(B=>{const b=B.b,end=B.rows[B.rows.length-1];return`<tr><td><span style="color:${B.col};font-weight:700">●</span> <input data-mrbn="${b.id}" value="${esc(b.name)}" style="width:110px"></td><td>${B.jr?'<b>'+fmtSta(B.jr.sta)+'</b> (จุดที่ '+(B.jr.i+1)+')':'<span style="color:#b3261e">ไม่พบจุดแยก</span>'}</td><td>${b.pts.length}</td><td><b>${nf(B.len,1)}</b></td><td><select data-mrbm="${b.id}"><option value="sep"${b.mode==='cont'?'':' selected'}>เริ่ม 0+000 ที่จุดแยก</option><option value="cont"${b.mode==='cont'?' selected':''}>สืบต่อจาก STA จุดแยก</option></select></td><td>${end?fmtSta(end.sta):'-'}</td><td style="white-space:nowrap"><button class="b ghost sm" data-mr="bcont" data-id="${b.id}" title="วางจุดต่อของแขนงนี้">✏ วางจุดต่อ</button><button class="b ghost sm" data-mr="bgoto" data-id="${b.id}">🔍</button><button class="b ghost sm" data-mr="bdel" data-id="${b.id}" style="color:#b3261e">✕</button></td></tr>`}).join('')}</tbody></table></div><div class="mute">ปุ่ม "สร้างผัง STA ในแท็บ ③" ใช้เฉพาะสายหลัก แขนงเก็บไว้เป็นแนวและระยะบนแผนที่ (ยังไม่แปลงเป็นผังแปลน)</div>`:'<div class="mute">ยังไม่มีแขนง — แตะหมุดบนแผนที่แล้วกด "สร้างทางแยกที่จุดนี้"</div>')+
+  `<div class="mute" style="margin-top:6px">STA เริ่มต้น = ${esc(g.sta0||'0+000')} (ตั้งค่าได้ที่แท็บ ③ STA) · ระยะที่แสดงเป็นระยะตรงระหว่างจุด เมื่อสร้างผังจะใส่โค้งตามรัศมีที่ตั้ง ความยาวรวมจึงต่างเล็กน้อย</div>
+  <div class="bar" style="flex-wrap:wrap;margin-top:8px"><button class="b" data-mr="apply"${rows.length>1?'':' disabled'}>✔ สร้างผัง STA ในแท็บ ③ จากสายหลัก</button></div>`}
+function mrInit(){if(MR.map)return true;if(!window.L){problem('MAP_LIB');return false}
+  MR.map=L.map('mrMap');const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri World Imagery'});
+  sat.addTo(MR.map);L.control.layers({'ภาพถ่ายดาวเทียม':sat,'แผนที่ถนน':osm}).addTo(MR.map);MR.lay=L.layerGroup().addTo(MR.map);
+  MR.map.on('click',e=>{const d=mrData();
+    if(MR.cur){const b=d.br.find(x=>x.id===MR.cur);if(b){b.pts.push({lat:e.latlng.lat,lon:e.latlng.lng});save(true);mrDraw();mrTable();mrAct()}return}
+    if(!MR.add)return;d.pts.push({id:uid(),lat:e.latlng.lat,lon:e.latlng.lng});save(true);mrDraw();mrTable();mrAct()});return true}
+function mrFit(){if(!MR.map)return;const p=mrData().pts;if(p.length>1)MR.map.fitBounds(p.map(q=>[q.lat,q.lon]),{padding:[30,30],maxZoom:19});
+  else if(p.length===1)MR.map.setView([p[0].lat,p[0].lon],18);else{const c=[];S.rows.forEach(r=>{const a=parseLL(r.g1),b=parseLL(r.g2);if(a)c.push(a);if(b)c.push(b)});if(c.length)MR.map.setView([c[0].lat,c[0].lon],17);else MR.map.setView([13.75,100.5],6)}}
+function mrRender(){const box=$('mrBox');if(!box)return;const st=S.stage||'';
   const chip=k=>`<button class="b ${st===k?'':'ghost'}" data-mr="stage" data-v="${k}" style="${st===k?'background:'+MR_ST[k][2]+';border-color:'+MR_ST[k][2]+';color:#fff':''}">${MR_ST[k][0]} · ${MR_ST[k][1]}</button>`;
-  box.innerHTML=`<h3 style="margin:0 0 6px">④ MAP ROUTE — แนวทางและ STA จากแผนที่ออนไลน์</h3>
-  <div class="mute">ใช้ตอนยังไม่ได้ลงพื้นที่: วัดแนวทาง สร้าง STA และประมาณปริมาณจากแผนที่ เพื่อทำแผน/เสนอของบประมาณ · เมื่อได้งบและต้องลงสำรวจจริง ให้ทำสำเนาโครงการเป็นชุด FIELD (ปุ่มด้านล่าง) แล้วแก้ตามหน้างาน โดยชุด MAP ยังอยู่เป็นหลักฐานเดิม</div>
-  <div style="font-weight:700;margin:12px 0 4px">ขั้นตอนของโครงการนี้</div>
-  <div class="bar" style="flex-wrap:wrap">${chip('map')}${chip('field')}${st?'<button class="b ghost sm" data-mr="stage" data-v="">ไม่ระบุ</button>':''}</div>
-  <div class="mute">ป้ายขั้นตอนจะแสดงต่อท้ายชื่อโครงการที่แถบด้านบนและในคลังโครงการ จะได้ไม่สับสนว่าตัวเลขมาจากแผนที่หรือจากสนาม</div>
-  <div style="font-weight:700;margin:14px 0 4px">สร้างแนวทางจากแผนที่</div>
-  <div class="bar" style="flex-wrap:wrap"><button class="b amber" data-mr="trace">📍 วาดแนวทางจากแผนที่ → สร้าง STA</button><button class="b ghost" data-mr="gostasta">ไปแท็บ ③ STA</button><button class="b ghost" data-mr="gomap">ไปแท็บ ② LOCATION</button></div>
-  <div class="mute">แตะบนภาพดาวเทียมตามแนวถนน ระบบแปลงเป็นช่วงตรง/โค้ง และ STA ให้ (ต้องต่ออินเทอร์เน็ต) · ตัวเลขจากแผนที่คลาดเคลื่อนได้ ควรเผื่อไว้ในราคาที่เสนอ</div>
-  <div style="font-weight:700;margin:14px 0 4px">สรุปแนวทางปัจจุบัน</div>
-  ${segs.length?`<div class="mute">STA เริ่มต้น ${esc(g.sta0||'0+000')} · ความยาวรวม <b>${nf(tot)}</b> ม. · ${segs.length} ช่วง (โค้ง ${nCur})</div>
-  <div style="overflow:auto"><table><thead><tr><th>ช่วง</th><th>ลักษณะ</th><th>STA</th><th>ยาว (ม.)</th><th>รัศมี / มุม</th></tr></thead><tbody>${segs.map((p,i)=>`<tr><td>${i+1}</td><td>${ty[p.t]||esc(p.t)}</td><td>${fmtSta(p._a)} – ${fmtSta(p._b)}</td><td>${nf(p._b-p._a)}</td><td>${p.t==='L'?'-':'R '+esc(String(p.R))+' ม. / '+esc(String(p.ang))+'°'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="mute">ยังไม่มีแนวทาง — กด "วาดแนวทางจากแผนที่" หรือสร้างช่วงที่แท็บ ③ STA</div>'}
-  <div style="font-weight:700;margin:14px 0 4px">เริ่มขั้นสำรวจจริง</div>
-  <div class="bar" style="flex-wrap:wrap"><button class="b" data-mr="tofield">⧉ ทำสำเนาเป็นโครงการสำรวจจริง (FIELD)</button></div>
-  <div class="mute">สร้างโครงการใหม่ชื่อต่อท้าย (FIELD) พร้อมข้อมูลและรูปทั้งหมดของชุดนี้ และรหัสโครงการใหม่ · ชุดนี้ไม่ถูกแก้ไข</div>`}
+  box.innerHTML=`<h3 style="margin:0 0 6px">④ MAP ROUTE — วัดแนวทางและสร้าง STA จากแผนที่ออนไลน์</h3>
+  <div class="mute">ใช้ตอนยังไม่ได้ลงพื้นที่ เพื่อทำแผน/เสนอของบประมาณ · เมื่อได้งบและต้องลงสำรวจจริง ให้ทำสำเนาโครงการเป็นชุด FIELD (ปุ่มด้านล่าง) ชุด MAP ยังอยู่เป็นหลักฐานเดิม</div>
+  <div class="bar" style="flex-wrap:wrap;margin-top:8px"><b>ขั้นตอนของโครงการนี้:</b>${chip('map')}${chip('field')}${st?'<button class="b ghost sm" data-mr="stage" data-v="">ไม่ระบุ</button>':''}<button class="b ghost" data-mr="tofield">⧉ ทำสำเนาเป็นโครงการสำรวจจริง (FIELD)</button><button class="b ghost" data-mr="gostasta">ไปแท็บ ③ STA</button></div>`;
+  const ok=mrInit();$('mrR').value=mrData().R||G().rcurve||15;$('mrMode').textContent=MR.add?'✋ หยุดวางจุด (เลื่อนแผนที่)':'📍 กลับไปวางจุด';
+  mrTable();mrAct();if(ok){mrDraw();setTimeout(()=>{MR.map.invalidateSize();mrFit()},80)}else{$('mrInfo').textContent=''}}
 async function mrToField(){const p=S;if(!confirm('ทำสำเนา "'+(p.proj.name||'โครงการ')+'" เป็นโครงการสำรวจจริง (FIELD)?\n\nชุดนี้จะไม่ถูกแก้ไข'))return;
   save(true);const c=JSON.parse(JSON.stringify(p));c.id=uid();c.created=c.updated=Date.now();c.proj.name=((c.proj.name||'โครงการ').replace(/\s*\((MAP|FIELD)[^)]*\)\s*$/i,''))+' (FIELD)';c.code=nextCode();c.stage='field';
   for(const o of [...c.rows,...(c.pts||[])]){const nw=[];for(const id of(o.ph||[])){const r=await pGet(id);if(r){const n=uid();await pPut({...r,id:n});nw.push(n)}}o.ph=nw}
   LIB.list[c.id]=c;if(!p.stage){p.stage='map'}save(true);openProj(c.id,true);showTab('t10');toast('✔ สร้างโครงการสำรวจจริง (FIELD) แล้ว — ชุด MAP ยังอยู่ในคลังโครงการ')}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-mr]');if(!b)return;const a=b.dataset.mr;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-mr]');if(!b)return;const a=b.dataset.mr,d=mrData(),i=+b.dataset.i;
   if(a==='stage'){S.stage=b.dataset.v||'';save(true);curLabel();mrRender()}
-  else if(a==='trace'){if(typeof openTracer==='function')openTracer()}
-  else if(a==='gostasta')showTab('t3');else if(a==='gomap')showTab('t5');else if(a==='tofield')mrToField()});
+  else if(a==='gostasta')showTab('t3');else if(a==='tofield')mrToField();
+  else if(a==='mode'){MR.add=!MR.add;b.textContent=MR.add?'✋ หยุดวางจุด (เลื่อนแผนที่)':'📍 กลับไปวางจุด';b.classList.toggle('amber',MR.add);b.classList.toggle('ghost',!MR.add);if(MR.map)MR.map.getContainer().style.cursor=MR.add?'crosshair':''}
+  else if(a==='undo'){if(MR.cur){const bb=d.br.find(x=>x.id===MR.cur);if(bb)bb.pts.pop()}else{const q=d.pts[d.pts.length-1];if(q&&d.br.some(x=>x.ref===q.id)){if(!confirm('จุดนี้มีแขนง จะลบแขนงที่ต่อจากจุดนี้ด้วย?'))return;d.br=d.br.filter(x=>x.ref!==q.id)}d.pts.pop()}save(true);mrDraw();mrTable();mrAct()}
+  else if(a==='sel'){const q=d.pts[i];if(q){MR.sel=q.id;MR.cur=null;mrDraw();mrAct();if(MR.map)MR.map.setView([q.lat,q.lon],Math.max(MR.map.getZoom?MR.map.getZoom():18,17));window.scrollTo({top:$('mrMap').getBoundingClientRect().top+scrollY-80,behavior:'smooth'})}}
+  else if(a==='unsel'){MR.sel=null;mrDraw();mrAct()}
+  else if(a==='mkbr'){const q=d.pts.find(x=>x.id===MR.sel);if(!q)return;const n=d.br.length,b={id:uid(),ref:q.id,name:'แขนง '+mrLet(n),mode:'sep',pts:[]};d.br.push(b);MR.cur=b.id;MR.sel=null;save(true);mrDraw();mrTable();mrAct();toast('แตะแผนที่เพื่อวางจุดของ '+b.name)}
+  else if(a==='bdone'){MR.cur=null;save(true);mrDraw();mrTable();mrAct()}
+  else if(a==='bundo'){const bb=d.br.find(x=>x.id===MR.cur);if(bb){bb.pts.pop();save(true);mrDraw();mrTable();mrAct()}}
+  else if(a==='bcont'){MR.cur=b.dataset.id;MR.sel=null;mrDraw();mrAct();toast('แตะแผนที่เพื่อวางจุดต่อของแขนง')}
+  else if(a==='bgoto'){const bb=d.br.find(x=>x.id===b.dataset.id);if(bb&&MR.map){const pts=[d.pts.find(x=>x.id===bb.ref)].concat(bb.pts).filter(Boolean);if(pts.length>1)MR.map.fitBounds(pts.map(q=>[q.lat,q.lon]),{padding:[30,30],maxZoom:19});else if(pts[0])MR.map.setView([pts[0].lat,pts[0].lon],19);window.scrollTo({top:$('mrMap').getBoundingClientRect().top+scrollY-80,behavior:'smooth'})}}
+  else if(a==='bdel'){const bb=d.br.find(x=>x.id===b.dataset.id);if(!bb||!confirm('ลบ '+bb.name+' ('+bb.pts.length+' จุด)?'))return;d.br=d.br.filter(x=>x!==bb);if(MR.cur===bb.id)MR.cur=null;save(true);mrDraw();mrTable();mrAct()}
+  else if(a==='clear'){if(d.pts.length&&!confirm('ล้างจุดบนแผนที่ทั้งหมด ('+d.pts.length+' จุด)? (ผังใน ③ ไม่ถูกแก้)'))return;d.pts=[];d.br=[];MR.cur=null;MR.sel=null;save(true);mrDraw();mrTable();mrAct()}
+  else if(a==='fit')mrFit();
+  else if(a==='gps'||a==='gpsadd'){if(!navigator.geolocation){problem('GPS_UNSUPPORTED');return}navigator.geolocation.getCurrentPosition(p=>{const la=p.coords.latitude,lo=p.coords.longitude;if(a==='gpsadd'){d.pts.push({id:uid(),lat:la,lon:lo});save(true);mrDraw();mrTable()}if(MR.map)MR.map.setView([la,lo],19)},er=>problem('GPS_FAIL',er&&er.message),{enableHighAccuracy:true,timeout:15000})}
+  else if(a==='go'){const q=parseLL($('mrGo').value);if(!q){toast('อ่านพิกัดไม่ได้ — ตัวอย่าง 13.7563, 100.5018',true);return}if(MR.map)MR.map.setView([q.lat,q.lon],18)}
+  else if(a==='goto'){const q=d.pts[i];if(q&&MR.map){MR.map.setView([q.lat,q.lon],19);window.scrollTo({top:$('mrMap').getBoundingClientRect().top+scrollY-80,behavior:'smooth'})}}
+  else if(a==='del'){const q=d.pts[i];if(q&&d.br.some(x=>x.ref===q.id)){if(!confirm('จุดนี้มีแขนง จะลบแขนงที่ต่อจากจุดนี้ด้วย?'))return;d.br=d.br.filter(x=>x.ref!==q.id);if(!d.br.some(x=>x.id===MR.cur))MR.cur=null}if(q&&MR.sel===q.id)MR.sel=null;d.pts.splice(i,1);save(true);mrDraw();mrTable();mrAct()}
+  else if(a==='ins'){const p=d.pts[i],q=d.pts[i+1];if(p&&q){d.pts.splice(i+1,0,{id:uid(),lat:(p.lat+q.lat)/2,lon:(p.lon+q.lon)/2});save(true);mrDraw();mrTable()}}
+  else if(a==='apply'){if(d.pts.length<2){problem('TR_FEW');return}d.R=gnum($('mrR').value,15);
+    const o=d.pts[0],xy=d.pts.map(p=>llToXY(p,o)),r=polyToSegs(xy,d.R);if(!r){problem('TR_DUP');return}
+    const g=G();if(g.segs&&g.segs.length&&!confirm('แทนที่แนวทางเดิมในแท็บ ③ STA ด้วยแนวจากจุดบนแผนที่นี้?'))return;
+    g.hd=r.hd;plFromSegs(g,r.segs);if(parseSta(g.sta0)==null)g.sta0='0+000';g.rcurve=d.R;save(true);toast('✔ สร้างผัง STA จากแผนที่แล้ว ('+r.segs.length+' ช่วง)');showTab('t3')}});
+document.addEventListener('change',e=>{const t=e.target;if(!t)return;if(t.id==='mrR'){mrData().R=gnum(t.value,15);save(true)}
+  else if(t.dataset&&t.dataset.mrbn){const b=mrData().br.find(x=>x.id===t.dataset.mrbn);if(b){b.name=t.value.trim()||b.name;save(true);mrDraw();mrTable();mrAct()}}
+  else if(t.dataset&&t.dataset.mrbm){const b=mrData().br.find(x=>x.id===t.dataset.mrbm);if(b){b.mode=t.value;save(true);mrDraw();mrTable()}}});
+(function(){const st=document.createElement('style');st.textContent='.mrPt b{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;color:#fff;border:2px solid #fff;font-size:12px;box-shadow:0 1px 4px #0008}.mrSeg span{position:absolute;transform:translate(-50%,-50%);background:#fffd;color:#000;border:1px solid #d35400;border-radius:4px;padding:0 4px;font-size:11px;font-weight:700;white-space:nowrap}.mrTip{font-weight:700;font-size:11px;padding:1px 5px}';document.head.appendChild(st)})();
 (function(){const _cl=curLabel;curLabel=function(){_cl.apply(this,arguments);const e=$('curName');if(e&&S&&S.stage&&MR_ST[S.stage])e.textContent+=' ['+MR_ST[S.stage][0]+']'}})();
 
 // ===== v93: ⑨ UNIT COST =====
