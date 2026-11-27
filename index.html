@@ -3570,8 +3570,12 @@ function mrTable(){const box=$('mrTbl');if(!box)return;const rows=mrCalc(),g=G()
   `<div class="mute" style="margin-top:6px">STA เริ่มต้น = ${esc(g.sta0||'0+000')} (ตั้งค่าได้ที่แท็บ ③ STA) · ระยะที่แสดงเป็นระยะตรงระหว่างจุด เมื่อสร้างผังจะใส่โค้งตามรัศมีที่ตั้ง ความยาวรวมจึงต่างเล็กน้อย</div>
   <div class="bar" style="flex-wrap:wrap;margin-top:8px"><button class="b" data-mr="apply"${rows.length>1?'':' disabled'}>✔ สร้างผัง STA ในแท็บ ③ จากสายหลัก</button></div>`}
 function mrInit(){if(MR.map)return true;if(!window.L){problem('MAP_LIB');return false}
-  MR.map=L.map('mrMap');const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}),sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri World Imagery'});
-  sat.addTo(MR.map);L.control.layers({'ภาพถ่ายดาวเทียม':sat,'แผนที่ถนน':osm}).addTo(MR.map);MR.lay=L.layerGroup().addTo(MR.map);
+  MR.map=L.map('mrMap');
+  // v116: แหล่งแผนที่ฟรีชุดเดียวกับแท็บ ② LOCATION (OSM, Esri ดาวเทียม/ถนน/ภูมิประเทศ, OpenTopoMap, CARTO ...) จำตัวที่เลือกไว้ล่าสุด
+  const base={};Object.keys(MM_SRC).forEach(k=>base[MM_SRC[k].n]=mmLf(k));let key='esrisat';try{const v=localStorage.getItem('sf.mr.base');if(MM_SRC[v])key=v}catch(e){}
+  base[MM_SRC[key].n].addTo(MR.map);L.control.layers(base).addTo(MR.map);
+  MR.map.on('baselayerchange',e=>{const k=Object.keys(MM_SRC).find(k=>MM_SRC[k].n===e.name);if(k)try{localStorage.setItem('sf.mr.base',k)}catch(_){}});
+  MR.lay=L.layerGroup().addTo(MR.map);
   MR.map.on('click',e=>{const d=mrData();
     if(MR.cur){const b=d.br.find(x=>x.id===MR.cur);if(b){b.pts.push({lat:e.latlng.lat,lon:e.latlng.lng});save(true);mrDraw();mrTable();mrAct()}return}
     if(!MR.add)return;d.pts.push({id:uid(),lat:e.latlng.lat,lon:e.latlng.lng});save(true);mrDraw();mrTable();mrAct()});return true}
